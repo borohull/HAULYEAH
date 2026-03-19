@@ -1,4 +1,4 @@
-﻿package view;
+package view;
 
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -14,6 +14,7 @@ import model.Position;
 import model.Tile;
 import model.TileType;
 import model.WaterBody;
+import javafx.scene.image.Image;
 
 
 public class MapPanel extends Canvas {
@@ -64,7 +65,19 @@ public class MapPanel extends Canvas {
     private static final Color COL_GRID     = Color.rgb(0, 0, 0, 0.08);
     private static final Color COL_LABEL    = Color.rgb(0, 0, 0, 0.55);
 
-    
+    private final Image grassImage = loadTileImage("/images/grass.png");
+    private final Image waterImage = loadTileImage("/images/water.png");
+    private final Image fieldImage = loadTileImage("/images/field.png");
+    private final Image plantationImage = loadTileImage("/images/plantation.png");
+
+    private Image loadTileImage(String path) {
+        try {
+            return new Image(getClass().getResourceAsStream(path));
+        } catch (Exception e) {
+            System.out.println("Could not load image: " + path);
+            return null;
+        }
+    }
 
     public MapPanel() {
         super(0, 0);
@@ -127,20 +140,52 @@ public class MapPanel extends Canvas {
         }
     }
 
-    
-    
-    
+    private Image getGroundImage(TileType type) {
+        return switch (type) {
+            case WATER -> waterImage;
+            case FOREST -> grassImage;
+            case FACILITY -> fieldImage;
+            case CITY -> grassImage;
+            case ROAD -> fieldImage;
+            case STOP -> plantationImage;
+            case BRIDGE -> waterImage;
+            case EMPTY -> grassImage;
+        };
+    }
+
+
     private void drawGround(GraphicsContext gc, Tile tile,
                             int tx, int ty, int ox, int oy) {
+        double cx = isoScreenX(tx, ty, ox);
+        double cy = isoScreenY(tx, ty, oy);
+
+        Image tileImage = getGroundImage(tile.getType());
+
+        if (tileImage != null) {
+
+            gc.drawImage(
+                    tileImage,
+                    cx - TILE_W / 2.0 - 2,
+                    cy - 2,
+                    TILE_W + 4,
+                    TILE_H + WALL_H + 4
+            );
+        } else {
+
+            double[] xs = diamondXs(tx, ty, ox);
+            double[] ys = diamondYs(tx, ty, oy);
+
+            gc.setFill(groundColor(tile.getType()));
+            gc.fillPolygon(xs, ys, 4);
+        }
+
+
         double[] xs = diamondXs(tx, ty, ox);
         double[] ys = diamondYs(tx, ty, oy);
 
-        gc.setFill(groundColor(tile.getType()));
-        gc.fillPolygon(xs, ys, 4);
-
-        gc.setStroke(COL_GRID);
-        gc.setLineWidth(0.5);
-        gc.strokePolygon(xs, ys, 4);
+//        gc.setStroke(COL_GRID);
+//        gc.setLineWidth(0.5);
+//        gc.strokePolygon(xs, ys, 4);
     }
 
     private Color groundColor(TileType type) {
