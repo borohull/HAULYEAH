@@ -1,4 +1,4 @@
-package model;
+﻿package model;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,10 +6,10 @@ import java.util.List;
 public class City {
     private final String id;
     private final String name;
-    private final Position origin;   // top-left tile of the city's bounding box
-    private final int width;         // in tiles (min 3)
-    private final int height;        // in tiles (min 3)
-    private final List<Position> tiles; // all tiles this city occupies
+    private final Position origin;   
+    private final int width;         
+    private final int height;        
+    private final List<Position> tiles; 
 
     public City(String id, String name, int originX, int originY, int width, int height) {
         this.id = id;
@@ -32,7 +32,7 @@ public class City {
     public int getHeight()            { return height; }
     public List<Position> getTiles()  { return tiles; }
 
-    /** Returns the center tile position (for label rendering). */
+    
     public Position getCenter() {
         return new Position(origin.getX() + width / 2, origin.getY() + height / 2);
     }

@@ -1,28 +1,31 @@
-package model;
+﻿package model;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Top-level model object. Holds the tile grid and all game entities.
- * This is what gets passed around between controller, model services, and view.
- */
+
 public class Game {
     private final int width;
     private final int height;
     private final Tile[][] grid;
 
-    private final List<City> cities;
-    private final List<Facility> facilities;
+    private final List<City>       cities;
+    private final List<Facility>   facilities;
+    private final List<WaterBody>  waterBodies;
+    private final List<Forest>     forests;
+    private final List<Bridge>     bridges;
 
     public Game(int width, int height) {
-        this.width = width;
+        this.width  = width;
         this.height = height;
-        this.grid = new Tile[width][height];
-        this.cities = new ArrayList<>();
-        this.facilities = new ArrayList<>();
+        this.grid   = new Tile[width][height];
+        this.cities      = new ArrayList<>();
+        this.facilities  = new ArrayList<>();
+        this.waterBodies = new ArrayList<>();
+        this.forests     = new ArrayList<>();
+        this.bridges     = new ArrayList<>();
 
-        // Initialise every tile as EMPTY
+        
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 grid[x][y] = new Tile(x, y);
@@ -30,7 +33,7 @@ public class Game {
         }
     }
 
-    // --- Grid access ---
+    
     public Tile getTile(int x, int y) {
         if (x < 0 || x >= width || y < 0 || y >= height) return null;
         return grid[x][y];
@@ -44,13 +47,16 @@ public class Game {
         return x >= 0 && x < width && y >= 0 && y < height;
     }
 
-    // --- Dimensions ---
+    
     public int getWidth()  { return width; }
     public int getHeight() { return height; }
 
-    // --- Entity lists ---
-    public List<City> getCities()           { return cities; }
-    public List<Facility> getFacilities()   { return facilities; }
+    
+    public List<City>      getCities()      { return cities; }
+    public List<Facility>  getFacilities()  { return facilities; }
+    public List<WaterBody> getWaterBodies() { return waterBodies; }
+    public List<Forest>    getForests()     { return forests; }
+    public List<Bridge>    getBridges()     { return bridges; }
 
     public void addCity(City city) {
         cities.add(city);
@@ -74,5 +80,47 @@ public class Game {
                 t.setEntityName(facility.getName());
             }
         }
+    }
+
+    public void addWaterBody(WaterBody water) {
+        waterBodies.add(water);
+        for (Position p : water.getTiles()) {
+            Tile t = getTile(p);
+            if (t != null) {
+                t.setType(TileType.WATER);
+                t.setEntityId(water.getId());
+                t.setEntityName(water.getName());
+            }
+        }
+    }
+
+    public void addForest(Forest forest) {
+        forests.add(forest);
+        for (Position p : forest.getTiles()) {
+            Tile t = getTile(p);
+            if (t != null) {
+                t.setType(TileType.FOREST);
+                t.setEntityId(forest.getId());
+                t.setEntityName(forest.getName());
+            }
+        }
+    }
+
+    
+    public boolean addBridge(Bridge bridge) {
+        for (Position p : bridge.getTiles()) {
+            Tile t = getTile(p);
+            if (t == null || t.getType() != TileType.WATER) {
+                return false; 
+            }
+        }
+        bridges.add(bridge);
+        for (Position p : bridge.getTiles()) {
+            Tile t = getTile(p);
+            t.setType(TileType.BRIDGE);
+            t.setEntityId(bridge.getId());
+            t.setEntityName(bridge.getName());
+        }
+        return true;
     }
 }

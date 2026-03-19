@@ -1,4 +1,4 @@
-package model;
+﻿package model;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,12 +6,12 @@ import java.util.List;
 public class Facility {
     private final String id;
     private final String name;
-    private final Position origin;   // top-left tile
-    private final int width;         // in tiles (min 2)
-    private final int height;        // in tiles (min 2)
+    private final Position origin;   
+    private final int width;         
+    private final int height;        
     private final List<Position> tiles;
 
-    // What this facility produces and consumes (cargo type names)
+    
     private final List<String> produces;
     private final List<String> consumes;
 
