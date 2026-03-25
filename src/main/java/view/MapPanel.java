@@ -13,6 +13,7 @@ import model.Game;
 import model.Position;
 import model.Tile;
 import model.TileType;
+import model.Road;
 import model.WaterBody;
 import javafx.scene.image.Image;
 
@@ -69,6 +70,12 @@ public class MapPanel extends Canvas {
     private final Image waterImage = loadTileImage("/images/water.png");
     private final Image fieldImage = loadTileImage("/images/field.png");
     private final Image plantationImage = loadTileImage("/images/plantation.png");
+    private final Image roadHorImage    = loadTileImage("/images/roadHor.png");
+    private final Image roadVertImage   = loadTileImage("/images/roadVert.png");
+
+    private Game currentGame;
+    private int  storedOriginX;
+    private int  storedOriginY;
 
     private Image loadTileImage(String path) {
         try {
@@ -96,6 +103,10 @@ public class MapPanel extends Canvas {
         
         int originX = rows * (TILE_W / 2) + ORIGIN_X;
         int originY = ORIGIN_Y;
+
+        this.currentGame   = game;
+        this.storedOriginX = originX;
+        this.storedOriginY = originY;
 
         GraphicsContext gc = getGraphicsContext2D();
         gc.clearRect(0, 0, canvasW, canvasH);
@@ -140,13 +151,20 @@ public class MapPanel extends Canvas {
         }
     }
 
-    private Image getGroundImage(TileType type) {
-        return switch (type) {
+    private Image getGroundImage(Tile tile) {
+        return switch (tile.getType()) {
             case WATER -> waterImage;
             case FOREST -> grassImage;
             case FACILITY -> fieldImage;
             case CITY -> grassImage;
-            case ROAD -> fieldImage;
+            case ROAD -> {
+                if (currentGame != null) {
+                    Road r = currentGame.getRoadAt(tile.getPosition());
+                    if (r != null && r.getType() == Road.RoadType.VERTICAL)
+                        yield roadVertImage;
+                }
+                yield roadHorImage;
+            }
             case STOP -> plantationImage;
             case BRIDGE -> waterImage;
             case EMPTY -> grassImage;
@@ -159,7 +177,7 @@ public class MapPanel extends Canvas {
         double cx = isoScreenX(tx, ty, ox);
         double cy = isoScreenY(tx, ty, oy);
 
-        Image tileImage = getGroundImage(tile.getType());
+        Image tileImage = getGroundImage(tile);
 
         if (tileImage != null) {
 
@@ -212,6 +230,7 @@ public class MapPanel extends Canvas {
             case WATER    -> drawWaterSurface(gc, tx, ty, ox, oy);
             case FOREST   -> drawForestTree(gc, tx, ty, ox, oy);
             case BRIDGE   -> drawBox(gc, tx, ty, ox, oy, COL_BRIDGE_LEFT, COL_BRIDGE_RIGHT, COL_BRIDGE_ROOF);
+            case ROAD     -> {  }  // road visuals handled by tile image
             default       -> {  }
         }
     }
@@ -290,9 +309,6 @@ public class MapPanel extends Canvas {
         gc.strokePolygon(diamondXs(tx, ty, ox), diamondYs(tx, ty, oy), 4);
     }
 
-    
-    
-    
     private void drawForestTree(GraphicsContext gc, int tx, int ty, int ox, int oy) {
         double cx  = isoScreenX(tx, ty, ox);
         double cy  = isoScreenY(tx, ty, oy);
@@ -365,4 +381,27 @@ public class MapPanel extends Canvas {
 
     public int getTileW() { return TILE_W; }
     public int getTileH() { return TILE_H; }
+
+    // Screen-to-tile conversion (inverse isometric)
+    public int[] screenToTile(double screenX, double screenY) {
+        double dx = screenX - storedOriginX;
+        double dy = screenY - storedOriginY;
+        double txRaw = (dx / (TILE_W / 2.0) + dy / (TILE_H / 2.0)) / 2.0;
+        double tyRaw = (dy / (TILE_H / 2.0) - dx / (TILE_W / 2.0)) / 2.0;
+        return new int[]{ (int) Math.floor(txRaw), (int) Math.floor(tyRaw) };
+    }
+
+    //Hover overlay for building entities
+    public void drawHoverOverlay(int tx, int ty, boolean valid) {
+        GraphicsContext gc = getGraphicsContext2D();
+        double[] xs = diamondXs(tx, ty, storedOriginX);
+        double[] ys = diamondYs(tx, ty, storedOriginY);
+        gc.setFill(valid
+                ? Color.rgb(0, 255, 0, 0.25)
+                : Color.rgb(255, 0, 0, 0.25));
+        gc.fillPolygon(xs, ys, 4);
+        gc.setStroke(valid ? Color.LIMEGREEN : Color.RED);
+        gc.setLineWidth(1.5);
+        gc.strokePolygon(xs, ys, 4);
+    }
 }
