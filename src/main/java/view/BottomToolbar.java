@@ -34,6 +34,7 @@ public class BottomToolbar extends VBox {
 
     private Road.RoadType selectedRoadType;
     private boolean       stopSelected;
+    private boolean       removeSelected;
 
     private final Button btnSelect;
     private final Button btnBuild;
@@ -85,23 +86,29 @@ public class BottomToolbar extends VBox {
         btnHRoad.setOnAction(e -> {
             selectedRoadType = Road.RoadType.HORIZONTAL;
             stopSelected = false;
+            removeSelected = false;
             btnHRoad.setStyle(SUB_BTN_ACTIVE);
             btnVRoad.setStyle(SUB_BTN_NORMAL);
             btnStop.setStyle(SUB_BTN_NORMAL);
+            btnRemove.setStyle(BTN_NORMAL);
         });
         btnVRoad.setOnAction(e -> {
             selectedRoadType = Road.RoadType.VERTICAL;
             stopSelected = false;
+            removeSelected = false;
             btnVRoad.setStyle(SUB_BTN_ACTIVE);
             btnHRoad.setStyle(SUB_BTN_NORMAL);
             btnStop.setStyle(SUB_BTN_NORMAL);
+            btnRemove.setStyle(BTN_NORMAL);
         });
         btnStop.setOnAction(e -> {
             stopSelected = true;
             selectedRoadType = null;
+            removeSelected = false;
             btnStop.setStyle(SUB_BTN_ACTIVE);
             btnHRoad.setStyle(SUB_BTN_NORMAL);
             btnVRoad.setStyle(SUB_BTN_NORMAL);
+            btnRemove.setStyle(BTN_NORMAL);
         });
 
         Label lblRoads = new Label("Roads:");
@@ -124,12 +131,27 @@ public class BottomToolbar extends VBox {
         //Toggle logic
         btnBuild.setOnAction(e -> {
             boolean show = !roadSubmenu.isVisible();
+            removeSelected = false;
             roadSubmenu.setVisible(show);
             roadSubmenu.setManaged(show);
             btnBuild.setStyle(show ? BTN_HIGHLIGHT : BTN_NORMAL);
+            btnRemove.setStyle(BTN_NORMAL);
             if (!show) {
                 clearSelection();
             }
+        });
+
+        btnRemove.setOnAction(e -> {
+            removeSelected = true;
+            selectedRoadType = null;
+            stopSelected = false;
+            roadSubmenu.setVisible(false);
+            roadSubmenu.setManaged(false);
+            btnBuild.setStyle(BTN_NORMAL);
+            btnRemove.setStyle(BTN_HIGHLIGHT);
+            btnHRoad.setStyle(SUB_BTN_NORMAL);
+            btnVRoad.setStyle(SUB_BTN_NORMAL);
+            btnStop.setStyle(SUB_BTN_NORMAL);
         });
 
         btnSelect.setOnAction(e -> {
@@ -151,12 +173,18 @@ public class BottomToolbar extends VBox {
         return stopSelected;
     }
 
+    public boolean isRemoveSelected() {
+        return removeSelected;
+    }
+
     public void clearSelection() {
         selectedRoadType = null;
         stopSelected = false;
+        removeSelected = false;
         btnHRoad.setStyle(SUB_BTN_NORMAL);
         btnVRoad.setStyle(SUB_BTN_NORMAL);
         btnStop.setStyle(SUB_BTN_NORMAL);
+        btnRemove.setStyle(BTN_NORMAL);
     }
 
 
