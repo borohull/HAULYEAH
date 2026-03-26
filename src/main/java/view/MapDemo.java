@@ -10,12 +10,23 @@ import javafx.stage.Stage;
 import model.Game;
 import model.MapGenerator;
 import model.Road;
+import model.Tile;
+import model.TileType;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 public class MapDemo extends Application {
+
+    private static final Path SAVE_DIR = Path.of(System.getProperty("user.home"), ".haulyea");
+    private static final Path SAVE_FILE = SAVE_DIR.resolve("savegame.txt");
 
     @Override
     public void start(Stage stage) {
@@ -441,27 +452,51 @@ public class MapDemo extends Application {
         TopHud topHud = new TopHud();
         BottomToolbar bottomToolbar = new BottomToolbar();
 
-        //Mouse handlers for road placement
+        bottomToolbar.getSelectButton().addEventHandler(javafx.event.ActionEvent.ACTION,
+                e -> mapPanel.drawGame(game));
+        bottomToolbar.getBuildButton().addEventHandler(javafx.event.ActionEvent.ACTION,
+                e -> mapPanel.drawGame(game));
+        bottomToolbar.getRemoveButton().addEventHandler(javafx.event.ActionEvent.ACTION,
+                e -> mapPanel.drawGame(game));
+        bottomToolbar.getSaveButton().setOnAction(e -> saveGame(game));
+
+        //Mouse handlers for road placement/removal
         final int[] roadIdCounter = { 0 };
 
         mapPanel.setOnMouseMoved(e -> {
-            if (bottomToolbar.getSelectedRoadType() == null) return;
             int[] tile = mapPanel.screenToTile(e.getX(), e.getY());
             int tx = tile[0], ty = tile[1];
+
+            if (!bottomToolbar.isRemoveSelected()
+                    && bottomToolbar.getSelectedRoadType() == null) return;
+
             mapPanel.drawGame(game);
             if (game.inBounds(tx, ty)) {
-                model.Tile t = game.getTile(tx, ty);
-                boolean valid = t.getType() == model.TileType.EMPTY
-                        || t.getType() == model.TileType.FOREST;
+                boolean valid;
+                if (bottomToolbar.isRemoveSelected()) {
+                    valid = game.getRoadAt(new model.Position(tx, ty)) != null;
+                } else {
+                    model.Tile t = game.getTile(tx, ty);
+                    valid = t.getType() == model.TileType.EMPTY
+                            || t.getType() == model.TileType.FOREST;
+                }
                 mapPanel.drawHoverOverlay(tx, ty, valid);
             }
         });
 
         mapPanel.setOnMouseClicked(e -> {
-            if (bottomToolbar.getSelectedRoadType() == null) return;
             int[] tile = mapPanel.screenToTile(e.getX(), e.getY());
             int tx = tile[0], ty = tile[1];
             if (game.inBounds(tx, ty)) {
+                if (bottomToolbar.isRemoveSelected()) {
+                    if (game.removeRoad(new model.Position(tx, ty))) {
+                        mapPanel.drawGame(game);
+                    }
+                    return;
+                }
+
+                if (bottomToolbar.getSelectedRoadType() == null) return;
+
                 Road road = new Road("road-" + (++roadIdCounter[0]),
                         tx, ty, bottomToolbar.getSelectedRoadType());
                 if (game.addRoad(road)) {
@@ -480,6 +515,48 @@ public class MapDemo extends Application {
         stage.setTitle("Haul Yea!");
         stage.setScene(scene);
         stage.show();
+    }
+
+    private void saveGame(Game game) {
+        StringBuilder content = new StringBuilder();
+        content.append("# Haul Yea Save\n");
+        content.append("savedAt=")
+                .append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+                .append('\n');
+        content.append("width=").append(game.getWidth()).append('\n');
+        content.append("height=").append(game.getHeight()).append('\n');
+        content.append("roads=").append(game.getRoads().size()).append('\n');
+
+        content.append("[roadList]\n");
+        for (Road road : game.getRoads()) {
+            content.append(road.getId()).append(',')
+                    .append(road.getPosition().getX()).append(',')
+                    .append(road.getPosition().getY()).append(',')
+                    .append(road.getType())
+                    .append('\n');
+        }
+
+        content.append("[tileTypes]\n");
+        for (int y = 0; y < game.getHeight(); y++) {
+            for (int x = 0; x < game.getWidth(); x++) {
+                Tile tile = game.getTile(x, y);
+                TileType type = tile == null ? TileType.EMPTY : tile.getType();
+                content.append(type.name());
+                if (x < game.getWidth() - 1) {
+                    content.append(',');
+                }
+            }
+            content.append('\n');
+        }
+
+        try {
+            Files.createDirectories(SAVE_DIR);
+            Files.writeString(SAVE_FILE, content);
+            System.out.println("Game saved: " + SAVE_FILE);
+        } catch (IOException ex) {
+            System.err.println("Failed to save game: " + ex.getMessage());
+            ex.printStackTrace();
+        }
     }
 
 
