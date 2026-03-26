@@ -11,6 +11,7 @@ import model.Facility;
 import model.Forest;
 import model.Game;
 import model.Position;
+import model.Stop;
 import model.Tile;
 import model.TileType;
 import model.Road;
@@ -72,6 +73,7 @@ public class MapPanel extends Canvas {
     private final Image plantationImage = loadTileImage("/images/plantation.png");
     private final Image roadHorImage    = loadTileImage("/images/roadHor.png");
     private final Image roadVertImage   = loadTileImage("/images/roadVert.png");
+    private final Image stopImage       = loadTileImage("/images/stop.png");
 
     private Game currentGame;
     private int  storedOriginX;
@@ -149,6 +151,10 @@ public class MapPanel extends Canvas {
             Position c = bridge.getCenter();
             drawLabel(gc, c.getX(), c.getY(), bridge.getName(), originX, originY);
         }
+        for (Stop stop : game.getStops()) {
+            Position c = stop.getPosition();
+            drawLabel(gc, c.getX(), c.getY(), stop.getName(), originX, originY);
+        }
     }
 
     private Image getGroundImage(Tile tile) {
@@ -165,7 +171,7 @@ public class MapPanel extends Canvas {
                 }
                 yield roadHorImage;
             }
-            case STOP -> plantationImage;
+            case STOP -> stopImage != null ? stopImage : plantationImage;
             case BRIDGE -> waterImage;
             case EMPTY -> grassImage;
         };

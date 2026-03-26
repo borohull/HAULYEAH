@@ -15,6 +15,7 @@ public class Game {
     private final List<Forest>     forests;
     private final List<Bridge>     bridges;
     private final List<Road>       roads;
+    private final List<Stop>       stops;
 
     public Game(int width, int height) {
         this.width  = width;
@@ -26,6 +27,7 @@ public class Game {
         this.forests     = new ArrayList<>();
         this.bridges     = new ArrayList<>();
         this.roads       = new ArrayList<>();
+        this.stops       = new ArrayList<>();
 
         
         for (int x = 0; x < width; x++) {
@@ -60,6 +62,7 @@ public class Game {
     public List<Forest>    getForests()     { return forests; }
     public List<Bridge>    getBridges()     { return bridges; }
     public List<Road>      getRoads()       { return roads; }
+    public List<Stop>      getStops()       { return stops; }
 
     public void addCity(City city) {
         cities.add(city);
@@ -156,6 +159,53 @@ public class Game {
             if (r.getPosition().equals(p)) return r;
         }
         return null;
+    }
+
+    // Stops occupy one tile and must be adjacent to ROAD, CITY, or FACILITY.
+    public boolean addStop(Stop stop) {
+        Tile t = getTile(stop.getPosition());
+        if (t == null || t.getType() != TileType.EMPTY) {
+            return false;
+        }
+        if (!isAdjacentToRoadCityOrFacility(stop.getPosition())) {
+            return false;
+        }
+        stops.add(stop);
+        t.setType(TileType.STOP);
+        t.setEntityId(stop.getId());
+        t.setEntityName(stop.getName());
+        return true;
+    }
+
+    public boolean removeStop(Position p) {
+        Stop found = getStopAt(p);
+        if (found == null) return false;
+        stops.remove(found);
+        Tile t = getTile(p);
+        t.setType(TileType.EMPTY);
+        t.setEntityId(null);
+        t.setEntityName(null);
+        return true;
+    }
+
+    public Stop getStopAt(Position p) {
+        for (Stop s : stops) {
+            if (s.getPosition().equals(p)) return s;
+        }
+        return null;
+    }
+
+    public boolean isAdjacentToRoadCityOrFacility(Position p) {
+        int[][] deltas = { {0, -1}, {0, 1}, {-1, 0}, {1, 0} };
+        for (int[] d : deltas) {
+            Tile neighbour = getTile(p.getX() + d[0], p.getY() + d[1]);
+            if (neighbour == null) continue;
+            TileType type = neighbour.getType();
+            if (type == TileType.ROAD || type == TileType.CITY || type == TileType.FACILITY) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Returns the N/S/E/W neighbours of p that are also ROAD tiles.
