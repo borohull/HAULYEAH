@@ -10,6 +10,7 @@ import javafx.stage.Stage;
 import model.Game;
 import model.MapGenerator;
 import model.Road;
+import model.Stop;
 import model.Tile;
 import model.TileType;
 import javafx.geometry.Pos;
@@ -460,21 +461,28 @@ public class MapDemo extends Application {
                 e -> mapPanel.drawGame(game));
         bottomToolbar.getSaveButton().setOnAction(e -> saveGame(game));
 
-        //Mouse handlers for road placement/removal
+        //Mouse handlers for road/stop placement and removal
         final int[] roadIdCounter = { 0 };
+        final int[] stopIdCounter = { 0 };
 
         mapPanel.setOnMouseMoved(e -> {
             int[] tile = mapPanel.screenToTile(e.getX(), e.getY());
             int tx = tile[0], ty = tile[1];
 
             if (!bottomToolbar.isRemoveSelected()
+                    && !bottomToolbar.isStopSelected()
                     && bottomToolbar.getSelectedRoadType() == null) return;
 
             mapPanel.drawGame(game);
             if (game.inBounds(tx, ty)) {
                 boolean valid;
                 if (bottomToolbar.isRemoveSelected()) {
-                    valid = game.getRoadAt(new model.Position(tx, ty)) != null;
+                    model.Position p = new model.Position(tx, ty);
+                    valid = game.getRoadAt(p) != null || game.getStopAt(p) != null;
+                } else if (bottomToolbar.isStopSelected()) {
+                    model.Tile t = game.getTile(tx, ty);
+                    valid = t.getType() == model.TileType.EMPTY
+                            && game.isAdjacentToRoadCityOrFacility(new model.Position(tx, ty));
                 } else {
                     model.Tile t = game.getTile(tx, ty);
                     valid = t.getType() == model.TileType.EMPTY
@@ -488,8 +496,18 @@ public class MapDemo extends Application {
             int[] tile = mapPanel.screenToTile(e.getX(), e.getY());
             int tx = tile[0], ty = tile[1];
             if (game.inBounds(tx, ty)) {
+                model.Position p = new model.Position(tx, ty);
                 if (bottomToolbar.isRemoveSelected()) {
-                    if (game.removeRoad(new model.Position(tx, ty))) {
+                    if (game.removeRoad(p) || game.removeStop(p)) {
+                        mapPanel.drawGame(game);
+                    }
+                    return;
+                }
+
+                if (bottomToolbar.isStopSelected()) {
+                    Stop stop = new Stop("stop-" + (++stopIdCounter[0]), tx, ty,
+                            "Stop " + stopIdCounter[0]);
+                    if (game.addStop(stop)) {
                         mapPanel.drawGame(game);
                     }
                     return;
@@ -533,6 +551,16 @@ public class MapDemo extends Application {
                     .append(road.getPosition().getX()).append(',')
                     .append(road.getPosition().getY()).append(',')
                     .append(road.getType())
+                    .append('\n');
+        }
+
+        content.append("stops=").append(game.getStops().size()).append('\n');
+        content.append("[stopList]\n");
+        for (Stop stop : game.getStops()) {
+            content.append(stop.getId()).append(',')
+                    .append(stop.getPosition().getX()).append(',')
+                    .append(stop.getPosition().getY()).append(',')
+                    .append(stop.getName())
                     .append('\n');
         }
 
