@@ -8,6 +8,7 @@ public class Game {
     private final int width;
     private final int height;
     private final Tile[][] grid;
+    private String worldName;
 
     private final List<City>       cities;
     private final List<Facility>   facilities;
@@ -21,6 +22,7 @@ public class Game {
         this.width  = width;
         this.height = height;
         this.grid   = new Tile[width][height];
+        this.worldName = "Unnamed World";
         this.cities      = new ArrayList<>();
         this.facilities  = new ArrayList<>();
         this.waterBodies = new ArrayList<>();
@@ -54,6 +56,15 @@ public class Game {
     
     public int getWidth()  { return width; }
     public int getHeight() { return height; }
+    public String getWorldName() { return worldName; }
+
+    public void setWorldName(String worldName) {
+        if (worldName == null || worldName.trim().isEmpty()) {
+            this.worldName = "Unnamed World";
+            return;
+        }
+        this.worldName = worldName.trim();
+    }
 
     
     public List<City>      getCities()      { return cities; }
