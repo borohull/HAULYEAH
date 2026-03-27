@@ -168,7 +168,7 @@ public class MapDemo extends Application {
         );
 
 
-        Label nameLabel = new Label("City Name");
+        Label nameLabel = new Label("World Name");
         nameLabel.setStyle(
                 "-fx-text-fill: white;" +
                         "-fx-font-size: 18px;" +
@@ -176,10 +176,10 @@ public class MapDemo extends Application {
         );
 
 
-        javafx.scene.control.TextField cityInput = new javafx.scene.control.TextField();
-        cityInput.setPromptText("Enter city name...");
-        cityInput.setMaxWidth(300);
-        cityInput.setStyle(
+        javafx.scene.control.TextField worldInput = new javafx.scene.control.TextField();
+        worldInput.setPromptText("Enter world name...");
+        worldInput.setMaxWidth(300);
+        worldInput.setStyle(
                 "-fx-font-size: 15px;" +
                         "-fx-background-radius: 8;" +
                         "-fx-padding: 8;"
@@ -218,10 +218,10 @@ public class MapDemo extends Application {
         menuBtn.setOnAction(e -> showMenu(stage));
 
         startBtn.setOnAction(e -> {
-            String cityName = cityInput.getText().trim();
+            String worldName = worldInput.getText().trim();
 
-            if (cityName.isEmpty()) {
-                cityInput.setStyle(
+            if (worldName.isEmpty()) {
+                worldInput.setStyle(
                         "-fx-font-size: 15px;" +
                                 "-fx-background-radius: 8;" +
                                 "-fx-padding: 8;" +
@@ -231,10 +231,16 @@ public class MapDemo extends Application {
                 return;
             }
 
-            showGame(stage);
+            worldInput.setStyle(
+                    "-fx-font-size: 15px;" +
+                            "-fx-background-radius: 8;" +
+                            "-fx-padding: 8;"
+            );
+
+            showGame(stage, worldName);
         });
 
-        panel.getChildren().addAll(title, nameLabel, cityInput, buttonRow);
+        panel.getChildren().addAll(title, nameLabel, worldInput, buttonRow);
         root.getChildren().add(panel);
 
         Scene scene = new Scene(root, 900, 650);
@@ -422,9 +428,10 @@ public class MapDemo extends Application {
         );
     }
 
-    private void showGame(Stage stage){
+    private void showGame(Stage stage, String worldName){
         MapGenerator generator = new MapGenerator();
         Game game = generator.generate(30, 30, 4, 5);
+        game.setWorldName(worldName);
 
         MapPanel mapPanel = new MapPanel();
         mapPanel.drawGame(game);
@@ -450,7 +457,7 @@ public class MapDemo extends Application {
         });
 
         //UI components
-        TopHud topHud = new TopHud();
+        TopHud topHud = new TopHud(game.getWorldName());
         BottomToolbar bottomToolbar = new BottomToolbar();
 
         bottomToolbar.getSelectButton().addEventHandler(javafx.event.ActionEvent.ACTION,
@@ -541,6 +548,7 @@ public class MapDemo extends Application {
         content.append("savedAt=")
                 .append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
                 .append('\n');
+        content.append("worldName=").append(game.getWorldName()).append('\n');
         content.append("width=").append(game.getWidth()).append('\n');
         content.append("height=").append(game.getHeight()).append('\n');
         content.append("roads=").append(game.getRoads().size()).append('\n');
