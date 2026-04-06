@@ -8,5 +8,7 @@ public enum TileType {
     STOP,
     WATER,
     FOREST,
-    BRIDGE
+    BRIDGE,
+    CITY_ROAD,  // Internal roads within cities - not modifiable by player
+    CITY_STOP   // Stops inside cities at internal road intersections
 }

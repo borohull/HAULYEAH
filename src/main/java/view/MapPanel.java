@@ -64,6 +64,7 @@ public class MapPanel extends Canvas {
     private static final Color COL_BRIDGE_ROOF  = Color.rgb(210, 195, 155);
 
     private static final Color COL_STOP_TOP = Color.rgb(220,  80,  80);
+    private static final Color COL_CITY_ROAD = Color.rgb(90, 90, 90);  // Dark grey for city roads
     private static final Color COL_GRID     = Color.rgb(0, 0, 0, 0.08);
     private static final Color COL_LABEL    = Color.rgb(0, 0, 0, 0.55);
 
@@ -74,6 +75,31 @@ public class MapPanel extends Canvas {
     private final Image roadHorImage    = loadTileImage("/images/roadHor.png");
     private final Image roadVertImage   = loadTileImage("/images/roadVert.png");
     private final Image stopImage       = loadTileImage("/images/stop.png");
+
+    private final Image crossroadImage  = loadTileImage("/images/crossroad.webp");
+
+    private final Image[] cityBuildingImages = {
+            loadTileImage("/images/buildings/building.png"),
+            loadTileImage("/images/buildings/building-1.png"),
+            loadTileImage("/images/buildings/building-2.png"),
+            loadTileImage("/images/buildings/commercial-building.png"),
+            loadTileImage("/images/buildings/hotel.png"),
+            loadTileImage("/images/buildings/hotel-1.png"),
+            loadTileImage("/images/buildings/hotel-service.png"),
+            loadTileImage("/images/buildings/house-building.png"),
+            loadTileImage("/images/buildings/plaza.png"),
+            loadTileImage("/images/buildings/plaza-1.png"),
+            loadTileImage("/images/buildings/restaurant.png"),
+            loadTileImage("/images/buildings/shop.png"),
+            loadTileImage("/images/buildings/shopping-center.png"),
+            loadTileImage("/images/buildings/shopping-complex.png"),
+            loadTileImage("/images/buildings/shopping-mall.png"),
+            loadTileImage("/images/buildings/skyscraper.png"),
+            loadTileImage("/images/buildings/skyscraper-1.png"),
+            loadTileImage("/images/buildings/store.png"),
+            loadTileImage("/images/buildings/store-1.png"),
+            loadTileImage("/images/buildings/structure.png")
+    };
 
     private Game currentGame;
     private int  storedOriginX;
@@ -162,31 +188,65 @@ public class MapPanel extends Canvas {
             case WATER -> waterImage;
             case FOREST -> grassImage;
             case FACILITY -> fieldImage;
-            case CITY -> grassImage;
-            case ROAD -> {
-                if (currentGame != null) {
-                    Road r = currentGame.getRoadAt(tile.getPosition());
-                    if (r != null && r.getType() == Road.RoadType.VERTICAL)
-                        yield roadVertImage;
-                }
-                yield roadHorImage;
-            }
-            case STOP -> stopImage != null ? stopImage : plantationImage;
+            case CITY -> null;
+            case CITY_ROAD -> null;  // Simple grey tile for city roads (no image)
+            case ROAD -> getRoadNetworkImage(tile.getPosition());
+            case STOP, CITY_STOP -> stopImage != null ? stopImage : plantationImage;
             case BRIDGE -> waterImage;
             case EMPTY -> grassImage;
         };
     }
 
 
+
+    private Image getRoadNetworkImage(Position p) {
+        // Simple road rendering - no adjacency detection
+        // Use stored road type or default to horizontal
+        Road road = currentGame.getRoadAt(p);
+        if (road != null && road.getType() == Road.RoadType.VERTICAL) {
+            return roadVertImage;
+        }
+
+        return roadHorImage;
+    }
+
+    private boolean isRoadLike(int x, int y) {
+        if (currentGame == null || !currentGame.inBounds(x, y)) return false;
+        TileType type = currentGame.getTile(x, y).getType();
+        return type == TileType.ROAD || type == TileType.CITY_ROAD || type == TileType.BRIDGE;
+    }
+    private Image getCityBuildingImage(int tx, int ty) {
+        Image[] available = getAvailableCityBuildingImages();
+        if (available.length == 0) return null;
+
+        int rowSeed = Math.floorMod((ty / 2) * 17 + (tx / 4) * 31, available.length);
+        int variation = Math.floorMod(tx + ty, 3);
+
+        int index = (rowSeed + variation) % available.length;
+        return available[index];
+    }
+
+    private Image[] getAvailableCityBuildingImages() {
+        return java.util.Arrays.stream(cityBuildingImages)
+                .filter(java.util.Objects::nonNull)
+                .toArray(Image[]::new);
+    }
+
     private void drawGround(GraphicsContext gc, Tile tile,
                             int tx, int ty, int ox, int oy) {
         double cx = isoScreenX(tx, ty, ox);
         double cy = isoScreenY(tx, ty, oy);
 
+        double[] xs = diamondXs(tx, ty, ox);
+        double[] ys = diamondYs(tx, ty, oy);
+
+        // Always fill the ground with solid color FIRST
+        gc.setFill(groundColor(tile.getType()));
+        gc.fillPolygon(xs, ys, 4);
+
         Image tileImage = getGroundImage(tile);
 
         if (tileImage != null) {
-
             gc.drawImage(
                     tileImage,
                     cx - TILE_W / 2.0 - 2,
@@ -194,28 +254,22 @@ public class MapPanel extends Canvas {
                     TILE_W + 4,
                     TILE_H + WALL_H + 4
             );
-        } else {
-
-            double[] xs = diamondXs(tx, ty, ox);
-            double[] ys = diamondYs(tx, ty, oy);
-
-            gc.setFill(groundColor(tile.getType()));
-            gc.fillPolygon(xs, ys, 4);
         }
 
-
-        double[] xs = diamondXs(tx, ty, ox);
-        double[] ys = diamondYs(tx, ty, oy);
-
-//        gc.setStroke(COL_GRID);
-//        gc.setLineWidth(0.5);
-//        gc.strokePolygon(xs, ys, 4);
+        // Add darker outline for city roads to ensure they're visible
+        if (tile.getType() == TileType.CITY_ROAD) {
+            gc.setStroke(Color.rgb(60, 60, 60));
+            gc.setLineWidth(1.0);
+            gc.strokePolygon(xs, ys, 4);
+        }
     }
+
 
     private Color groundColor(TileType type) {
         return switch (type) {
-            case ROAD     -> COL_ROAD_TOP;
-            case STOP     -> COL_STOP_TOP;
+            case ROAD -> COL_ROAD_TOP;
+            case CITY_ROAD -> COL_CITY_ROAD;  // Dark grey for city roads
+            case STOP, CITY_STOP  -> COL_STOP_TOP;
             case CITY     -> COL_CITY_TOP;
             case FACILITY -> COL_FAC_TOP;
             case WATER    -> COL_WATER_TOP;
@@ -225,23 +279,46 @@ public class MapPanel extends Canvas {
         };
     }
 
-    
-    
-    
+
+
+
     private void drawStructure(GraphicsContext gc, Tile tile,
                                int tx, int ty, int ox, int oy) {
         switch (tile.getType()) {
-            case CITY     -> drawBox(gc, tx, ty, ox, oy, COL_CITY_LEFT,   COL_CITY_RIGHT,   COL_CITY_ROOF);
-            case FACILITY -> drawBox(gc, tx, ty, ox, oy, COL_FAC_LEFT,    COL_FAC_RIGHT,    COL_FAC_ROOF);
-            case WATER    -> drawWaterSurface(gc, tx, ty, ox, oy);
-            case FOREST   -> drawForestTree(gc, tx, ty, ox, oy);
-            case BRIDGE   -> drawBox(gc, tx, ty, ox, oy, COL_BRIDGE_LEFT, COL_BRIDGE_RIGHT, COL_BRIDGE_ROOF);
-            case ROAD     -> {  }  // road visuals handled by tile image
-            default       -> {  }
+            case CITY -> drawCityBuilding(gc, tile, tx, ty, ox, oy);
+            case FACILITY -> drawBox(gc, tx, ty, ox, oy, COL_FAC_LEFT, COL_FAC_RIGHT, COL_FAC_ROOF);
+            case WATER -> drawWaterSurface(gc, tx, ty, ox, oy);
+            case FOREST -> drawForestTree(gc, tx, ty, ox, oy);
+            case BRIDGE -> drawBox(gc, tx, ty, ox, oy, COL_BRIDGE_LEFT, COL_BRIDGE_RIGHT, COL_BRIDGE_ROOF);
+            case ROAD, CITY_ROAD, STOP, CITY_STOP -> { }
+            default -> { }
         }
     }
 
-    
+    private void drawCityBuilding(GraphicsContext gc, Tile tile, int tx, int ty, int ox, int oy) {
+        // Only draw building images on actual CITY tiles, not on CITY_ROAD tiles
+        if (tile.getType() != TileType.CITY) {
+            return;
+        }
+
+        Image img = getCityBuildingImage(tx, ty);
+
+        double cx = isoScreenX(tx, ty, ox);
+        double cy = isoScreenY(tx, ty, oy);
+
+        if (img != null) {
+            double drawW = TILE_W * 0.92;
+            double drawH = TILE_H + WALL_H + 6;
+
+            gc.drawImage(
+                    img,
+                    cx - drawW / 2.0,
+                    cy - WALL_H - 4,
+                    drawW,
+                    drawH
+            );
+        }
+    }
     
     
     private void drawBox(GraphicsContext gc, int tx, int ty, int ox, int oy,

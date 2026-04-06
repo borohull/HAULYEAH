@@ -532,8 +532,11 @@ public class MapDemo extends Application {
 
                 if (bottomToolbar.getSelectedRoadType() == null) return;
 
+                // Use user's selected road type directly - no auto-detection
+                Road.RoadType roadType = bottomToolbar.getSelectedRoadType();
+
                 Road road = new Road("road-" + (++roadIdCounter[0]),
-                        tx, ty, bottomToolbar.getSelectedRoadType());
+                        tx, ty, roadType);
                 if (game.addRoad(road)) {
                     mapPanel.drawGame(game);
                 }
