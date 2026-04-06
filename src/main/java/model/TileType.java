@@ -8,5 +8,6 @@ public enum TileType {
     STOP,
     WATER,
     FOREST,
-    BRIDGE
+    BRIDGE,
+    CITY_ROAD
 }

@@ -77,10 +77,20 @@ public class Game {
 
     public void addCity(City city) {
         cities.add(city);
-        for (Position p : city.getTiles()) {
+
+        for (Position p : city.getBuildingTiles()) {
             Tile t = getTile(p);
             if (t != null) {
                 t.setType(TileType.CITY);
+                t.setEntityId(city.getId());
+                t.setEntityName(city.getName());
+            }
+        }
+
+        for (Position p : city.getRoadTiles()) {
+            Tile t = getTile(p);
+            if (t != null) {
+                t.setType(TileType.CITY_ROAD);
                 t.setEntityId(city.getId());
                 t.setEntityName(city.getName());
             }
