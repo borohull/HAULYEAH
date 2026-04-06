@@ -430,7 +430,7 @@ public class MapDemo extends Application {
 
     private void showGame(Stage stage, String worldName){
         MapGenerator generator = new MapGenerator();
-        Game game = generator.generate(30, 30, 4, 5);
+        Game game = generator.generate(55,55,4,5);
         game.setWorldName(worldName);
 
         MapPanel mapPanel = new MapPanel();
@@ -441,6 +441,16 @@ public class MapDemo extends Application {
 
         ScrollPane scroll = new ScrollPane(mapGroup);
         scroll.setPannable(true);
+
+        javafx.application.Platform.runLater(() -> {
+            scroll.setHvalue(0.5);
+            scroll.setVvalue(0.5);
+        });
+
+        scroll.setStyle(
+                "-fx-background: #87CEEB;" +
+                        "-fx-background-color: #87CEEB;"
+        );
 
         //Zoom
         final double MIN_ZOOM = 0.3;
