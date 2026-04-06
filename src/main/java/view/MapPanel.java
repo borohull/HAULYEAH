@@ -189,7 +189,7 @@ public class MapPanel extends Canvas {
             case FOREST -> grassImage;
             case FACILITY -> fieldImage;
             case CITY -> null;
-            case CITY_ROAD -> null;  // Simple grey tile for city roads (no image)
+            case CITY_ROAD -> getCityRoadImage(tile.getPosition());
             case ROAD -> getRoadNetworkImage(tile.getPosition());
             case STOP, CITY_STOP -> stopImage != null ? stopImage : plantationImage;
             case BRIDGE -> waterImage;
@@ -197,17 +197,36 @@ public class MapPanel extends Canvas {
         };
     }
 
-
-
-    private Image getRoadNetworkImage(Position p) {
-        // Simple road rendering - no adjacency detection
-        // Use stored road type or default to horizontal
-        Road road = currentGame.getRoadAt(p);
-        if (road != null && road.getType() == Road.RoadType.VERTICAL) {
-            return roadVertImage;
+    private Image getCityRoadImage(Position p) {
+        if (currentGame == null) {
+            return roadVertImage; // swapped
         }
 
-        return roadHorImage;
+        for (City city : currentGame.getCities()) {
+            if (!city.containsPosition(p.getX(), p.getY())) {
+                continue;
+            }
+
+            if (city.isCrossroad(p)) {
+                return crossroadImage != null ? crossroadImage : roadVertImage;
+            }
+
+            if (city.isVerticalRoad(p)) {
+                return roadHorImage;  // swapped
+            }
+
+            return roadVertImage;  // swapped
+        }
+
+        return roadVertImage; // swapped
+    }
+
+    private Image getRoadNetworkImage(Position p) {
+        Road road = currentGame.getRoadAt(p);
+        if (road != null && road.getType() == Road.RoadType.VERTICAL) {
+            return roadHorImage;  // swapped
+        }
+        return roadVertImage;  // swapped
     }
 
     private boolean isRoadLike(int x, int y) {
@@ -240,7 +259,6 @@ public class MapPanel extends Canvas {
         double[] xs = diamondXs(tx, ty, ox);
         double[] ys = diamondYs(tx, ty, oy);
 
-        // Always fill the ground with solid color FIRST
         gc.setFill(groundColor(tile.getType()));
         gc.fillPolygon(xs, ys, 4);
 
@@ -249,14 +267,13 @@ public class MapPanel extends Canvas {
         if (tileImage != null) {
             gc.drawImage(
                     tileImage,
-                    cx - TILE_W / 2.0 - 2,
-                    cy - 2,
-                    TILE_W + 4,
-                    TILE_H + WALL_H + 4
+                    cx - TILE_W / 2.0,
+                    cy,
+                    TILE_W,
+                    TILE_H + WALL_H
             );
         }
 
-        // Add darker outline for city roads to ensure they're visible
         if (tile.getType() == TileType.CITY_ROAD) {
             gc.setStroke(Color.rgb(60, 60, 60));
             gc.setLineWidth(1.0);
@@ -264,21 +281,18 @@ public class MapPanel extends Canvas {
         }
     }
 
-
     private Color groundColor(TileType type) {
         return switch (type) {
-            case ROAD -> COL_ROAD_TOP;
-            case CITY_ROAD -> COL_CITY_ROAD;  // Dark grey for city roads
-            case STOP, CITY_STOP  -> COL_STOP_TOP;
-            case CITY     -> COL_CITY_TOP;
+            case ROAD, CITY_ROAD -> COL_ROAD_TOP;
+            case STOP, CITY_STOP -> COL_STOP_TOP;
+            case CITY -> COL_CITY_TOP;
             case FACILITY -> COL_FAC_TOP;
-            case WATER    -> COL_WATER_TOP;
-            case FOREST   -> COL_FOREST_TOP;
-            case BRIDGE   -> COL_BRIDGE_TOP;
-            default       -> COL_EMPTY_TOP;
+            case WATER -> COL_WATER_TOP;
+            case FOREST -> COL_FOREST_TOP;
+            case BRIDGE -> COL_BRIDGE_TOP;
+            default -> COL_EMPTY_TOP;
         };
     }
-
 
 
 

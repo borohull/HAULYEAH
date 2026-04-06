@@ -1,44 +1,32 @@
 package model;
 
-import java.util.Random;
-
-/**
- * Defines a fixed city layout template with building patterns.
- * Can be reused and randomly placed on the map.
- */
 public class CityTemplate {
     private final String name;
     private final int width;
     private final int height;
-    private final double buildingPercentage;
-    private final boolean[][] layout;  // true = building, false = empty
+    private final char[][] layout;
 
-    public CityTemplate(String name, int width, int height, double buildingPercentage) {
+    public CityTemplate(String name, String... rows) {
+        if (rows == null || rows.length == 0) {
+            throw new IllegalArgumentException("Template rows cannot be empty");
+        }
+
         this.name = name;
-        this.width = width;
-        this.height = height;
-        this.buildingPercentage = buildingPercentage;
-        this.layout = new boolean[width][height];
-        generateLayout();
-    }
+        this.height = rows.length;
+        this.width = rows[0].length();
+        this.layout = new char[width][height];
 
-    private void generateLayout() {
-        Random rng = new Random();
+        for (int y = 0; y < rows.length; y++) {
+            if (rows[y].length() != width) {
+                throw new IllegalArgumentException("All template rows must have the same width");
+            }
 
-        // Fill border with buildings for enclosure
-        for (int x = 0; x < width; x++) {
-            layout[x][0] = true;
-            layout[x][height - 1] = true;
-        }
-        for (int y = 0; y < height; y++) {
-            layout[0][y] = true;
-            layout[width - 1][y] = true;
-        }
-
-        // Fill interior with buildings based on percentage
-        for (int y = 1; y < height - 1; y++) {
-            for (int x = 1; x < width - 1; x++) {
-                layout[x][y] = rng.nextDouble() < buildingPercentage;
+            for (int x = 0; x < width; x++) {
+                char c = rows[y].charAt(x);
+                if (c != 'B' && c != 'H' && c != 'V' && c != 'X') {
+                    throw new IllegalArgumentException("Supported symbols: B, H, V, X");
+                }
+                layout[x][y] = c;
             }
         }
     }
@@ -55,15 +43,28 @@ public class CityTemplate {
         return height;
     }
 
-    public boolean[][] getLayout() {
-        return layout;
-    }
-
-    public boolean hasBuilding(int x, int y) {
-        if (x < 0 || x >= width || y < 0 || y >= height) {
-            return false;
-        }
+    public char getTileSymbol(int x, int y) {
         return layout[x][y];
     }
-}
 
+    public boolean isBuilding(int x, int y) {
+        return layout[x][y] == 'B';
+    }
+
+    public boolean isRoad(int x, int y) {
+        char c = layout[x][y];
+        return c == 'H' || c == 'V' || c == 'X';
+    }
+
+    public boolean isHorizontalRoad(int x, int y) {
+        return layout[x][y] == 'H';
+    }
+
+    public boolean isVerticalRoad(int x, int y) {
+        return layout[x][y] == 'V';
+    }
+
+    public boolean isCrossroad(int x, int y) {
+        return layout[x][y] == 'X';
+    }
+}
