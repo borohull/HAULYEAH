@@ -37,8 +37,20 @@ public class MapGenerator {
 
     private final Random rng;
 
+    private List<CityTemplate> cityTemplates;
+
     public MapGenerator() {
         this.rng = new Random();
+        this.cityTemplates = new ArrayList<>();
+        initializeCityTemplates();
+    }
+
+    private void initializeCityTemplates() {
+        // Debrecen: 20% buildings, 80% empty
+        cityTemplates.add(new CityTemplate("Debrecen", 16, 16, 0.20));
+
+        // Budapest: 30% buildings, 70% empty
+        cityTemplates.add(new CityTemplate("Budapest", 20, 20, 0.30));
     }
 
     public MapGenerator(long seed) {
@@ -87,24 +99,23 @@ public class MapGenerator {
         }
 
         for (int i = 0; i < numCities; i++) {
-            String name = CITY_NAMES[i % CITY_NAMES.length];
+            // Use predefined city templates instead of random generation
+            CityTemplate template = cityTemplates.get(i % cityTemplates.size());
 
-            int cw = CITY_MIN_W + rng.nextInt(CITY_MAX_W - CITY_MIN_W + 1);
-            int ch = CITY_MIN_H + rng.nextInt(CITY_MAX_H - CITY_MIN_H + 1);
-
-            int[] pos = findFreePosition(width, height, cw, ch, occupied);
+            int[] pos = findFreePosition(width, height, template.getWidth(), template.getHeight(), occupied);
             if (pos == null) continue;
 
-            City city = createCityLayout("city_" + i, name, pos[0], pos[1], cw, ch);
+            City city = createCityFromTemplate("city_" + i, template, pos[0], pos[1]);
             game.addCity(city);
 
             occupied.add(new int[]{
                     pos[0] - PADDING,
                     pos[1] - PADDING,
-                    cw + PADDING * 2,
-                    ch + PADDING * 2
+                    template.getWidth() + PADDING * 2,
+                    template.getHeight() + PADDING * 2
             });
         }
+
 
         for (int i = 0; i < numFacilities && i < FACILITY_DATA.length; i++) {
             String[] data = FACILITY_DATA[i];
@@ -142,128 +153,28 @@ public class MapGenerator {
         return game;
     }
 
-    private City createCityLayout(String id, String name, int startX, int startY, int width, int height) {
-        City city = new City(id, name, startX, startY, width, height);
+    private City createCityFromTemplate(String id, CityTemplate template, int startX, int startY) {
+        City city = new City(id, template.getName(), startX, startY, template.getWidth(), template.getHeight());
 
-        boolean[][] roads = new boolean[width][height];
-        boolean[][] buildings = new boolean[width][height];
+        boolean[][] layout = template.getLayout();
 
-        // Outer border roads
-        for (int x = 0; x < width; x++) {
-            roads[x][0] = true;
-            roads[x][height - 1] = true;
+        // Mark border as entrances
+        for (int x = 0; x < template.getWidth(); x++) {
+            city.addEntrance(startX + x, startY);
+            city.addEntrance(startX + x, startY + template.getHeight() - 1);
         }
-        for (int y = 0; y < height; y++) {
-            roads[0][y] = true;
-            roads[width - 1][y] = true;
-        }
-
-        // Main long vertical roads
-        List<Integer> verticals = new ArrayList<>();
-        verticals.add(3);
-        verticals.add(width / 2);
-        verticals.add(width - 4);
-
-        for (int vx : verticals) {
-            if (vx > 0 && vx < width - 1) {
-                for (int y = 0; y < height; y++) {
-                    roads[vx][y] = true;
-                }
-            }
+        for (int y = 0; y < template.getHeight(); y++) {
+            city.addEntrance(startX, startY + y);
+            city.addEntrance(startX + template.getWidth() - 1, startY + y);
         }
 
-        // Main long horizontal roads
-        List<Integer> horizontals = new ArrayList<>();
-        horizontals.add(3);
-        horizontals.add(height / 2);
-        horizontals.add(height - 4);
-
-        for (int hy : horizontals) {
-            if (hy > 0 && hy < height - 1) {
-                for (int x = 0; x < width; x++) {
-                    roads[x][hy] = true;
-                }
-            }
-        }
-
-        // Optional extra full roads for larger cities
-        if (width >= 18) {
-            int extraV = width / 2 - 4;
-            if (extraV > 1 && extraV < width - 2) {
-                for (int y = 0; y < height; y++) {
-                    roads[extraV][y] = true;
-                }
-            }
-        }
-
-        if (height >= 18) {
-            int extraH = height / 2 + 4;
-            if (extraH > 1 && extraH < height - 2) {
-                for (int x = 0; x < width; x++) {
-                    roads[x][extraH] = true;
-                }
-            }
-        }
-
-        // Place buildings as rows inside each block
-        for (int y = 1; y < height - 1; y++) {
-            for (int x = 1; x < width - 1; x++) {
-                if (roads[x][y]) {
-                    continue;
-                }
-
-                boolean nearRoad =
-                        roads[x - 1][y] || roads[x + 1][y] ||
-                                roads[x][y - 1] || roads[x][y + 1];
-
-                if (!nearRoad) {
-                    continue;
-                }
-
-                // Leave intersections more open
-                int adjacentRoadCount = 0;
-                if (roads[x - 1][y]) adjacentRoadCount++;
-                if (roads[x + 1][y]) adjacentRoadCount++;
-                if (roads[x][y - 1]) adjacentRoadCount++;
-                if (roads[x][y + 1]) adjacentRoadCount++;
-
-                if (adjacentRoadCount >= 2) {
-                    // keep some corners/intersection-adjacent tiles open
-                    if ((x + y) % 3 == 0) {
-                        continue;
-                    }
-                }
-
-                buildings[x][y] = true;
-            }
-        }
-
-        // Add only a few empty lots so city doesn't become too empty
-        int openLots = 2;
-        for (int i = 0; i < openLots; i++) {
-            int lotW = 2;
-            int lotH = 2;
-
-            int lotX = 2 + rng.nextInt(Math.max(1, width - lotW - 4));
-            int lotY = 2 + rng.nextInt(Math.max(1, height - lotH - 4));
-
-            for (int dy = 0; dy < lotH; dy++) {
-                for (int dx = 0; dx < lotW; dx++) {
-                    if (!roads[lotX + dx][lotY + dy]) {
-                        buildings[lotX + dx][lotY + dy] = false;
-                    }
-                }
-            }
-        }
-
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
+        // Add buildings according to template layout
+        for (int y = 0; y < template.getHeight(); y++) {
+            for (int x = 0; x < template.getWidth(); x++) {
                 int worldX = startX + x;
                 int worldY = startY + y;
 
-                if (roads[x][y]) {
-                    city.addRoadTile(worldX, worldY);
-                } else if (buildings[x][y]) {
+                if (layout[x][y]) {
                     city.addBuildingTile(worldX, worldY);
                 }
             }

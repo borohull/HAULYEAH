@@ -64,6 +64,7 @@ public class MapPanel extends Canvas {
     private static final Color COL_BRIDGE_ROOF  = Color.rgb(210, 195, 155);
 
     private static final Color COL_STOP_TOP = Color.rgb(220,  80,  80);
+    private static final Color COL_CITY_ROAD = Color.rgb(90, 90, 90);  // Dark grey for city roads
     private static final Color COL_GRID     = Color.rgb(0, 0, 0, 0.08);
     private static final Color COL_LABEL    = Color.rgb(0, 0, 0, 0.55);
 
@@ -188,9 +189,9 @@ public class MapPanel extends Canvas {
             case FOREST -> grassImage;
             case FACILITY -> fieldImage;
             case CITY -> null;
-            case CITY_ROAD -> getRoadNetworkImage(tile.getPosition());
+            case CITY_ROAD -> null;  // Simple grey tile for city roads (no image)
             case ROAD -> getRoadNetworkImage(tile.getPosition());
-            case STOP -> stopImage != null ? stopImage : plantationImage;
+            case STOP, CITY_STOP -> stopImage != null ? stopImage : plantationImage;
             case BRIDGE -> waterImage;
             case EMPTY -> grassImage;
         };
@@ -199,19 +200,10 @@ public class MapPanel extends Canvas {
 
 
     private Image getRoadNetworkImage(Position p) {
-        boolean up = isRoadLike(p.getX(), p.getY() - 1);
-        boolean down = isRoadLike(p.getX(), p.getY() + 1);
-        boolean left = isRoadLike(p.getX() - 1, p.getY());
-        boolean right = isRoadLike(p.getX() + 1, p.getY());
-
-        boolean hasVertical = up || down;
-        boolean hasHorizontal = left || right;
-
-        if (hasVertical && hasHorizontal && crossroadImage != null) {
-            return crossroadImage;
-        }
-
-        if (hasVertical && roadVertImage != null) {
+        // Simple road rendering - no adjacency detection
+        // Use stored road type or default to horizontal
+        Road road = currentGame.getRoadAt(p);
+        if (road != null && road.getType() == Road.RoadType.VERTICAL) {
             return roadVertImage;
         }
 
@@ -245,10 +237,16 @@ public class MapPanel extends Canvas {
         double cx = isoScreenX(tx, ty, ox);
         double cy = isoScreenY(tx, ty, oy);
 
+        double[] xs = diamondXs(tx, ty, ox);
+        double[] ys = diamondYs(tx, ty, oy);
+
+        // Always fill the ground with solid color FIRST
+        gc.setFill(groundColor(tile.getType()));
+        gc.fillPolygon(xs, ys, 4);
+
         Image tileImage = getGroundImage(tile);
 
         if (tileImage != null) {
-
             gc.drawImage(
                     tileImage,
                     cx - TILE_W / 2.0 - 2,
@@ -256,28 +254,22 @@ public class MapPanel extends Canvas {
                     TILE_W + 4,
                     TILE_H + WALL_H + 4
             );
-        } else {
-
-            double[] xs = diamondXs(tx, ty, ox);
-            double[] ys = diamondYs(tx, ty, oy);
-
-            gc.setFill(groundColor(tile.getType()));
-            gc.fillPolygon(xs, ys, 4);
         }
 
-
-        double[] xs = diamondXs(tx, ty, ox);
-        double[] ys = diamondYs(tx, ty, oy);
-
-//        gc.setStroke(COL_GRID);
-//        gc.setLineWidth(0.5);
-//        gc.strokePolygon(xs, ys, 4);
+        // Add darker outline for city roads to ensure they're visible
+        if (tile.getType() == TileType.CITY_ROAD) {
+            gc.setStroke(Color.rgb(60, 60, 60));
+            gc.setLineWidth(1.0);
+            gc.strokePolygon(xs, ys, 4);
+        }
     }
+
 
     private Color groundColor(TileType type) {
         return switch (type) {
-            case ROAD, CITY_ROAD -> COL_ROAD_TOP;
-            case STOP     -> COL_STOP_TOP;
+            case ROAD -> COL_ROAD_TOP;
+            case CITY_ROAD -> COL_CITY_ROAD;  // Dark grey for city roads
+            case STOP, CITY_STOP  -> COL_STOP_TOP;
             case CITY     -> COL_CITY_TOP;
             case FACILITY -> COL_FAC_TOP;
             case WATER    -> COL_WATER_TOP;
@@ -293,16 +285,22 @@ public class MapPanel extends Canvas {
     private void drawStructure(GraphicsContext gc, Tile tile,
                                int tx, int ty, int ox, int oy) {
         switch (tile.getType()) {
-            case CITY -> drawCityBuilding(gc, tx, ty, ox, oy);
+            case CITY -> drawCityBuilding(gc, tile, tx, ty, ox, oy);
             case FACILITY -> drawBox(gc, tx, ty, ox, oy, COL_FAC_LEFT, COL_FAC_RIGHT, COL_FAC_ROOF);
             case WATER -> drawWaterSurface(gc, tx, ty, ox, oy);
             case FOREST -> drawForestTree(gc, tx, ty, ox, oy);
             case BRIDGE -> drawBox(gc, tx, ty, ox, oy, COL_BRIDGE_LEFT, COL_BRIDGE_RIGHT, COL_BRIDGE_ROOF);
-            case ROAD, CITY_ROAD -> { }
+            case ROAD, CITY_ROAD, STOP, CITY_STOP -> { }
             default -> { }
         }
     }
-    private void drawCityBuilding(GraphicsContext gc, int tx, int ty, int ox, int oy) {
+
+    private void drawCityBuilding(GraphicsContext gc, Tile tile, int tx, int ty, int ox, int oy) {
+        // Only draw building images on actual CITY tiles, not on CITY_ROAD tiles
+        if (tile.getType() != TileType.CITY) {
+            return;
+        }
+
         Image img = getCityBuildingImage(tx, ty);
 
         double cx = isoScreenX(tx, ty, ox);

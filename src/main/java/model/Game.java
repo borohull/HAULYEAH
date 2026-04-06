@@ -87,14 +87,7 @@ public class Game {
             }
         }
 
-        for (Position p : city.getRoadTiles()) {
-            Tile t = getTile(p);
-            if (t != null) {
-                t.setType(TileType.CITY_ROAD);
-                t.setEntityId(city.getId());
-                t.setEntityName(city.getName());
-            }
-        }
+        // City roads are removed - no internal roads
     }
 
     public void addFacility(Facility facility) {
@@ -152,11 +145,21 @@ public class Game {
     }
 
     // Roads can be built on EMPTY or FOREST tiles only
+    // Cannot be built on city/facility tiles or city internal roads
     public boolean addRoad(Road road) {
         Tile t = getTile(road.getPosition());
         if (t == null || (t.getType() != TileType.EMPTY && t.getType() != TileType.FOREST)) {
             return false;
         }
+
+        // Additional check: cannot build roads inside cities
+        Position p = road.getPosition();
+        for (City city : cities) {
+            if (city.containsPosition(p.getX(), p.getY())) {
+                return false;  // Cannot build roads inside city tiles
+            }
+        }
+
         roads.add(road);
         t.setType(TileType.ROAD);
         t.setEntityId(road.getId());
@@ -182,17 +185,28 @@ public class Game {
         return null;
     }
 
-    // Stops occupy one tile and must be adjacent to ROAD, CITY, or FACILITY.
+    // Stops occupy one tile and must be adjacent to ROAD, CITY_ROAD, CITY, or FACILITY.
     public boolean addStop(Stop stop) {
         Tile t = getTile(stop.getPosition());
         if (t == null || t.getType() != TileType.EMPTY) {
             return false;
         }
-        if (!isAdjacentToRoadCityOrFacility(stop.getPosition())) {
+
+        // Check if adjacent to road, city road, city, or facility
+        boolean adjacent = isAdjacentToRoadCityOrFacility(stop.getPosition());
+        if (!adjacent) {
             return false;
         }
+
+        // Determine if stop is inside a city (adjacent to CITY_ROAD)
+        boolean insideCity = isAdjacentToCityRoad(stop.getPosition());
+
         stops.add(stop);
-        t.setType(TileType.STOP);
+        stop.setInsideCity(insideCity);
+
+        // Use CITY_STOP for stops inside cities, STOP for external ones
+        TileType stopType = insideCity ? TileType.CITY_STOP : TileType.STOP;
+        t.setType(stopType);
         t.setEntityId(stop.getId());
         t.setEntityName(stop.getName());
         return true;
@@ -222,7 +236,24 @@ public class Game {
             Tile neighbour = getTile(p.getX() + d[0], p.getY() + d[1]);
             if (neighbour == null) continue;
             TileType type = neighbour.getType();
-            if (type == TileType.ROAD || type == TileType.CITY || type == TileType.FACILITY) {
+            // Updated to include CITY_ROAD for stops adjacent to internal city roads
+            if (type == TileType.ROAD || type == TileType.CITY_ROAD ||
+                type == TileType.CITY || type == TileType.FACILITY) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if a position is adjacent to any CITY_ROAD tile.
+     * Used to determine if a stop should be marked as inside a city.
+     */
+    public boolean isAdjacentToCityRoad(Position p) {
+        int[][] deltas = { {0, -1}, {0, 1}, {-1, 0}, {1, 0} };
+        for (int[] d : deltas) {
+            Tile neighbour = getTile(p.getX() + d[0], p.getY() + d[1]);
+            if (neighbour != null && neighbour.getType() == TileType.CITY_ROAD) {
                 return true;
             }
         }
