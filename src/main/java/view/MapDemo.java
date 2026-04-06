@@ -436,7 +436,6 @@ public class MapDemo extends Application {
         MapPanel mapPanel = new MapPanel();
         mapPanel.drawGame(game);
 
-        // Wrap in Group so ScrollPane respects the scaled size
         Group mapGroup = new Group(mapPanel);
 
         ScrollPane scroll = new ScrollPane(mapGroup);
