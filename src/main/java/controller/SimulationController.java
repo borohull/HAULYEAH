@@ -1,6 +1,8 @@
 package controller;
 
 import model.Game;
+import model.service.SimulationEngine;
+import javafx.animation.AnimationTimer;
 
 /**
  * SimulationController
@@ -49,11 +51,38 @@ public class SimulationController {
     private Speed      speed   = Speed.PAUSED;
     private boolean    running = false;
 
+    private final SimulationEngine engine = new SimulationEngine();
+    private AnimationTimer timer;
+    private long lastTime = 0;
+
     // Registered by the View (HudPanel) to refresh speed/pause display
     private Runnable onStateChanged;
 
     public SimulationController(Game game) {
         this.game = game;
+        
+        this.timer = new AnimationTimer() {
+            @Override
+            public void handle(long now) {
+                if (lastTime == 0) {
+                    lastTime = now;
+                    return;
+                }
+                
+                // Elapsed physical time in seconds
+                double elapsedSeconds = (now - lastTime) / 1_000_000_000.0;
+                lastTime = now;
+
+                if (speed != Speed.PAUSED) {
+                    // Simulated logic time depends on speed multiplier
+                    double dt = elapsedSeconds * speed.multiplier;
+                    engine.tick(SimulationController.this.game, dt);
+                    
+                    // Request a redraw from the View (so vehicles/animations update)
+                    notifyView();
+                }
+            }
+        };
     }
 
     public void setOnStateChanged(Runnable callback) {
@@ -74,7 +103,8 @@ public class SimulationController {
         }
         running = true;
         System.out.println("[SimulationController] play() — " + speed.label);
-        // TODO: start AnimationTimer -> SimulationEngine.tick()
+        lastTime = 0;
+        timer.start();
         notifyView();
     }
 
@@ -85,7 +115,7 @@ public class SimulationController {
         running = false;
         speed   = Speed.PAUSED;
         System.out.println("[SimulationController] pause()");
-        // TODO: stop AnimationTimer
+        timer.stop();
         notifyView();
     }
 
@@ -97,6 +127,14 @@ public class SimulationController {
         speed   = speed.next();
         running = speed != Speed.PAUSED;
         System.out.println("[SimulationController] speed -> " + speed.label);
+        
+        if (running) {
+            lastTime = 0;
+            timer.start();
+        } else {
+            timer.stop();
+        }
+        
         notifyView();
     }
 
@@ -109,6 +147,14 @@ public class SimulationController {
         this.speed   = newSpeed;
         this.running = newSpeed != Speed.PAUSED;
         System.out.println("[SimulationController] setSpeed -> " + newSpeed.label);
+        
+        if (running) {
+            lastTime = 0;
+            timer.start();
+        } else {
+            timer.stop();
+        }
+        
         notifyView();
     }
 
