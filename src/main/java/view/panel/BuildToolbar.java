@@ -1,4 +1,4 @@
-package view;
+package view.panel;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -10,8 +10,15 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import model.Road;
 
-public class BottomToolbar extends VBox {
+/**
+ * BuildToolbar — the bottom toolbar shown during gameplay.
+ *
+ * Contains: Select, Build (with road/stop submenu), Remove, Garage, Finance, Save, Menu.
+ * Renamed from BottomToolbar → BuildToolbar to match the UML diagram.
+ */
+public class BuildToolbar extends VBox {
 
+    // ── Style constants ───────────────────────────────────────────────────────
     private static final String BTN_NORMAL =
         "-fx-background-color:#3c3c3c; -fx-text-fill:white; " +
         "-fx-font-size:13px; -fx-padding:8 18; " +
@@ -32,10 +39,12 @@ public class BottomToolbar extends VBox {
         "-fx-font-size:12px; -fx-padding:6 14; " +
         "-fx-background-radius:5; -fx-cursor:hand;";
 
+    // ── State ─────────────────────────────────────────────────────────────────
     private Road.RoadType selectedRoadType;
     private boolean       stopSelected;
     private boolean       removeSelected;
 
+    // ── Main toolbar buttons ──────────────────────────────────────────────────
     private final Button btnSelect;
     private final Button btnBuild;
     private final Button btnRemove;
@@ -44,16 +53,16 @@ public class BottomToolbar extends VBox {
     private final Button btnSave;
     private final Button btnMenu;
 
+    // ── Build submenu buttons ─────────────────────────────────────────────────
     private final Button btnHRoad;
     private final Button btnVRoad;
+    private final Button btnStop;
     private final HBox   roadSubmenu;
 
-    private final Button btnStop;
-
-    public BottomToolbar() {
+    public BuildToolbar() {
         super();
 
-        //Main toolbar
+        // Main toolbar
         btnSelect  = makeBtn("Select");
         btnBuild   = makeBtn("Build");
         btnRemove  = makeBtn("Remove");
@@ -74,13 +83,12 @@ public class BottomToolbar extends VBox {
         toolbar.setAlignment(Pos.CENTER_LEFT);
         toolbar.setStyle("-fx-background-color:#2b2b2b;");
 
-        //build road menu
+        // Build submenu (Roads + Stops)
         btnHRoad = new Button("Horizontal");
         btnVRoad = new Button("Vertical");
+        btnStop  = new Button("Stop");
         btnHRoad.setStyle(SUB_BTN_NORMAL);
         btnVRoad.setStyle(SUB_BTN_NORMAL);
-
-        btnStop = new Button("Stop");
         btnStop.setStyle(SUB_BTN_NORMAL);
 
         btnHRoad.setOnAction(e -> {
@@ -113,10 +121,8 @@ public class BottomToolbar extends VBox {
 
         Label lblRoads = new Label("Roads:");
         lblRoads.setStyle("-fx-text-fill:#cccccc; -fx-font-size:13px; -fx-padding:0 8 0 0;");
-
         Label lblSep = new Label("|");
         lblSep.setStyle("-fx-text-fill:#666666; -fx-font-size:14px; -fx-padding:0 4;");
-
         Label lblStops = new Label("Stops:");
         lblStops.setStyle("-fx-text-fill:#cccccc; -fx-font-size:13px; -fx-padding:0 8 0 0;");
 
@@ -127,8 +133,7 @@ public class BottomToolbar extends VBox {
         roadSubmenu.setVisible(false);
         roadSubmenu.setManaged(false);
 
-
-        //Toggle logic
+        // Toggle logic
         btnBuild.setOnAction(e -> {
             boolean show = !roadSubmenu.isVisible();
             removeSelected = false;
@@ -136,9 +141,7 @@ public class BottomToolbar extends VBox {
             roadSubmenu.setManaged(show);
             btnBuild.setStyle(show ? BTN_HIGHLIGHT : BTN_NORMAL);
             btnRemove.setStyle(BTN_NORMAL);
-            if (!show) {
-                clearSelection();
-            }
+            if (!show) clearSelection();
         });
 
         btnRemove.setOnAction(e -> {
@@ -161,21 +164,15 @@ public class BottomToolbar extends VBox {
             clearSelection();
         });
 
-        // Assemble: submenu on top, toolbar on bottom
+        // Submenu on top, toolbar on bottom
         getChildren().addAll(roadSubmenu, toolbar);
     }
 
-    public Road.RoadType getSelectedRoadType() {
-        return selectedRoadType;
-    }
+    // ── State getters ─────────────────────────────────────────────────────────
 
-    public boolean isStopSelected() {
-        return stopSelected;
-    }
-
-    public boolean isRemoveSelected() {
-        return removeSelected;
-    }
+    public Road.RoadType getSelectedRoadType() { return selectedRoadType; }
+    public boolean isStopSelected()            { return stopSelected; }
+    public boolean isRemoveSelected()          { return removeSelected; }
 
     public void clearSelection() {
         selectedRoadType = null;
@@ -187,6 +184,7 @@ public class BottomToolbar extends VBox {
         btnRemove.setStyle(BTN_NORMAL);
     }
 
+    // ── Button accessors (for GameWindow wiring) ──────────────────────────────
 
     public Button getSelectButton()  { return btnSelect; }
     public Button getBuildButton()   { return btnBuild; }
@@ -195,6 +193,8 @@ public class BottomToolbar extends VBox {
     public Button getFinanceButton() { return btnFinance; }
     public Button getSaveButton()    { return btnSave; }
     public Button getMenuButton()    { return btnMenu; }
+
+    // ── Helper ────────────────────────────────────────────────────────────────
 
     private static Button makeBtn(String text) {
         Button b = new Button(text);

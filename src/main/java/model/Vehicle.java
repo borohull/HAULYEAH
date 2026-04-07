@@ -1,5 +1,7 @@
 package model;
 
+import model.enums.VehicleType;
+
 import java.util.ArrayList;
 import java.util.List;
 

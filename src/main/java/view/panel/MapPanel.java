@@ -1,4 +1,4 @@
-package view;
+package view.panel;
 
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -6,16 +6,15 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 import model.Bridge;
-import model.City;
-import model.Facility;
-import model.Forest;
+import model.MapEntity;
 import model.Game;
+import model.City;
 import model.Position;
 import model.Stop;
 import model.Tile;
-import model.TileType;
+import model.enums.TileType;
 import model.Road;
-import model.WaterBody;
+import model.Road;
 import javafx.scene.image.Image;
 
 
@@ -64,19 +63,15 @@ public class MapPanel extends Canvas {
     private static final Color COL_BRIDGE_ROOF  = Color.rgb(210, 195, 155);
 
     private static final Color COL_STOP_TOP = Color.rgb(220,  80,  80);
-    private static final Color COL_CITY_ROAD = Color.rgb(90, 90, 90);  // Dark grey for city roads
+    private static final Color COL_CITY_ROAD = Color.rgb(90, 90, 90);
     private static final Color COL_GRID     = Color.rgb(0, 0, 0, 0.08);
     private static final Color COL_LABEL    = Color.rgb(0, 0, 0, 0.55);
 
-    private final Image grassImage = loadTileImage("/images/grass.png");
-    private final Image waterImage = loadTileImage("/images/water.png");
-    private final Image fieldImage = loadTileImage("/images/field.png");
-    private final Image plantationImage = loadTileImage("/images/plantation.png");
-    private final Image roadHorImage    = loadTileImage("/images/roadHor.png");
-    private final Image roadVertImage   = loadTileImage("/images/roadVert.png");
-    private final Image stopImage       = loadTileImage("/images/stop.png");
-
-    private final Image crossroadImage  = loadTileImage("/images/crossroad.webp");
+    private final Image grassImage       = loadTileImage("/images/grass.png");
+    private final Image waterImage       = loadTileImage("/images/water.png");
+    private final Image fieldImage       = loadTileImage("/images/field.png");
+    private final Image plantationImage  = loadTileImage("/images/plantation.png");
+    private final Image stopImage        = loadTileImage("/images/stop.png");
 
     private final Image[] cityBuildingImages = {
             loadTileImage("/images/buildings/building.png"),
@@ -157,25 +152,9 @@ public class MapPanel extends Canvas {
         gc.setFont(Font.font("Monospace", 11));
         gc.setTextAlign(TextAlignment.CENTER);
 
-        for (City city : game.getCities()) {
-            Position c = city.getCenter();
-            drawLabel(gc, c.getX(), c.getY(), city.getName(), originX, originY);
-        }
-        for (Facility fac : game.getFacilities()) {
-            Position c = fac.getCenter();
-            drawLabel(gc, c.getX(), c.getY(), fac.getName(), originX, originY);
-        }
-        for (WaterBody water : game.getWaterBodies()) {
-            Position c = water.getCenter();
-            drawLabel(gc, c.getX(), c.getY(), water.getName(), originX, originY);
-        }
-        for (Forest forest : game.getForests()) {
-            Position c = forest.getCenter();
-            drawLabel(gc, c.getX(), c.getY(), forest.getName(), originX, originY);
-        }
-        for (Bridge bridge : game.getBridges()) {
-            Position c = bridge.getCenter();
-            drawLabel(gc, c.getX(), c.getY(), bridge.getName(), originX, originY);
+        for (MapEntity entity : game.getAllEntities()) {
+            Position c = entity.getCenter();
+            drawLabel(gc, c.getX(), c.getY(), entity.getName(), originX, originY);
         }
         for (Stop stop : game.getStops()) {
             Position c = stop.getPosition();
@@ -185,64 +164,29 @@ public class MapPanel extends Canvas {
 
     private Image getGroundImage(Tile tile) {
         return switch (tile.getType()) {
-            case WATER -> waterImage;
-            case FOREST -> grassImage;
-            case FACILITY -> fieldImage;
-            case CITY -> null;
-            case CITY_ROAD -> getCityRoadImage(tile.getPosition());
-            case ROAD -> getRoadNetworkImage(tile.getPosition());
+            case WATER     -> waterImage;
+            case FOREST    -> grassImage;
+            case FACILITY  -> fieldImage;
+            case CITY, ROAD, CITY_ROAD -> null;
             case STOP, CITY_STOP -> stopImage != null ? stopImage : plantationImage;
-            case BRIDGE -> waterImage;
-            case EMPTY -> grassImage;
+            case BRIDGE    -> waterImage;
+            case EMPTY     -> grassImage;
         };
     }
 
-    private Image getCityRoadImage(Position p) {
-        if (currentGame == null) {
-            return roadVertImage; // swapped
-        }
-
-        for (City city : currentGame.getCities()) {
-            if (!city.containsPosition(p.getX(), p.getY())) {
-                continue;
-            }
-
-            if (city.isCrossroad(p)) {
-                return crossroadImage != null ? crossroadImage : roadVertImage;
-            }
-
-            if (city.isVerticalRoad(p)) {
-                return roadHorImage;  // swapped
-            }
-
-            return roadVertImage;  // swapped
-        }
-
-        return roadVertImage; // swapped
-    }
-
-    private Image getRoadNetworkImage(Position p) {
-        Road road = currentGame.getRoadAt(p);
-        if (road != null && road.getType() == Road.RoadType.VERTICAL) {
-            return roadHorImage;  // swapped
-        }
-        return roadVertImage;  // swapped
-    }
 
     private boolean isRoadLike(int x, int y) {
         if (currentGame == null || !currentGame.inBounds(x, y)) return false;
         TileType type = currentGame.getTile(x, y).getType();
         return type == TileType.ROAD || type == TileType.CITY_ROAD || type == TileType.BRIDGE;
     }
+
     private Image getCityBuildingImage(int tx, int ty) {
         Image[] available = getAvailableCityBuildingImages();
         if (available.length == 0) return null;
-
-        int rowSeed = Math.floorMod((ty / 2) * 17 + (tx / 4) * 31, available.length);
+        int rowSeed   = Math.floorMod((ty / 2) * 17 + (tx / 4) * 31, available.length);
         int variation = Math.floorMod(tx + ty, 3);
-
-        int index = (rowSeed + variation) % available.length;
-        return available[index];
+        return available[(rowSeed + variation) % available.length];
     }
 
     private Image[] getAvailableCityBuildingImages() {
@@ -263,15 +207,8 @@ public class MapPanel extends Canvas {
         gc.fillPolygon(xs, ys, 4);
 
         Image tileImage = getGroundImage(tile);
-
         if (tileImage != null) {
-            gc.drawImage(
-                    tileImage,
-                    cx - TILE_W / 2.0,
-                    cy,
-                    TILE_W,
-                    TILE_H + WALL_H
-            );
+            gc.drawImage(tileImage, cx - TILE_W / 2.0, cy, TILE_W, TILE_H + WALL_H);
         }
 
         if (tile.getType() == TileType.CITY_ROAD) {
@@ -279,62 +216,92 @@ public class MapPanel extends Canvas {
             gc.setLineWidth(1.0);
             gc.strokePolygon(xs, ys, 4);
         }
+
+        drawRoadDetails(gc, tile, cx, cy);
+    }
+
+    private void drawRoadDetails(GraphicsContext gc, Tile tile, double cx, double cy) {
+        if (tile.getType() != TileType.ROAD && tile.getType() != TileType.CITY_ROAD) return;
+        
+        Position p = tile.getPosition();
+        boolean isVertical = false;
+        boolean isHorizontal = false;
+        boolean isCrossroad = false;
+
+        if (currentGame != null) {
+            if (tile.getType() == TileType.CITY_ROAD) {
+                // Determine orientation from the city directly
+                for (model.MapEntity entity : currentGame.getAllEntities()) {
+                    if (entity instanceof model.City city) {
+                        if (city.isCrossroad(p)) { isCrossroad = true; break; }
+                        if (city.isVerticalRoad(p)) { isVertical = true; break; }
+                        if (city.isHorizontalRoad(p)) { isHorizontal = true; break; }
+                    }
+                }
+            } else if (tile.getType() == TileType.ROAD) {
+                model.Road road = currentGame.getRoadAt(p);
+                if (road != null) {
+                    if (road.getType() == model.Road.RoadType.VERTICAL) isVertical = true;
+                    else isHorizontal = true;
+                }
+            }
+        }
+
+        gc.setStroke(Color.WHITE);
+        gc.setLineWidth(2.0);
+        gc.setLineDashes(10.0, 6.0);
+
+        if (isVertical || isCrossroad) {
+            gc.strokeLine(cx + TILE_W / 4.0, cy + TILE_H / 4.0,
+                          cx - TILE_W / 4.0, cy + 3 * TILE_H / 4.0);
+        }
+
+        if (isHorizontal || isCrossroad) {
+            gc.strokeLine(cx - TILE_W / 4.0, cy + TILE_H / 4.0,
+                          cx + TILE_W / 4.0, cy + 3 * TILE_H / 4.0);
+        }
+
+        gc.setLineDashes((double[]) null);
     }
 
     private Color groundColor(TileType type) {
         return switch (type) {
-            case ROAD, CITY_ROAD -> COL_ROAD_TOP;
-            case STOP, CITY_STOP -> COL_STOP_TOP;
-            case CITY -> COL_CITY_TOP;
-            case FACILITY -> COL_FAC_TOP;
-            case WATER -> COL_WATER_TOP;
-            case FOREST -> COL_FOREST_TOP;
-            case BRIDGE -> COL_BRIDGE_TOP;
-            default -> COL_EMPTY_TOP;
+            case ROAD, CITY_ROAD     -> COL_ROAD_TOP;
+            case STOP, CITY_STOP     -> COL_STOP_TOP;
+            case CITY                -> COL_CITY_TOP;
+            case FACILITY            -> COL_FAC_TOP;
+            case WATER               -> COL_WATER_TOP;
+            case FOREST              -> COL_FOREST_TOP;
+            case BRIDGE              -> COL_BRIDGE_TOP;
+            default                  -> COL_EMPTY_TOP;
         };
     }
-
-
 
     private void drawStructure(GraphicsContext gc, Tile tile,
                                int tx, int ty, int ox, int oy) {
         switch (tile.getType()) {
-            case CITY -> drawCityBuilding(gc, tile, tx, ty, ox, oy);
+            case CITY     -> drawCityBuilding(gc, tile, tx, ty, ox, oy);
             case FACILITY -> drawBox(gc, tx, ty, ox, oy, COL_FAC_LEFT, COL_FAC_RIGHT, COL_FAC_ROOF);
-            case WATER -> drawWaterSurface(gc, tx, ty, ox, oy);
-            case FOREST -> drawForestTree(gc, tx, ty, ox, oy);
-            case BRIDGE -> drawBox(gc, tx, ty, ox, oy, COL_BRIDGE_LEFT, COL_BRIDGE_RIGHT, COL_BRIDGE_ROOF);
+            case WATER    -> drawWaterSurface(gc, tx, ty, ox, oy);
+            case FOREST   -> drawForestTree(gc, tx, ty, ox, oy);
+            case BRIDGE   -> drawBox(gc, tx, ty, ox, oy, COL_BRIDGE_LEFT, COL_BRIDGE_RIGHT, COL_BRIDGE_ROOF);
             case ROAD, CITY_ROAD, STOP, CITY_STOP -> { }
             default -> { }
         }
     }
 
     private void drawCityBuilding(GraphicsContext gc, Tile tile, int tx, int ty, int ox, int oy) {
-        // Only draw building images on actual CITY tiles, not on CITY_ROAD tiles
-        if (tile.getType() != TileType.CITY) {
-            return;
-        }
-
+        if (tile.getType() != TileType.CITY) return;
         Image img = getCityBuildingImage(tx, ty);
-
         double cx = isoScreenX(tx, ty, ox);
         double cy = isoScreenY(tx, ty, oy);
-
         if (img != null) {
             double drawW = TILE_W * 0.92;
             double drawH = TILE_H + WALL_H + 6;
-
-            gc.drawImage(
-                    img,
-                    cx - drawW / 2.0,
-                    cy - WALL_H - 4,
-                    drawW,
-                    drawH
-            );
+            gc.drawImage(img, cx - drawW / 2.0, cy - WALL_H - 4, drawW, drawH);
         }
     }
-    
-    
+
     private void drawBox(GraphicsContext gc, int tx, int ty, int ox, int oy,
                          Color colLeft, Color colRight, Color colRoof) {
         double inset = 6;
@@ -350,25 +317,19 @@ public class MapPanel extends Canvas {
         double botY   = cy + TILE_H - inset;
         double wh     = WALL_H;
 
-        
         gc.setFill(colLeft);
         gc.fillPolygon(
                 new double[]{ leftX, leftX,       topX,      topX  },
                 new double[]{ leftY, leftY - wh,  topY - wh, topY  }, 4);
-
-        
         gc.setFill(colRight);
         gc.fillPolygon(
                 new double[]{ topX,  topX,       rightX,      rightX },
                 new double[]{ topY,  topY - wh,  rightY - wh, rightY }, 4);
-
-        
         gc.setFill(colRoof);
         gc.fillPolygon(
                 new double[]{ topX,      rightX,      cx,       leftX     },
                 new double[]{ topY - wh, rightY - wh, botY - wh,leftY - wh }, 4);
 
-        
         gc.setStroke(Color.rgb(0, 0, 0, 0.18));
         gc.setLineWidth(0.6);
         gc.strokePolygon(
@@ -382,25 +343,17 @@ public class MapPanel extends Canvas {
                 new double[]{ topY - wh, rightY - wh, botY - wh,leftY - wh }, 4);
     }
 
-    
-    
-    
     private void drawWaterSurface(GraphicsContext gc, int tx, int ty, int ox, int oy) {
         double cx = isoScreenX(tx, ty, ox);
         double cy = isoScreenY(tx, ty, oy);
         double hw = TILE_W / 2.0;
         double hh = TILE_H / 2.0;
 
-        
         gc.setStroke(COL_WATER_ROOF);
         gc.setLineWidth(1.0);
-        
-        gc.strokeLine(cx - hw * 0.5, cy + hh * 0.5,
-                      cx + hw * 0.5, cy + hh * 0.5);
-        gc.strokeLine(cx - hw * 0.3, cy + hh * 0.8,
-                      cx + hw * 0.3, cy + hh * 0.8);
+        gc.strokeLine(cx - hw * 0.5, cy + hh * 0.5, cx + hw * 0.5, cy + hh * 0.5);
+        gc.strokeLine(cx - hw * 0.3, cy + hh * 0.8, cx + hw * 0.3, cy + hh * 0.8);
 
-        
         gc.setStroke(COL_WATER_LEFT);
         gc.setLineWidth(0.8);
         gc.strokePolygon(diamondXs(tx, ty, ox), diamondYs(tx, ty, oy), 4);
@@ -412,11 +365,9 @@ public class MapPanel extends Canvas {
         double hw  = TILE_W / 2.0 * 0.45;
         double hh  = TILE_H / 2.0 * 0.45;
 
-        
         gc.setFill(Color.rgb(80, 50, 20));
         gc.fillRect(cx - 3, cy + hh - 2, 6, WALL_H * 0.3);
 
-        
         double treeH = WALL_H * 1.1;
         gc.setFill(COL_FOREST_LEFT);
         gc.fillPolygon(
@@ -427,7 +378,6 @@ public class MapPanel extends Canvas {
                 new double[]{ cx,  cx + hw, cx },
                 new double[]{ cy - treeH, cy + hh, cy + hh }, 3);
 
-        
         gc.setStroke(Color.rgb(0, 0, 0, 0.20));
         gc.setLineWidth(0.5);
         gc.strokePolygon(
@@ -435,14 +385,10 @@ public class MapPanel extends Canvas {
                 new double[]{ cy + hh, cy + hh, cy - treeH }, 3);
     }
 
-    
-    
-    
     private void drawLabel(GraphicsContext gc, int tx, int ty, String text,
                            int ox, int oy) {
         double cx = isoScreenX(tx, ty, ox);
         double cy = isoScreenY(tx, ty, oy) - WALL_H - 14;
-
         double tw = text.length() * 6.5;
         gc.setFill(COL_LABEL);
         gc.fillRoundRect(cx - tw / 2 - 3, cy - 10, tw + 6, 14, 4, 4);
@@ -450,27 +396,21 @@ public class MapPanel extends Canvas {
         gc.fillText(text, cx, cy);
     }
 
-    
-    
-    
+    // ── Coordinate helpers ────────────────────────────────────────────────────
 
-    
     private double isoScreenX(int tx, int ty, int ox) {
         return ox + (tx - ty) * (TILE_W / 2.0);
     }
 
-    
     private double isoScreenY(int tx, int ty, int oy) {
         return oy + (tx + ty) * (TILE_H / 2.0);
     }
 
-    
     private double[] diamondXs(int tx, int ty, int ox) {
         double cx = isoScreenX(tx, ty, ox);
         return new double[]{ cx, cx + TILE_W / 2.0, cx, cx - TILE_W / 2.0 };
     }
 
-    
     private double[] diamondYs(int tx, int ty, int oy) {
         double cy = isoScreenY(tx, ty, oy);
         return new double[]{ cy, cy + TILE_H / 2.0, cy + TILE_H, cy + TILE_H / 2.0 };
@@ -479,7 +419,6 @@ public class MapPanel extends Canvas {
     public int getTileW() { return TILE_W; }
     public int getTileH() { return TILE_H; }
 
-    // Screen-to-tile conversion (inverse isometric)
     public int[] screenToTile(double screenX, double screenY) {
         double dx = screenX - storedOriginX;
         double dy = screenY - storedOriginY;
@@ -488,14 +427,11 @@ public class MapPanel extends Canvas {
         return new int[]{ (int) Math.floor(txRaw), (int) Math.floor(tyRaw) };
     }
 
-    //Hover overlay for building entities
     public void drawHoverOverlay(int tx, int ty, boolean valid) {
         GraphicsContext gc = getGraphicsContext2D();
         double[] xs = diamondXs(tx, ty, storedOriginX);
         double[] ys = diamondYs(tx, ty, storedOriginY);
-        gc.setFill(valid
-                ? Color.rgb(0, 255, 0, 0.25)
-                : Color.rgb(255, 0, 0, 0.25));
+        gc.setFill(valid ? Color.rgb(0, 255, 0, 0.25) : Color.rgb(255, 0, 0, 0.25));
         gc.fillPolygon(xs, ys, 4);
         gc.setStroke(valid ? Color.LIMEGREEN : Color.RED);
         gc.setLineWidth(1.5);
