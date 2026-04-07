@@ -1,6 +1,6 @@
 package controller;
 
-import model.Game;
+import model.GameState;
 import model.service.SimulationEngine;
 import javafx.animation.AnimationTimer;
 
@@ -47,7 +47,7 @@ public class SimulationController {
         }
     }
 
-    private final Game game;
+    private final GameState state;
     private Speed      speed   = Speed.PAUSED;
     private boolean    running = false;
 
@@ -58,8 +58,8 @@ public class SimulationController {
     // Registered by the View (HudPanel) to refresh speed/pause display
     private Runnable onStateChanged;
 
-    public SimulationController(Game game) {
-        this.game = game;
+    public SimulationController(GameState state) {
+        this.state = state;
         
         this.timer = new AnimationTimer() {
             @Override
@@ -76,7 +76,7 @@ public class SimulationController {
                 if (speed != Speed.PAUSED) {
                     // Simulated logic time depends on speed multiplier
                     double dt = elapsedSeconds * speed.multiplier;
-                    engine.tick(SimulationController.this.game, dt);
+                    engine.tick(SimulationController.this.state, dt);
                     
                     // Request a redraw from the View (so vehicles/animations update)
                     notifyView();
@@ -168,7 +168,7 @@ public class SimulationController {
      * @param slot save-slot index (0-based)
      */
     public void saveGame(int slot) {
-        new model.service.SaveManager().save(game, slot);
+        new model.service.SaveManager().save(state, slot);
     }
 
     // -----------------------------------------------------------------------

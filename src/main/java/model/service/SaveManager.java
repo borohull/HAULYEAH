@@ -1,6 +1,6 @@
 package model.service;
 
-import model.Game;
+import model.GameState;
 import model.Road;
 import model.Stop;
 import model.Tile;
@@ -25,10 +25,11 @@ public class SaveManager {
      * Saves the provided Game state to ~/.haulyea/savegame.txt.
      * Currently ignores the slot parameter to stick to the default behavior.
      *
-     * @param game the game state to save
+     * @param state the game state to save
      * @param slot save slot index (reserved for future multi-save support)
      */
-    public void save(Game game, int slot) {
+    public void save(GameState state, int slot) {
+        model.Game game = state.getMap();
         StringBuilder content = new StringBuilder();
         content.append("# Haul Yea Save\n");
         content.append("savedAt=")
@@ -86,7 +87,7 @@ public class SaveManager {
      * @param slot save slot index
      * @return the loaded Game, or null if it failed
      */
-    public Game load(int slot) {
+    public GameState load(int slot) {
         System.out.println("[SaveManager] load() not yet implemented");
         return null;
     }

@@ -51,7 +51,7 @@ public class GameWindow {
      * Builds the game scene and shows it on the stage.
      */
     public void show() {
-        Game game = gameController.getGame();
+        Game game = gameController.getState().getMap();
 
         // ── Map ──────────────────────────────────────────────────────────────
         mapPanel = new MapPanel();

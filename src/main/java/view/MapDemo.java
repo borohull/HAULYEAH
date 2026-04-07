@@ -476,7 +476,11 @@ public class MapDemo extends Application {
                 e -> mapPanel.drawGame(game));
         bottomToolbar.getRemoveButton().addEventHandler(javafx.event.ActionEvent.ACTION,
                 e -> mapPanel.drawGame(game));
-        bottomToolbar.getSaveButton().setOnAction(e -> new model.service.SaveManager().save(game, 0));
+        bottomToolbar.getSaveButton().setOnAction(e -> {
+            model.Player p = new model.Player("Admin", 100000);
+            model.GameState state = new model.GameState(game, p);
+            new model.service.SaveManager().save(state, 0);
+        });
 
         //Mouse handlers for road/stop placement and removal
         final int[] roadIdCounter = { 0 };

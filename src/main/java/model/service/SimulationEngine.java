@@ -1,6 +1,6 @@
 package model.service;
 
-import model.Game;
+import model.GameState;
 
 /**
  * SimulationEngine
@@ -13,10 +13,10 @@ public class SimulationEngine {
     /**
      * Advances the logic of the game by dt milliseconds.
      * 
-     * @param game The main game model structure.
+     * @param state The current full game state structure.
      * @param dt   The simulated delta time in milliseconds.
      */
-    public void tick(Game game, double dt) {
+    public void tick(GameState state, double dt) {
         // Issue #7 Stub for SimulationEngine tick logic
         // E.g.:
         // vehicleService.updateVehicles(game, dt);

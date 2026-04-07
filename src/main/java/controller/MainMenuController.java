@@ -3,6 +3,8 @@ package controller;
 import javafx.stage.Stage;
 import model.Game;
 import model.MapGenerator;
+import model.Player;
+import model.GameState;
 import view.GameWindow;
 import view.MainMenuView;
 
@@ -60,8 +62,10 @@ public class MainMenuController {
         game.setWorldName(worldName);
 
         // Build the controllers
-        GameController       gameController = new GameController(game);
-        SimulationController simController  = new SimulationController(game);
+        Player player = new Player("Player 1", 100000);
+        GameState state = new GameState(game, player);
+        GameController       gameController = new GameController(state);
+        SimulationController simController  = new SimulationController(state);
 
         // Build and show the game window (View)
         GameWindow gameWindow = new GameWindow(stage, gameController, simController);

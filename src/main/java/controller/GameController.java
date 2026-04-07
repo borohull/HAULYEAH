@@ -1,6 +1,6 @@
 package controller;
 
-import model.Game;
+import model.GameState;
 import model.Position;
 import model.Road;
 import model.Stop;
@@ -35,7 +35,7 @@ public class GameController {
         DEMOLISH
     }
 
-    private final Game game;
+    private final GameState state;
     private BuildMode  buildMode = BuildMode.SELECT;
 
     // Shared service for handling validation and modifications
@@ -44,8 +44,8 @@ public class GameController {
     // Registered by the View so the controller can request a redraw
     private Runnable onStateChanged;
 
-    public GameController(Game game) {
-        this.game = game;
+    public GameController(GameState state) {
+        this.state = state;
     }
 
     /**
@@ -101,7 +101,8 @@ public class GameController {
 
     /** Places a road of the given type at position p. */
     public void onBuildRoad(Position p, Road.RoadType type) {
-        if (constructionService.buildRoad(game, p, type)) {
+        if (constructionService.buildRoad(state.getMap(), p, type)) {
+            // Deduct money here eventually: state.getPlayer().getLedger().spend(100...)
             System.out.println("[GameController] Road placed at " + p);
             notifyView();
         }
@@ -111,7 +112,7 @@ public class GameController {
     public void onBuildStop(Position p) {
         // Find a stop counter logic or rely on service to count
         String stopName = "Stop at " + p.getX() + "," + p.getY();
-        if (constructionService.buildStop(game, p, stopName)) {
+        if (constructionService.buildStop(state.getMap(), p, stopName)) {
             System.out.println("[GameController] Stop placed at " + p);
             notifyView();
         }
@@ -119,7 +120,7 @@ public class GameController {
 
     /** Removes a road or stop at position p. */
     public void onDemolish(Position p) {
-        if (constructionService.removeRoad(game, p) || constructionService.removeStop(game, p)) {
+        if (constructionService.removeRoad(state.getMap(), p) || constructionService.removeStop(state.getMap(), p)) {
             System.out.println("[GameController] Demolished at " + p);
             notifyView();
         }
@@ -179,7 +180,7 @@ public class GameController {
         }
     }
 
-    public Game getGame() {
-        return game;
+    public GameState getState() {
+        return state;
     }
 }
