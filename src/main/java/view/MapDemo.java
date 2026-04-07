@@ -12,7 +12,7 @@ import model.MapGenerator;
 import model.Road;
 import model.Stop;
 import model.Tile;
-import model.TileType;
+import model.enums.TileType;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -497,12 +497,12 @@ public class MapDemo extends Application {
                     valid = game.getRoadAt(p) != null || game.getStopAt(p) != null;
                 } else if (bottomToolbar.isStopSelected()) {
                     model.Tile t = game.getTile(tx, ty);
-                    valid = t.getType() == model.TileType.EMPTY
+                    valid = t.getType() == TileType.EMPTY
                             && game.isAdjacentToRoadCityOrFacility(new model.Position(tx, ty));
                 } else {
                     model.Tile t = game.getTile(tx, ty);
-                    valid = t.getType() == model.TileType.EMPTY
-                            || t.getType() == model.TileType.FOREST;
+                    valid = t.getType() == TileType.EMPTY
+                            || t.getType() == TileType.FOREST;
                 }
                 mapPanel.drawHoverOverlay(tx, ty, valid);
             }

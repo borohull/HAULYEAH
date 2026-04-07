@@ -4,7 +4,7 @@ import model.Game;
 import model.Position;
 import model.Road;
 import model.Stop;
-import model.VehicleType;
+import model.enums.VehicleType;
 
 import java.util.List;
 

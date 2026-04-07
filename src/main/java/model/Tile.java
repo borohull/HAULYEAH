@@ -1,5 +1,7 @@
 package model;
 
+import model.enums.TileType;
+
 public class Tile {
     private TileType type;
     private final Position position;

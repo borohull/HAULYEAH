@@ -4,6 +4,7 @@ module haulyea {
     requires javafx.graphics;
 
     opens model;
+    opens model.enums;
     opens view;
     opens view.panel;
     opens controller;

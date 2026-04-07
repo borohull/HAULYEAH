@@ -9,6 +9,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import model.Game;
 import model.Position;
+import model.enums.TileType;
 import view.panel.BuildToolbar;
 import view.panel.HudPanel;
 import view.panel.MapPanel;
@@ -146,11 +147,11 @@ public class GameWindow {
                     Position p = new Position(tx, ty);
                     valid = game.getRoadAt(p) != null || game.getStopAt(p) != null;
                 } else if (bottomToolbar.isStopSelected()) {
-                    valid = game.getTile(tx, ty).getType() == model.TileType.EMPTY
+                    valid = game.getTile(tx, ty).getType() == TileType.EMPTY
                             && game.isAdjacentToRoadCityOrFacility(new Position(tx, ty));
                 } else {
-                    model.TileType t = game.getTile(tx, ty).getType();
-                    valid = t == model.TileType.EMPTY || t == model.TileType.FOREST;
+                    TileType t = game.getTile(tx, ty).getType();
+                    valid = t == TileType.EMPTY || t == TileType.FOREST;
                 }
                 mapPanel.drawHoverOverlay(tx, ty, valid);
             }

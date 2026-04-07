@@ -13,7 +13,7 @@ import model.Game;
 import model.Position;
 import model.Stop;
 import model.Tile;
-import model.TileType;
+import model.enums.TileType;
 import model.Road;
 import model.WaterBody;
 import javafx.scene.image.Image;
