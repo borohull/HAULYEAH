@@ -3,6 +3,7 @@ package model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import model.service.ConstructionService;
 
 public class MapGenerator {
     private static final int FAC_W = 2;
@@ -238,7 +239,7 @@ public class MapGenerator {
             );
         }
 
-        game.addBridge(bridge);
+        new ConstructionService().buildBridge(game, bridge);
     }
 
     private int[] findFreePosition(int mapW, int mapH, int entityW, int entityH, List<int[]> occupied) {

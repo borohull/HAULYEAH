@@ -13,6 +13,7 @@ import model.enums.TileType;
 import view.panel.BuildToolbar;
 import view.panel.HudPanel;
 import view.panel.MapPanel;
+import model.service.ConstructionService;
 
 /**
  * GameWindow — builds and shows the in-game scene.
@@ -148,7 +149,7 @@ public class GameWindow {
                     valid = game.getRoadAt(p) != null || game.getStopAt(p) != null;
                 } else if (bottomToolbar.isStopSelected()) {
                     valid = game.getTile(tx, ty).getType() == TileType.EMPTY
-                            && game.isAdjacentToRoadCityOrFacility(new Position(tx, ty));
+                            && new ConstructionService().isAdjacentToRoadCityOrFacility(game, new Position(tx, ty));
                 } else {
                     TileType t = game.getTile(tx, ty).getType();
                     valid = t == TileType.EMPTY || t == TileType.FOREST;

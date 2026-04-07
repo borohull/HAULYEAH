@@ -13,6 +13,7 @@ import model.Road;
 import model.Stop;
 import model.Tile;
 import model.enums.TileType;
+import model.service.ConstructionService;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -498,7 +499,7 @@ public class MapDemo extends Application {
                 } else if (bottomToolbar.isStopSelected()) {
                     model.Tile t = game.getTile(tx, ty);
                     valid = t.getType() == TileType.EMPTY
-                            && game.isAdjacentToRoadCityOrFacility(new model.Position(tx, ty));
+                            && new ConstructionService().isAdjacentToRoadCityOrFacility(game, new model.Position(tx, ty));
                 } else {
                     model.Tile t = game.getTile(tx, ty);
                     valid = t.getType() == TileType.EMPTY
@@ -514,7 +515,8 @@ public class MapDemo extends Application {
             if (game.inBounds(tx, ty)) {
                 model.Position p = new model.Position(tx, ty);
                 if (bottomToolbar.isRemoveSelected()) {
-                    if (game.removeRoad(p) || game.removeStop(p)) {
+                    ConstructionService cs = new ConstructionService();
+                    if (cs.removeRoad(game, p) || cs.removeStop(game, p)) {
                         mapPanel.drawGame(game);
                     }
                     return;
@@ -523,7 +525,7 @@ public class MapDemo extends Application {
                 if (bottomToolbar.isStopSelected()) {
                     Stop stop = new Stop("stop-" + (++stopIdCounter[0]), tx, ty,
                             "Stop " + stopIdCounter[0]);
-                    if (game.addStop(stop)) {
+                    if (new ConstructionService().buildStop(game, p, "Stop " + stopIdCounter[0])) {
                         mapPanel.drawGame(game);
                     }
                     return;
@@ -534,9 +536,7 @@ public class MapDemo extends Application {
                 // Use user's selected road type directly - no auto-detection
                 Road.RoadType roadType = bottomToolbar.getSelectedRoadType();
 
-                Road road = new Road("road-" + (++roadIdCounter[0]),
-                        tx, ty, roadType);
-                if (game.addRoad(road)) {
+                if (new ConstructionService().buildRoad(game, p, roadType)) {
                     mapPanel.drawGame(game);
                 }
             }

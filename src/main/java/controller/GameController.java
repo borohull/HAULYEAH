@@ -7,6 +7,7 @@ import model.Stop;
 import model.enums.VehicleType;
 
 import java.util.List;
+import model.service.ConstructionService;
 
 /**
  * GameController
@@ -37,9 +38,8 @@ public class GameController {
     private final Game game;
     private BuildMode  buildMode = BuildMode.SELECT;
 
-    // Simple counters — will be replaced by ConstructionService (Issue 6)
-    private int roadIdCounter = 0;
-    private int stopIdCounter = 0;
+    // Shared service for handling validation and modifications
+    private final ConstructionService constructionService = new ConstructionService();
 
     // Registered by the View so the controller can request a redraw
     private Runnable onStateChanged;
@@ -101,8 +101,7 @@ public class GameController {
 
     /** Places a road of the given type at position p. */
     public void onBuildRoad(Position p, Road.RoadType type) {
-        Road road = new Road("road-" + (++roadIdCounter), p.getX(), p.getY(), type);
-        if (game.addRoad(road)) {
+        if (constructionService.buildRoad(game, p, type)) {
             System.out.println("[GameController] Road placed at " + p);
             notifyView();
         }
@@ -110,9 +109,9 @@ public class GameController {
 
     /** Places a stop at position p. */
     public void onBuildStop(Position p) {
-        Stop stop = new Stop("stop-" + (++stopIdCounter), p.getX(), p.getY(),
-                "Stop " + stopIdCounter);
-        if (game.addStop(stop)) {
+        // Find a stop counter logic or rely on service to count
+        String stopName = "Stop at " + p.getX() + "," + p.getY();
+        if (constructionService.buildStop(game, p, stopName)) {
             System.out.println("[GameController] Stop placed at " + p);
             notifyView();
         }
@@ -120,7 +119,7 @@ public class GameController {
 
     /** Removes a road or stop at position p. */
     public void onDemolish(Position p) {
-        if (game.removeRoad(p) || game.removeStop(p)) {
+        if (constructionService.removeRoad(game, p) || constructionService.removeStop(game, p)) {
             System.out.println("[GameController] Demolished at " + p);
             notifyView();
         }
