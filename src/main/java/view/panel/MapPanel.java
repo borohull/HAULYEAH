@@ -71,10 +71,7 @@ public class MapPanel extends Canvas {
     private final Image waterImage       = loadTileImage("/images/water.png");
     private final Image fieldImage       = loadTileImage("/images/field.png");
     private final Image plantationImage  = loadTileImage("/images/plantation.png");
-    private final Image roadHorImage     = loadTileImage("/images/roadHor.png");
-    private final Image roadVertImage    = loadTileImage("/images/roadVert.png");
     private final Image stopImage        = loadTileImage("/images/stop.png");
-    private final Image crossroadImage   = loadTileImage("/images/crossroad.webp");
 
     private final Image[] cityBuildingImages = {
             loadTileImage("/images/buildings/building.png"),
@@ -170,31 +167,13 @@ public class MapPanel extends Canvas {
             case WATER     -> waterImage;
             case FOREST    -> grassImage;
             case FACILITY  -> fieldImage;
-            case CITY      -> null;
-            case CITY_ROAD -> getCityRoadImage(tile.getPosition());
-            case ROAD      -> getRoadNetworkImage(tile.getPosition());
+            case CITY, ROAD, CITY_ROAD -> null;
             case STOP, CITY_STOP -> stopImage != null ? stopImage : plantationImage;
             case BRIDGE    -> waterImage;
             case EMPTY     -> grassImage;
         };
     }
 
-    private Image getCityRoadImage(Position p) {
-        if (currentGame == null) return roadVertImage;
-        for (City city : currentGame.getCities()) {
-            if (!city.containsPosition(p.getX(), p.getY())) continue;
-            if (city.isCrossroad(p))     return crossroadImage != null ? crossroadImage : roadVertImage;
-            if (city.isVerticalRoad(p))  return roadHorImage;
-            return roadVertImage;
-        }
-        return roadVertImage;
-    }
-
-    private Image getRoadNetworkImage(Position p) {
-        Road road = currentGame.getRoadAt(p);
-        if (road != null && road.getType() == Road.RoadType.VERTICAL) return roadHorImage;
-        return roadVertImage;
-    }
 
     private boolean isRoadLike(int x, int y) {
         if (currentGame == null || !currentGame.inBounds(x, y)) return false;
@@ -237,6 +216,52 @@ public class MapPanel extends Canvas {
             gc.setLineWidth(1.0);
             gc.strokePolygon(xs, ys, 4);
         }
+
+        drawRoadDetails(gc, tile, cx, cy);
+    }
+
+    private void drawRoadDetails(GraphicsContext gc, Tile tile, double cx, double cy) {
+        if (tile.getType() != TileType.ROAD && tile.getType() != TileType.CITY_ROAD) return;
+        
+        Position p = tile.getPosition();
+        boolean isVertical = false;
+        boolean isHorizontal = false;
+        boolean isCrossroad = false;
+
+        if (currentGame != null) {
+            if (tile.getType() == TileType.CITY_ROAD) {
+                // Determine orientation from the city directly
+                for (model.MapEntity entity : currentGame.getAllEntities()) {
+                    if (entity instanceof model.City city) {
+                        if (city.isCrossroad(p)) { isCrossroad = true; break; }
+                        if (city.isVerticalRoad(p)) { isVertical = true; break; }
+                        if (city.isHorizontalRoad(p)) { isHorizontal = true; break; }
+                    }
+                }
+            } else if (tile.getType() == TileType.ROAD) {
+                model.Road road = currentGame.getRoadAt(p);
+                if (road != null) {
+                    if (road.getType() == model.Road.RoadType.VERTICAL) isVertical = true;
+                    else isHorizontal = true;
+                }
+            }
+        }
+
+        gc.setStroke(Color.WHITE);
+        gc.setLineWidth(2.0);
+        gc.setLineDashes(10.0, 6.0);
+
+        if (isVertical || isCrossroad) {
+            gc.strokeLine(cx + TILE_W / 4.0, cy + TILE_H / 4.0,
+                          cx - TILE_W / 4.0, cy + 3 * TILE_H / 4.0);
+        }
+
+        if (isHorizontal || isCrossroad) {
+            gc.strokeLine(cx - TILE_W / 4.0, cy + TILE_H / 4.0,
+                          cx + TILE_W / 4.0, cy + 3 * TILE_H / 4.0);
+        }
+
+        gc.setLineDashes((double[]) null);
     }
 
     private Color groundColor(TileType type) {

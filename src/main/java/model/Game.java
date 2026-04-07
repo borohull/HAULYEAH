@@ -4,9 +4,6 @@ import model.enums.TileType;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Collections;
-import model.MapEntity;
-
 
 public class Game {
     private final int width;
