@@ -1,0 +1,145 @@
+package controller;
+
+import model.Game;
+
+/**
+ * SimulationController
+ *
+ * Manages the simulation lifecycle:
+ *   - Play / Pause
+ *   - Speed control (1×, 2×, 4×)
+ *   - Saving the current game to a slot
+ *
+ * In a future issue this controller will drive a JavaFX AnimationTimer
+ * that calls SimulationEngine.tick(state, dt) on every frame.
+ *
+ * It fires an onStateChanged callback after each action so the HUD
+ * (speed indicator, pause icon) can refresh without the controller
+ * touching JavaFX directly.
+ */
+public class SimulationController {
+
+    /** Matches the TimeSpeed enum in the UML (currently stored in GameSpeed). */
+    public enum Speed {
+        PAUSED(0, "⏸"),
+        X1(1,    "▶  1×"),
+        X2(2,    "▶▶ 2×"),
+        X4(4,    "▶▶▶ 4×");
+
+        public final int multiplier;
+        public final String label;
+
+        Speed(int multiplier, String label) {
+            this.multiplier = multiplier;
+            this.label = label;
+        }
+
+        /** Cycles: PAUSED → X1 → X2 → X4 → PAUSED */
+        public Speed next() {
+            return switch (this) {
+                case PAUSED -> X1;
+                case X1     -> X2;
+                case X2     -> X4;
+                case X4     -> PAUSED;
+            };
+        }
+    }
+
+    private final Game game;
+    private Speed      speed   = Speed.PAUSED;
+    private boolean    running = false;
+
+    // Registered by the View (HudPanel) to refresh speed/pause display
+    private Runnable onStateChanged;
+
+    public SimulationController(Game game) {
+        this.game = game;
+    }
+
+    public void setOnStateChanged(Runnable callback) {
+        this.onStateChanged = callback;
+    }
+
+    // -----------------------------------------------------------------------
+    // Simulation control
+    // -----------------------------------------------------------------------
+
+    /**
+     * Starts (or resumes) the simulation.
+     * If currently paused, switches to 1× speed.
+     */
+    public void play() {
+        if (speed == Speed.PAUSED) {
+            speed = Speed.X1;
+        }
+        running = true;
+        System.out.println("[SimulationController] play() — " + speed.label);
+        // TODO: start AnimationTimer -> SimulationEngine.tick()
+        notifyView();
+    }
+
+    /**
+     * Pauses the simulation.
+     */
+    public void pause() {
+        running = false;
+        speed   = Speed.PAUSED;
+        System.out.println("[SimulationController] pause()");
+        // TODO: stop AnimationTimer
+        notifyView();
+    }
+
+    /**
+     * Cycles through PAUSED → 1× → 2× → 4× → PAUSED.
+     * Convenient for a single speed-toggle button.
+     */
+    public void cycleSpeed() {
+        speed   = speed.next();
+        running = speed != Speed.PAUSED;
+        System.out.println("[SimulationController] speed -> " + speed.label);
+        notifyView();
+    }
+
+    /**
+     * Sets a specific speed directly.
+     *
+     * @param newSpeed desired speed (use Speed.PAUSED to pause)
+     */
+    public void setSpeed(Speed newSpeed) {
+        this.speed   = newSpeed;
+        this.running = newSpeed != Speed.PAUSED;
+        System.out.println("[SimulationController] setSpeed -> " + newSpeed.label);
+        notifyView();
+    }
+
+    // -----------------------------------------------------------------------
+    // Save
+    // -----------------------------------------------------------------------
+
+    /**
+     * Saves the game to the given slot.
+     *
+     * @param slot save-slot index (0-based)
+     */
+    public void saveGame(int slot) {
+        // TODO: delegate to SaveManager.save(game, slot)
+        System.out.println("[SimulationController] saveGame(slot=" + slot + ")");
+    }
+
+    // -----------------------------------------------------------------------
+    // Getters for the HUD
+    // -----------------------------------------------------------------------
+
+    public boolean isRunning() { return running; }
+    public Speed   getSpeed()  { return speed; }
+
+    // -----------------------------------------------------------------------
+    // Internal
+    // -----------------------------------------------------------------------
+
+    private void notifyView() {
+        if (onStateChanged != null) {
+            onStateChanged.run();
+        }
+    }
+}
