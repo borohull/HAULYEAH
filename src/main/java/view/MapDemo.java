@@ -475,7 +475,7 @@ public class MapDemo extends Application {
                 e -> mapPanel.drawGame(game));
         bottomToolbar.getRemoveButton().addEventHandler(javafx.event.ActionEvent.ACTION,
                 e -> mapPanel.drawGame(game));
-        bottomToolbar.getSaveButton().setOnAction(e -> saveGame(game));
+        bottomToolbar.getSaveButton().setOnAction(e -> new model.service.SaveManager().save(game, 0));
 
         //Mouse handlers for road/stop placement and removal
         final int[] roadIdCounter = { 0 };
@@ -552,59 +552,6 @@ public class MapDemo extends Application {
         stage.setTitle("Haul Yea!");
         stage.setScene(scene);
         stage.show();
-    }
-
-    private void saveGame(Game game) {
-        StringBuilder content = new StringBuilder();
-        content.append("# Haul Yea Save\n");
-        content.append("savedAt=")
-                .append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
-                .append('\n');
-        content.append("worldName=").append(game.getWorldName()).append('\n');
-        content.append("width=").append(game.getWidth()).append('\n');
-        content.append("height=").append(game.getHeight()).append('\n');
-        content.append("roads=").append(game.getRoads().size()).append('\n');
-
-        content.append("[roadList]\n");
-        for (Road road : game.getRoads()) {
-            content.append(road.getId()).append(',')
-                    .append(road.getPosition().getX()).append(',')
-                    .append(road.getPosition().getY()).append(',')
-                    .append(road.getType())
-                    .append('\n');
-        }
-
-        content.append("stops=").append(game.getStops().size()).append('\n');
-        content.append("[stopList]\n");
-        for (Stop stop : game.getStops()) {
-            content.append(stop.getId()).append(',')
-                    .append(stop.getPosition().getX()).append(',')
-                    .append(stop.getPosition().getY()).append(',')
-                    .append(stop.getName())
-                    .append('\n');
-        }
-
-        content.append("[tileTypes]\n");
-        for (int y = 0; y < game.getHeight(); y++) {
-            for (int x = 0; x < game.getWidth(); x++) {
-                Tile tile = game.getTile(x, y);
-                TileType type = tile == null ? TileType.EMPTY : tile.getType();
-                content.append(type.name());
-                if (x < game.getWidth() - 1) {
-                    content.append(',');
-                }
-            }
-            content.append('\n');
-        }
-
-        try {
-            Files.createDirectories(SAVE_DIR);
-            Files.writeString(SAVE_FILE, content);
-            System.out.println("Game saved: " + SAVE_FILE);
-        } catch (IOException ex) {
-            System.err.println("Failed to save game: " + ex.getMessage());
-            ex.printStackTrace();
-        }
     }
 
 

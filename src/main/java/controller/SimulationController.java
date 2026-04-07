@@ -122,8 +122,7 @@ public class SimulationController {
      * @param slot save-slot index (0-based)
      */
     public void saveGame(int slot) {
-        // TODO: delegate to SaveManager.save(game, slot)
-        System.out.println("[SimulationController] saveGame(slot=" + slot + ")");
+        new model.service.SaveManager().save(game, slot);
     }
 
     // -----------------------------------------------------------------------
