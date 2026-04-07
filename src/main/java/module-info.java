@@ -5,5 +5,6 @@ module haulyea {
 
     opens model;
     opens view;
+    opens view.panel;
     opens controller;
 }

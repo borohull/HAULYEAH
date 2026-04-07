@@ -9,6 +9,9 @@ import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import model.Game;
 import model.Position;
+import view.panel.BuildToolbar;
+import view.panel.HudPanel;
+import view.panel.MapPanel;
 
 /**
  * GameWindow — builds and shows the in-game scene.
@@ -30,9 +33,9 @@ public class GameWindow {
     private final GameController       gameController;
     private final SimulationController simController;
 
-    private MapPanel     mapPanel;
-    private TopHud       topHud;
-    private BottomToolbar bottomToolbar;
+    private MapPanel      mapPanel;
+    private HudPanel      topHud;
+    private BuildToolbar  bottomToolbar;
 
     public GameWindow(Stage stage,
                       GameController gameController,
@@ -76,8 +79,8 @@ public class GameWindow {
         });
 
         // ── HUD components ───────────────────────────────────────────────────
-        topHud       = new TopHud(game.getWorldName());
-        bottomToolbar = new BottomToolbar();
+        topHud       = new HudPanel(game.getWorldName());
+        bottomToolbar = new BuildToolbar();
 
         // ── Wire toolbar → GameController / SimulationController ─────────────
         wireToolbar(game);
