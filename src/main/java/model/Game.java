@@ -4,6 +4,8 @@ import model.enums.TileType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collections;
+import model.MapEntity;
 
 
 public class Game {
@@ -167,5 +169,15 @@ public class Game {
             }
         }
         return result;
+    }
+
+    public List<MapEntity> getAllEntities() {
+        List<MapEntity> entities = new ArrayList<>();
+        entities.addAll(cities);
+        entities.addAll(facilities);
+        entities.addAll(forests);
+        entities.addAll(waterBodies);
+        entities.addAll(bridges);
+        return entities;
     }
 }

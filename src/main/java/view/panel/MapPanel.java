@@ -6,16 +6,15 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 import model.Bridge;
-import model.City;
-import model.Facility;
-import model.Forest;
+import model.MapEntity;
 import model.Game;
+import model.City;
 import model.Position;
 import model.Stop;
 import model.Tile;
 import model.enums.TileType;
 import model.Road;
-import model.WaterBody;
+import model.Road;
 import javafx.scene.image.Image;
 
 
@@ -156,25 +155,9 @@ public class MapPanel extends Canvas {
         gc.setFont(Font.font("Monospace", 11));
         gc.setTextAlign(TextAlignment.CENTER);
 
-        for (City city : game.getCities()) {
-            Position c = city.getCenter();
-            drawLabel(gc, c.getX(), c.getY(), city.getName(), originX, originY);
-        }
-        for (Facility fac : game.getFacilities()) {
-            Position c = fac.getCenter();
-            drawLabel(gc, c.getX(), c.getY(), fac.getName(), originX, originY);
-        }
-        for (WaterBody water : game.getWaterBodies()) {
-            Position c = water.getCenter();
-            drawLabel(gc, c.getX(), c.getY(), water.getName(), originX, originY);
-        }
-        for (Forest forest : game.getForests()) {
-            Position c = forest.getCenter();
-            drawLabel(gc, c.getX(), c.getY(), forest.getName(), originX, originY);
-        }
-        for (Bridge bridge : game.getBridges()) {
-            Position c = bridge.getCenter();
-            drawLabel(gc, c.getX(), c.getY(), bridge.getName(), originX, originY);
+        for (MapEntity entity : game.getAllEntities()) {
+            Position c = entity.getCenter();
+            drawLabel(gc, c.getX(), c.getY(), entity.getName(), originX, originY);
         }
         for (Stop stop : game.getStops()) {
             Position c = stop.getPosition();
