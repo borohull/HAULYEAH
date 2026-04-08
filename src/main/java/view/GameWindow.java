@@ -1,0 +1,190 @@
+package view;
+
+import controller.GameController;
+import controller.SimulationController;
+import javafx.scene.Group;
+import javafx.scene.Scene;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.BorderPane;
+import javafx.stage.Stage;
+import model.Game;
+import model.Position;
+import model.enums.TileType;
+import view.panel.BuildToolbar;
+import view.panel.HudPanel;
+import view.panel.MapPanel;
+import model.service.ConstructionService;
+
+/**
+ * GameWindow — builds and shows the in-game scene.
+ *
+ * Responsibilities (View only):
+ *   - Assemble the BorderPane: MapPanel (center), TopHud (top), BottomToolbar (bottom)
+ *   - Set up zoom on the ScrollPane
+ *   - Register map hover/click handlers that call GameController
+ *   - Register toolbar button handlers that call GameController / SimulationController
+ *
+ * Must NOT contain any game logic — all decisions go through the controllers.
+ */
+public class GameWindow {
+
+    private static final double MIN_ZOOM = 0.3;
+    private static final double MAX_ZOOM = 3.0;
+
+    private final Stage                stage;
+    private final GameController       gameController;
+    private final SimulationController simController;
+
+    private MapPanel      mapPanel;
+    private HudPanel      topHud;
+    private BuildToolbar  bottomToolbar;
+
+    public GameWindow(Stage stage,
+                      GameController gameController,
+                      SimulationController simController) {
+        this.stage          = stage;
+        this.gameController = gameController;
+        this.simController  = simController;
+    }
+
+    /**
+     * Builds the game scene and shows it on the stage.
+     */
+    public void show() {
+        Game game = gameController.getState().getMap();
+
+        // ── Map ──────────────────────────────────────────────────────────────
+        mapPanel = new MapPanel();
+        mapPanel.drawGame(game);
+
+        Group mapGroup = new Group(mapPanel);
+        ScrollPane scroll = new ScrollPane(mapGroup);
+        scroll.setPannable(true);
+        scroll.setStyle("-fx-background: #87CEEB; -fx-background-color: #87CEEB;");
+
+        // Centre the scroll after layout
+        javafx.application.Platform.runLater(() -> {
+            scroll.setHvalue(0.5);
+            scroll.setVvalue(0.5);
+        });
+
+        // Ctrl+scroll to zoom
+        scroll.addEventFilter(javafx.scene.input.ScrollEvent.SCROLL, e -> {
+            if (e.isControlDown()) {
+                e.consume();
+                double factor   = e.getDeltaY() > 0 ? 1.1 : 1 / 1.1;
+                double newScale = mapPanel.getScaleX() * factor;
+                newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newScale));
+                mapPanel.setScaleX(newScale);
+                mapPanel.setScaleY(newScale);
+            }
+        });
+
+        // ── HUD components ───────────────────────────────────────────────────
+        topHud       = new HudPanel(game.getWorldName());
+        bottomToolbar = new BuildToolbar();
+
+        // ── Wire toolbar → GameController / SimulationController ─────────────
+        wireToolbar(game);
+
+        // ── Wire map mouse events → GameController ───────────────────────────
+        wireMapEvents(game);
+
+        // Tell GameController to call mapPanel.drawGame() on any state change
+        gameController.setOnStateChanged(() -> mapPanel.drawGame(game));
+
+        // ── Assemble layout ──────────────────────────────────────────────────
+        BorderPane root = new BorderPane();
+        root.setTop(topHud);
+        root.setCenter(scroll);
+        root.setBottom(bottomToolbar);
+
+        stage.setTitle("Haul Yea!");
+        stage.setScene(new Scene(root, 900, 650));
+        stage.show();
+    }
+
+    // ── Toolbar wiring ───────────────────────────────────────────────────────
+
+    private void wireToolbar(Game game) {
+        bottomToolbar.getSelectButton().setOnAction(e -> {
+            gameController.setBuildMode(GameController.BuildMode.SELECT);
+            mapPanel.drawGame(game);
+        });
+
+        bottomToolbar.getBuildButton().addEventHandler(javafx.event.ActionEvent.ACTION,
+                e -> mapPanel.drawGame(game));
+
+        bottomToolbar.getRemoveButton().setOnAction(e -> {
+            gameController.setBuildMode(GameController.BuildMode.DEMOLISH);
+            mapPanel.drawGame(game);
+        });
+
+        bottomToolbar.getSaveButton().setOnAction(e -> simController.saveGame(0));
+
+        // Garage / Finance — stubs for future issues
+        bottomToolbar.getGarageButton().setOnAction(e ->
+                System.out.println("[GameWindow] Garage button — not yet implemented"));
+        bottomToolbar.getFinanceButton().setOnAction(e ->
+                gameController.onOpenFinanceDetails());
+    }
+
+    // ── Map mouse wiring ─────────────────────────────────────────────────────
+
+    private void wireMapEvents(Game game) {
+        // Hover overlay
+        mapPanel.setOnMouseMoved(e -> {
+            int[] tile = mapPanel.screenToTile(e.getX(), e.getY());
+            int tx = tile[0], ty = tile[1];
+
+            if (!bottomToolbar.isRemoveSelected()
+                    && !bottomToolbar.isStopSelected()
+                    && bottomToolbar.getSelectedRoadType() == null) return;
+
+            mapPanel.drawGame(game);
+            if (game.inBounds(tx, ty)) {
+                boolean valid;
+                if (bottomToolbar.isRemoveSelected()) {
+                    Position p = new Position(tx, ty);
+                    valid = game.getRoadAt(p) != null || game.getStopAt(p) != null;
+                } else if (bottomToolbar.isStopSelected()) {
+                    valid = game.getTile(tx, ty).getType() == TileType.EMPTY
+                            && new ConstructionService().isAdjacentToRoadCityOrFacility(game, new Position(tx, ty));
+                } else {
+                    TileType t = game.getTile(tx, ty).getType();
+                    valid = t == TileType.EMPTY || t == TileType.FOREST;
+                }
+                mapPanel.drawHoverOverlay(tx, ty, valid);
+            }
+        });
+
+        // Click — delegate everything to GameController
+        mapPanel.setOnMouseClicked(e -> {
+            int[] tile = mapPanel.screenToTile(e.getX(), e.getY());
+            int tx = tile[0], ty = tile[1];
+            if (!game.inBounds(tx, ty)) return;
+
+            Position p = new Position(tx, ty);
+
+            if (bottomToolbar.isRemoveSelected()) {
+                gameController.setBuildMode(GameController.BuildMode.DEMOLISH);
+                gameController.onTileClicked(p);
+                return;
+            }
+            if (bottomToolbar.isStopSelected()) {
+                gameController.setBuildMode(GameController.BuildMode.STOP);
+                gameController.onTileClicked(p);
+                return;
+            }
+            if (bottomToolbar.getSelectedRoadType() == null) return;
+
+            // Road type from toolbar → set mode then click
+            if (bottomToolbar.getSelectedRoadType() == model.Road.RoadType.HORIZONTAL) {
+                gameController.setBuildMode(GameController.BuildMode.ROAD_HORIZONTAL);
+            } else {
+                gameController.setBuildMode(GameController.BuildMode.ROAD_VERTICAL);
+            }
+            gameController.onTileClicked(p);
+        });
+    }
+}

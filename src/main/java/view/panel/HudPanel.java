@@ -1,4 +1,4 @@
-package view;
+package view.panel;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -8,18 +8,24 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 
-public class TopHud extends HBox {
+/**
+ * HudPanel — the top status bar shown during gameplay.
+ *
+ * Displays: pause button, speed label, money, world name.
+ * Renamed from TopHud → HudPanel to match the UML diagram.
+ */
+public class HudPanel extends HBox {
 
     private final Button btnPause;
     private final Label  lblSpeed;
     private final Label  lblMoney;
     private final Label  lblWorldName;
 
-    public TopHud() {
+    public HudPanel() {
         this("Unnamed World");
     }
 
-    public TopHud(String worldName) {
+    public HudPanel(String worldName) {
         super(10);
 
         btnPause = new Button("\u23f8");
@@ -50,6 +56,8 @@ public class TopHud extends HBox {
         setStyle("-fx-background-color:#d8d8d8;");
     }
 
+    // ── Public API ────────────────────────────────────────────────────────────
+
     public void setWorldName(String worldName) {
         String displayName = (worldName == null || worldName.trim().isEmpty())
                 ? "Unnamed World"
@@ -57,8 +65,18 @@ public class TopHud extends HBox {
         lblWorldName.setText("World: " + displayName);
     }
 
-    public Button getPauseButton() { return btnPause; }
-    public Label  getSpeedLabel()  { return lblSpeed; }
-    public Label  getMoneyLabel()  { return lblMoney; }
-    public Label  getWorldNameLabel() { return lblWorldName; }
+    /** Update money display. Called by SimulationController callback. */
+    public void updateMoney(int capital) {
+        lblMoney.setText("$" + capital);
+    }
+
+    /** Update speed label. Called by SimulationController callback. */
+    public void updateSpeed(String speedLabel) {
+        lblSpeed.setText(speedLabel);
+    }
+
+    public Button getPauseButton()      { return btnPause; }
+    public Label  getSpeedLabel()       { return lblSpeed; }
+    public Label  getMoneyLabel()       { return lblMoney; }
+    public Label  getWorldNameLabel()   { return lblWorldName; }
 }
