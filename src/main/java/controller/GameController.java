@@ -3,11 +3,15 @@ package controller;
 import model.GameState;
 import model.Position;
 import model.Road;
+import model.Route;
 import model.Stop;
+import model.Vehicle;
 import model.enums.VehicleType;
-
-import java.util.List;
 import model.service.ConstructionService;
+import model.service.VehicleService;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * GameController
@@ -28,8 +32,7 @@ public class GameController {
      */
     public enum BuildMode {
         SELECT,
-        ROAD_HORIZONTAL,
-        ROAD_VERTICAL,
+        ROAD,
         STOP,
         BRIDGE,
         DEMOLISH
@@ -38,15 +41,16 @@ public class GameController {
     private final GameState state;
     private BuildMode  buildMode = BuildMode.SELECT;
 
-    // Shared service for handling validation and modifications
     private final ConstructionService constructionService = new ConstructionService();
+    private       VehicleService      vehicleService      = new VehicleService();
+    private int routeCounter = 0;
 
-    // Registered by the View so the controller can request a redraw
     private Runnable onStateChanged;
 
     public GameController(GameState state) {
         this.state = state;
     }
+
 
     /**
      * The View registers this callback so the controller can trigger a redraw
@@ -68,12 +72,11 @@ public class GameController {
      */
     public void onTileClicked(Position p) {
         switch (buildMode) {
-            case ROAD_HORIZONTAL -> onBuildRoad(p, Road.RoadType.HORIZONTAL);
-            case ROAD_VERTICAL   -> onBuildRoad(p, Road.RoadType.VERTICAL);
-            case STOP            -> onBuildStop(p);
-            case DEMOLISH        -> onDemolish(p);
-            case SELECT          -> onSelect(p);
-            default              -> { /* bridge — handled separately */ }
+            case ROAD     -> onBuildRoad(p);
+            case STOP     -> onBuildStop(p);
+            case DEMOLISH -> onDemolish(p);
+            case SELECT   -> onSelect(p);
+            default       -> { /* bridge — handled separately */ }
         }
     }
 
@@ -99,10 +102,9 @@ public class GameController {
     // Construction actions  (will delegate to ConstructionService in Issue 6)
     // -----------------------------------------------------------------------
 
-    /** Places a road of the given type at position p. */
-    public void onBuildRoad(Position p, Road.RoadType type) {
-        if (constructionService.buildRoad(state.getMap(), p, type)) {
-            // Deduct money here eventually: state.getPlayer().getLedger().spend(100...)
+    /** Places a road at position p. */
+    public void onBuildRoad(Position p) {
+        if (constructionService.buildRoad(state.getMap(), p, Road.RoadType.HORIZONTAL)) {
             System.out.println("[GameController] Road placed at " + p);
             notifyView();
         }
@@ -136,24 +138,46 @@ public class GameController {
     // Route / Vehicle stubs  (will be filled in later issues)
     // -----------------------------------------------------------------------
 
-    public void onCreateRoute(List<Stop> stops) {
-        // TODO: delegate to RouteService
-        System.out.println("[GameController] onCreateRoute() — not yet implemented");
+    public Route onCreateRoute(List<Stop> stops) {
+        if (stops == null || stops.size() < 2) {
+            System.out.println("[GameController] Route needs at least 2 stops");
+            return null;
+        }
+        String id   = "route-" + (++routeCounter);
+        String name = "Route " + routeCounter;
+        Route route = new Route(id, name, new ArrayList<>(stops));
+        state.getMap().addRoute(route);
+        System.out.println("[GameController] Created " + name);
+        notifyView();
+        return route;
     }
 
-    public void onModifyRoute(model.Route route, List<Stop> newOrder) {
-        // TODO: delegate to RouteService
+    public void onModifyRoute(Route route, List<Stop> newOrder) {
         System.out.println("[GameController] onModifyRoute() — not yet implemented");
     }
 
     public void onBuyVehicle(VehicleType type) {
-        // TODO: delegate to VehicleService
-        System.out.println("[GameController] onBuyVehicle(" + type + ") — not yet implemented");
+        List<Stop> stops = state.getMap().getStops();
+        if (stops.isEmpty()) return;
+        Vehicle v = vehicleService.spawnVehicle(state.getMap(), type, stops.get(0));
+        List<Route> routes = state.getMap().getRoutes();
+        if (!routes.isEmpty()) vehicleService.assignRoute(state.getMap(), v, routes.get(0));
+        notifyView();
     }
 
-    public void onAssignVehicle(model.Vehicle vehicle, model.Route route) {
-        // TODO: delegate to VehicleService
-        System.out.println("[GameController] onAssignVehicle() — not yet implemented");
+    /** Spawns a vehicle and assigns it to the given route. Used by GaragePanel. */
+    public Vehicle spawnAndAssign(VehicleType type, Route route) {
+        List<Stop> stops = state.getMap().getStops();
+        if (stops.isEmpty()) return null;
+        Vehicle v = vehicleService.spawnVehicle(state.getMap(), type, stops.get(0));
+        vehicleService.assignRoute(state.getMap(), v, route);
+        notifyView();
+        return v;
+    }
+
+    public void onAssignVehicle(Vehicle vehicle, Route route) {
+        vehicleService.assignRoute(state.getMap(), vehicle, route);
+        notifyView();
     }
 
     // -----------------------------------------------------------------------

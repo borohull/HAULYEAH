@@ -40,9 +40,10 @@ public class BuildToolbar extends VBox {
         "-fx-background-radius:5; -fx-cursor:hand;";
 
     // ── State ─────────────────────────────────────────────────────────────────
-    private Road.RoadType selectedRoadType;
-    private boolean       stopSelected;
-    private boolean       removeSelected;
+    private boolean roadSelected;
+    private boolean stopSelected;
+    private boolean removeSelected;
+    private boolean routeSelected;
 
     // ── Main toolbar buttons ──────────────────────────────────────────────────
     private final Button btnSelect;
@@ -54,10 +55,10 @@ public class BuildToolbar extends VBox {
     private final Button btnMenu;
 
     // ── Build submenu buttons ─────────────────────────────────────────────────
-    private final Button btnHRoad;
-    private final Button btnVRoad;
+    private final Button btnRoad;
     private final Button btnStop;
-    private final HBox   roadSubmenu;
+    private final Button btnRoute;
+    private final HBox   buildSubmenu;
 
     public BuildToolbar() {
         super();
@@ -83,62 +84,61 @@ public class BuildToolbar extends VBox {
         toolbar.setAlignment(Pos.CENTER_LEFT);
         toolbar.setStyle("-fx-background-color:#2b2b2b;");
 
-        // Build submenu (Roads + Stops)
-        btnHRoad = new Button("Horizontal");
-        btnVRoad = new Button("Vertical");
+        // Build submenu (Road + Stop + Route)
+        btnRoad  = new Button("Road");
         btnStop  = new Button("Stop");
-        btnHRoad.setStyle(SUB_BTN_NORMAL);
-        btnVRoad.setStyle(SUB_BTN_NORMAL);
+        btnRoute = new Button("+ Route");
+        btnRoad.setStyle(SUB_BTN_NORMAL);
         btnStop.setStyle(SUB_BTN_NORMAL);
+        btnRoute.setStyle(SUB_BTN_NORMAL);
 
-        btnHRoad.setOnAction(e -> {
-            selectedRoadType = Road.RoadType.HORIZONTAL;
-            stopSelected = false;
+        btnRoad.setOnAction(e -> {
+            roadSelected   = true;
+            stopSelected   = false;
+            routeSelected  = false;
             removeSelected = false;
-            btnHRoad.setStyle(SUB_BTN_ACTIVE);
-            btnVRoad.setStyle(SUB_BTN_NORMAL);
+            btnRoad.setStyle(SUB_BTN_ACTIVE);
             btnStop.setStyle(SUB_BTN_NORMAL);
-            btnRemove.setStyle(BTN_NORMAL);
-        });
-        btnVRoad.setOnAction(e -> {
-            selectedRoadType = Road.RoadType.VERTICAL;
-            stopSelected = false;
-            removeSelected = false;
-            btnVRoad.setStyle(SUB_BTN_ACTIVE);
-            btnHRoad.setStyle(SUB_BTN_NORMAL);
-            btnStop.setStyle(SUB_BTN_NORMAL);
+            btnRoute.setStyle(SUB_BTN_NORMAL);
             btnRemove.setStyle(BTN_NORMAL);
         });
         btnStop.setOnAction(e -> {
-            stopSelected = true;
-            selectedRoadType = null;
+            stopSelected   = true;
+            roadSelected   = false;
+            routeSelected  = false;
             removeSelected = false;
             btnStop.setStyle(SUB_BTN_ACTIVE);
-            btnHRoad.setStyle(SUB_BTN_NORMAL);
-            btnVRoad.setStyle(SUB_BTN_NORMAL);
+            btnRoad.setStyle(SUB_BTN_NORMAL);
+            btnRoute.setStyle(SUB_BTN_NORMAL);
+            btnRemove.setStyle(BTN_NORMAL);
+        });
+        btnRoute.setOnAction(e -> {
+            routeSelected  = true;
+            roadSelected   = false;
+            stopSelected   = false;
+            removeSelected = false;
+            btnRoute.setStyle(SUB_BTN_ACTIVE);
+            btnRoad.setStyle(SUB_BTN_NORMAL);
+            btnStop.setStyle(SUB_BTN_NORMAL);
             btnRemove.setStyle(BTN_NORMAL);
         });
 
-        Label lblRoads = new Label("Roads:");
-        lblRoads.setStyle("-fx-text-fill:#cccccc; -fx-font-size:13px; -fx-padding:0 8 0 0;");
-        Label lblSep = new Label("|");
-        lblSep.setStyle("-fx-text-fill:#666666; -fx-font-size:14px; -fx-padding:0 4;");
-        Label lblStops = new Label("Stops:");
-        lblStops.setStyle("-fx-text-fill:#cccccc; -fx-font-size:13px; -fx-padding:0 8 0 0;");
+        Label lblBuild = new Label("Build:");
+        lblBuild.setStyle("-fx-text-fill:#cccccc; -fx-font-size:13px; -fx-padding:0 8 0 0;");
 
-        roadSubmenu = new HBox(10, lblRoads, btnHRoad, btnVRoad, lblSep, lblStops, btnStop);
-        roadSubmenu.setPadding(new Insets(8, 12, 8, 12));
-        roadSubmenu.setAlignment(Pos.CENTER_LEFT);
-        roadSubmenu.setStyle("-fx-background-color:#3a3a3a;");
-        roadSubmenu.setVisible(false);
-        roadSubmenu.setManaged(false);
+        buildSubmenu = new HBox(10, lblBuild, btnRoad, btnStop, btnRoute);
+        buildSubmenu.setPadding(new Insets(8, 12, 8, 12));
+        buildSubmenu.setAlignment(Pos.CENTER_LEFT);
+        buildSubmenu.setStyle("-fx-background-color:#3a3a3a;");
+        buildSubmenu.setVisible(false);
+        buildSubmenu.setManaged(false);
 
         // Toggle logic
         btnBuild.setOnAction(e -> {
-            boolean show = !roadSubmenu.isVisible();
+            boolean show = !buildSubmenu.isVisible();
             removeSelected = false;
-            roadSubmenu.setVisible(show);
-            roadSubmenu.setManaged(show);
+            buildSubmenu.setVisible(show);
+            buildSubmenu.setManaged(show);
             btnBuild.setStyle(show ? BTN_HIGHLIGHT : BTN_NORMAL);
             btnRemove.setStyle(BTN_NORMAL);
             if (!show) clearSelection();
@@ -146,41 +146,44 @@ public class BuildToolbar extends VBox {
 
         btnRemove.setOnAction(e -> {
             removeSelected = true;
-            selectedRoadType = null;
-            stopSelected = false;
-            roadSubmenu.setVisible(false);
-            roadSubmenu.setManaged(false);
+            roadSelected   = false;
+            stopSelected   = false;
+            routeSelected  = false;
+            buildSubmenu.setVisible(false);
+            buildSubmenu.setManaged(false);
             btnBuild.setStyle(BTN_NORMAL);
             btnRemove.setStyle(BTN_HIGHLIGHT);
-            btnHRoad.setStyle(SUB_BTN_NORMAL);
-            btnVRoad.setStyle(SUB_BTN_NORMAL);
+            btnRoad.setStyle(SUB_BTN_NORMAL);
             btnStop.setStyle(SUB_BTN_NORMAL);
+            btnRoute.setStyle(SUB_BTN_NORMAL);
         });
 
         btnSelect.setOnAction(e -> {
-            roadSubmenu.setVisible(false);
-            roadSubmenu.setManaged(false);
+            buildSubmenu.setVisible(false);
+            buildSubmenu.setManaged(false);
             btnBuild.setStyle(BTN_NORMAL);
             clearSelection();
         });
 
         // Submenu on top, toolbar on bottom
-        getChildren().addAll(roadSubmenu, toolbar);
+        getChildren().addAll(buildSubmenu, toolbar);
     }
 
     // ── State getters ─────────────────────────────────────────────────────────
 
-    public Road.RoadType getSelectedRoadType() { return selectedRoadType; }
-    public boolean isStopSelected()            { return stopSelected; }
-    public boolean isRemoveSelected()          { return removeSelected; }
+    public boolean isRoadSelected()    { return roadSelected; }
+    public boolean isStopSelected()    { return stopSelected; }
+    public boolean isRemoveSelected()  { return removeSelected; }
+    public boolean isRouteSelected()   { return routeSelected; }
 
     public void clearSelection() {
-        selectedRoadType = null;
-        stopSelected = false;
+        roadSelected   = false;
+        stopSelected   = false;
         removeSelected = false;
-        btnHRoad.setStyle(SUB_BTN_NORMAL);
-        btnVRoad.setStyle(SUB_BTN_NORMAL);
+        routeSelected  = false;
+        btnRoad.setStyle(SUB_BTN_NORMAL);
         btnStop.setStyle(SUB_BTN_NORMAL);
+        btnRoute.setStyle(SUB_BTN_NORMAL);
         btnRemove.setStyle(BTN_NORMAL);
     }
 
@@ -193,6 +196,13 @@ public class BuildToolbar extends VBox {
     public Button getFinanceButton() { return btnFinance; }
     public Button getSaveButton()    { return btnSave; }
     public Button getMenuButton()    { return btnMenu; }
+
+    // kept for backwards compat — always returns true when road is selected
+    /** @deprecated use {@link #isRoadSelected()} */
+    @Deprecated
+    public Road.RoadType getSelectedRoadType() {
+        return roadSelected ? Road.RoadType.HORIZONTAL : null;
+    }
 
     // ── Helper ────────────────────────────────────────────────────────────────
 
