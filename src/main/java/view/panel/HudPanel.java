@@ -11,49 +11,154 @@ import javafx.scene.layout.Region;
 /**
  * HudPanel — the top status bar shown during gameplay.
  *
- * Displays: pause button, speed label, money, world name.
- * Renamed from TopHud → HudPanel to match the UML diagram.
+ * Displays:
+ *   - Pause / Continue button
+ *   - Speed controls (1x, 2x, 4x)
+ *   - Money
+ *   - World name
  */
 public class HudPanel extends HBox {
 
+    private static final String PANEL_STYLE =
+            "-fx-background-color: linear-gradient(to right, #99D2FB, #FBD3AC);" +
+                    "-fx-border-color: #d0d0d0;" +
+                    "-fx-border-width: 0 0 1 0;";
+
+    private static final String ROUND_BUTTON_STYLE =
+            "-fx-background-color: #AA333C;" +
+                    "-fx-text-fill: white;" +
+                    "-fx-background-radius: 14;" +
+                    "-fx-font-size: 12px;" +
+                    "-fx-font-weight: bold;" +
+                    "-fx-padding: 5 10;" +
+                    "-fx-cursor: hand;";
+
+    private static final String SPEED_BUTTON_STYLE =
+            "-fx-background-color: #9AAB64;" +
+                    "-fx-text-fill: white;" +
+                    "-fx-background-radius: 6;" +
+                    "-fx-font-size: 11px;" +
+                    "-fx-padding: 4 10;";
+
+    private static final String SPEED_BUTTON_ACTIVE_STYLE =
+            "-fx-background-color: #3C5227;" +
+                    "-fx-text-fill: white;" +
+                    "-fx-background-radius: 6;" +
+                    "-fx-font-size: 11px;" +
+                    "-fx-padding: 4 10;";
+
+    private static final String INFO_BOX_STYLE =
+            "-fx-background-color: rgba(255,255,255,0.7);" +
+                    "-fx-background-radius: 12;" +
+                    "-fx-border-color: rgba(0,0,0,0.08);" +
+                    "-fx-border-radius: 12;" +
+                    "-fx-padding: 5 10;";
+
     private final Button btnPause;
-    private final Label  lblSpeed;
-    private final Label  lblMoney;
-    private final Label  lblWorldName;
+    private final Button btnSpeed1x;
+    private final Button btnSpeed2x;
+    private final Button btnSpeed4x;
+
+    private final Label lblMoney;
+    private final Label lblWorldName;
+
+    private boolean paused = false;
 
     public HudPanel() {
         this("Unnamed World");
+        lblMoney.setStyle(
+                "-fx-text-fill: #3C5227;" +
+                        "-fx-font-size: 14px;" +
+                        "-fx-font-weight: bold;"
+        );
+
+        lblWorldName.setStyle(
+                "-fx-text-fill: #3C5227;" +
+                        "-fx-font-size: 13px;" +
+                        "-fx-font-weight: bold;"
+        );
     }
 
     public HudPanel(String worldName) {
-        super(10);
+        super(8);
 
-        btnPause = new Button("\u23f8");
-        btnPause.setStyle(
-            "-fx-background-color:#444444; -fx-text-fill:white; " +
-            "-fx-background-radius:20; -fx-font-size:14px; -fx-padding:4 10;");
+        setAlignment(Pos.CENTER_LEFT);
+        setPadding(new Insets(6, 10, 6, 10));
+        setStyle(PANEL_STYLE);
 
-        lblSpeed = new Label("1x | 2x | 4x");
-        lblSpeed.setStyle(
-            "-fx-text-fill:black; -fx-background-color:white; " +
-            "-fx-border-color:#888888; -fx-border-radius:4; " +
-            "-fx-padding:4 10; -fx-font-size:12px;");
+        // Pause button
+        btnPause = new Button("Pause");
+        btnPause.setStyle(ROUND_BUTTON_STYLE);
+        btnPause.setMinHeight(38);
+        btnPause.setMinWidth(90);
+        btnPause.setPrefWidth(90);
+        btnPause.setMaxWidth(90);
 
-        lblMoney = new Label("amount: 10000$");
-        lblMoney.setStyle("-fx-text-fill:#222222; -fx-font-size:13px; -fx-padding:4 12;");
+        // Speed controls
+        btnSpeed1x = new Button("1x");
+        btnSpeed2x = new Button("2x");
+        btnSpeed4x = new Button("4x");
 
-        lblWorldName = new Label();
-        lblWorldName.setStyle(
-            "-fx-text-fill:#1f1f1f; -fx-font-size:14px; -fx-font-weight:bold; -fx-padding:4 12;");
-        setWorldName(worldName);
+        btnSpeed1x.setStyle(SPEED_BUTTON_ACTIVE_STYLE);
+        btnSpeed2x.setStyle(SPEED_BUTTON_STYLE);
+        btnSpeed4x.setStyle(SPEED_BUTTON_STYLE);
 
+        HBox speedBox = new HBox(8, btnSpeed1x, btnSpeed2x, btnSpeed4x);
+        speedBox.setAlignment(Pos.CENTER_LEFT);
+        speedBox.setStyle(INFO_BOX_STYLE);
+
+        // Money display
+        Label moneyTitle = new Label("Amount");
+        moneyTitle.setStyle(
+                "-fx-text-fill: #666666;" +
+                        "-fx-font-size: 11px;" +
+                        "-fx-font-weight: bold;"
+        );
+
+        lblMoney = new Label("$10,000");
+        lblMoney.setStyle(
+                "-fx-text-fill: #202020;" +
+                        "-fx-font-size: 18px;" +
+                        "-fx-font-weight: bold;"
+        );
+
+        HBox moneyBox = new HBox();
+        moneyBox.setAlignment(Pos.CENTER_LEFT);
+        moneyBox.setSpacing(8);
+        moneyBox.setStyle(INFO_BOX_STYLE);
+        moneyBox.getChildren().addAll(moneyTitle, lblMoney);
+
+        // Spacer
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        getChildren().addAll(btnPause, lblSpeed, lblMoney, spacer, lblWorldName);
-        setPadding(new Insets(6, 12, 6, 12));
-        setAlignment(Pos.CENTER_LEFT);
-        setStyle("-fx-background-color:#d8d8d8;");
+        // World name display
+        Label worldTitle = new Label("World");
+        worldTitle.setStyle(
+                "-fx-text-fill: #666666;" +
+                        "-fx-font-size: 10px;" +
+                        "-fx-font-weight: bold;"
+        );
+
+        lblWorldName = new Label();
+        lblWorldName.setStyle(
+                "-fx-text-fill: #202020;" +
+                        "-fx-font-size: 16px;" +
+                        "-fx-font-weight: bold;"
+        );
+        setWorldName(worldName);
+
+        HBox worldBox = new HBox(8, worldTitle, lblWorldName);
+        worldBox.setAlignment(Pos.CENTER_RIGHT);
+        worldBox.setStyle(INFO_BOX_STYLE);
+
+        getChildren().addAll(
+                btnPause,
+                speedBox,
+                moneyBox,
+                spacer,
+                worldBox
+        );
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -62,21 +167,55 @@ public class HudPanel extends HBox {
         String displayName = (worldName == null || worldName.trim().isEmpty())
                 ? "Unnamed World"
                 : worldName.trim();
-        lblWorldName.setText("World: " + displayName);
+        lblWorldName.setText(displayName);
     }
 
-    /** Update money display. Called by SimulationController callback. */
     public void updateMoney(int capital) {
-        lblMoney.setText("$" + capital);
+        lblMoney.setText(String.format("$%,d", capital));
     }
 
-    /** Update speed label. Called by SimulationController callback. */
-    public void updateSpeed(String speedLabel) {
-        lblSpeed.setText(speedLabel);
+    public void setPaused(boolean paused) {
+        this.paused = paused;
+        btnPause.setText(paused ? "Continue" : "Pause");
     }
 
-    public Button getPauseButton()      { return btnPause; }
-    public Label  getSpeedLabel()       { return lblSpeed; }
-    public Label  getMoneyLabel()       { return lblMoney; }
-    public Label  getWorldNameLabel()   { return lblWorldName; }
+    public boolean isPaused() {
+        return paused;
+    }
+
+    public void setActiveSpeedButton(String speed) {
+        btnSpeed1x.setStyle(SPEED_BUTTON_STYLE);
+        btnSpeed2x.setStyle(SPEED_BUTTON_STYLE);
+        btnSpeed4x.setStyle(SPEED_BUTTON_STYLE);
+
+        switch (speed) {
+            case "2x" -> btnSpeed2x.setStyle(SPEED_BUTTON_ACTIVE_STYLE);
+            case "4x" -> btnSpeed4x.setStyle(SPEED_BUTTON_ACTIVE_STYLE);
+            default -> btnSpeed1x.setStyle(SPEED_BUTTON_ACTIVE_STYLE);
+        }
+    }
+
+    public Button getPauseButton() {
+        return btnPause;
+    }
+
+    public Button getSpeed1xButton() {
+        return btnSpeed1x;
+    }
+
+    public Button getSpeed2xButton() {
+        return btnSpeed2x;
+    }
+
+    public Button getSpeed4xButton() {
+        return btnSpeed4x;
+    }
+
+    public Label getMoneyLabel() {
+        return lblMoney;
+    }
+
+    public Label getWorldNameLabel() {
+        return lblWorldName;
+    }
 }
