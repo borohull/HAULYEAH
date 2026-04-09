@@ -12,8 +12,8 @@ import model.City;
 import model.Position;
 import model.Stop;
 import model.Tile;
+import model.Vehicle;
 import model.enums.TileType;
-import model.Road;
 import model.Road;
 import javafx.scene.image.Image;
 
@@ -72,6 +72,10 @@ public class MapPanel extends Canvas {
     private final Image fieldImage       = loadTileImage("/images/field.png");
     private final Image plantationImage  = loadTileImage("/images/plantation.png");
     private final Image stopImage        = loadTileImage("/images/stop.png");
+    private final Image roadHorImage     = loadTileImage("/images/roadHor.png");
+    private final Image roadVertImage    = loadTileImage("/images/roadVert.png");
+    private final Image busImage         = loadTileImage("/images/bus.png");
+    private final Image truckImage       = loadTileImage("/images/truck.png");
 
     private final Image[] cityBuildingImages = {
             loadTileImage("/images/buildings/building.png"),
@@ -160,6 +164,36 @@ public class MapPanel extends Canvas {
             Position c = stop.getPosition();
             drawLabel(gc, c.getX(), c.getY(), stop.getName(), originX, originY);
         }
+
+        // ── Draw vehicles ────────────────────────────────────────────────────
+        for (Vehicle vehicle : game.getVehicles()) {
+            drawVehicle(gc, vehicle, originX, originY);
+        }
+    }
+
+    private void drawVehicle(GraphicsContext gc, Vehicle vehicle, int ox, int oy) {
+        Position cur = vehicle.getPosition();
+        double   cx  = isoScreenX(cur.getX(), cur.getY(), ox);
+        double   cy  = isoScreenY(cur.getX(), cur.getY(), oy);
+
+        boolean isPassenger = vehicle.getType().isPassenger();
+        Image   img         = isPassenger ? busImage : truckImage;
+
+        double imgW = TILE_W * 1.3;
+        double imgH = imgW * 0.85;
+        double imgY = cy - imgH * 0.6;
+
+        // Shadow
+        gc.setFill(Color.rgb(0, 0, 0, 0.20));
+        gc.fillOval(cx - imgW * 0.3, cy + TILE_H * 0.2, imgW * 0.6, TILE_H * 0.28);
+
+        if (img != null) {
+            gc.drawImage(img, cx - imgW / 2.0, imgY, imgW, imgH);
+        } else {
+            // Fallback dot
+            gc.setFill(isPassenger ? Color.rgb(30, 120, 220) : Color.rgb(220, 100, 30));
+            gc.fillOval(cx - 8, cy, 16, 10);
+        }
     }
 
     private Image getGroundImage(Tile tile) {
@@ -203,66 +237,36 @@ public class MapPanel extends Canvas {
         double[] xs = diamondXs(tx, ty, ox);
         double[] ys = diamondYs(tx, ty, oy);
 
-        gc.setFill(groundColor(tile.getType()));
+        TileType type = tile.getType();
+
+        // ── Road tiles: use PNG image instead of color fill ───────────────────
+        if (type == TileType.ROAD || type == TileType.CITY_ROAD) {
+            Image roadImg = getRoadImage(tile, tx, ty);
+            if (roadImg != null) {
+                gc.drawImage(roadImg, cx - TILE_W / 2.0, cy - WALL_H, TILE_W, TILE_H + WALL_H * 2);
+            } else {
+                // Fallback to color fill if PNG missing
+                gc.setFill(COL_ROAD_TOP);
+                gc.fillPolygon(xs, ys, 4);
+            }
+            return;
+        }
+
+        // ── All other tiles ───────────────────────────────────────────────────
+        gc.setFill(groundColor(type));
         gc.fillPolygon(xs, ys, 4);
 
         Image tileImage = getGroundImage(tile);
         if (tileImage != null) {
             gc.drawImage(tileImage, cx - TILE_W / 2.0, cy, TILE_W, TILE_H + WALL_H);
         }
-
-        if (tile.getType() == TileType.CITY_ROAD) {
-            gc.setStroke(Color.rgb(60, 60, 60));
-            gc.setLineWidth(1.0);
-            gc.strokePolygon(xs, ys, 4);
-        }
-
-        drawRoadDetails(gc, tile, cx, cy);
     }
 
-    private void drawRoadDetails(GraphicsContext gc, Tile tile, double cx, double cy) {
-        if (tile.getType() != TileType.ROAD && tile.getType() != TileType.CITY_ROAD) return;
-        
-        Position p = tile.getPosition();
-        boolean isVertical = false;
-        boolean isHorizontal = false;
-        boolean isCrossroad = false;
-
-        if (currentGame != null) {
-            if (tile.getType() == TileType.CITY_ROAD) {
-                // Determine orientation from the city directly
-                for (model.MapEntity entity : currentGame.getAllEntities()) {
-                    if (entity instanceof model.City city) {
-                        if (city.isCrossroad(p)) { isCrossroad = true; break; }
-                        if (city.isVerticalRoad(p)) { isVertical = true; break; }
-                        if (city.isHorizontalRoad(p)) { isHorizontal = true; break; }
-                    }
-                }
-            } else if (tile.getType() == TileType.ROAD) {
-                model.Road road = currentGame.getRoadAt(p);
-                if (road != null) {
-                    if (road.getType() == model.Road.RoadType.VERTICAL) isVertical = true;
-                    else isHorizontal = true;
-                }
-            }
-        }
-
-        gc.setStroke(Color.WHITE);
-        gc.setLineWidth(2.0);
-        gc.setLineDashes(10.0, 6.0);
-
-        if (isVertical || isCrossroad) {
-            gc.strokeLine(cx + TILE_W / 4.0, cy + TILE_H / 4.0,
-                          cx - TILE_W / 4.0, cy + 3 * TILE_H / 4.0);
-        }
-
-        if (isHorizontal || isCrossroad) {
-            gc.strokeLine(cx - TILE_W / 4.0, cy + TILE_H / 4.0,
-                          cx + TILE_W / 4.0, cy + 3 * TILE_H / 4.0);
-        }
-
-        gc.setLineDashes((double[]) null);
+    /** Returns the road PNG — single image used for all road tiles. */
+    private Image getRoadImage(Tile tile, int tx, int ty) {
+        return roadHorImage;
     }
+
 
     private Color groundColor(TileType type) {
         return switch (type) {

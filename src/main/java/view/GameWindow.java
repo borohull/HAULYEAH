@@ -4,13 +4,16 @@ import controller.GameController;
 import controller.SimulationController;
 import javafx.scene.Group;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import model.Game;
 import model.Position;
+import model.Route;
 import model.enums.TileType;
 import view.panel.BuildToolbar;
+import view.panel.GaragePanel;
 import view.panel.HudPanel;
 import view.panel.MapPanel;
 import model.service.ConstructionService;
@@ -93,6 +96,7 @@ public class GameWindow {
         // Tell GameController to call mapPanel.drawGame() on any state change
         gameController.setOnStateChanged(() -> mapPanel.drawGame(game));
 
+
         // ── Assemble layout ──────────────────────────────────────────────────
         BorderPane root = new BorderPane();
         root.setTop(topHud);
@@ -122,9 +126,9 @@ public class GameWindow {
 
         bottomToolbar.getSaveButton().setOnAction(e -> simController.saveGame(0));
 
-        // Garage / Finance — stubs for future issues
+        // Garage — opens the vehicle purchase modal
         bottomToolbar.getGarageButton().setOnAction(e ->
-                System.out.println("[GameWindow] Garage button — not yet implemented"));
+                new GaragePanel(gameController, game).show(stage));
         bottomToolbar.getFinanceButton().setOnAction(e ->
                 gameController.onOpenFinanceDetails());
     }
@@ -139,7 +143,7 @@ public class GameWindow {
 
             if (!bottomToolbar.isRemoveSelected()
                     && !bottomToolbar.isStopSelected()
-                    && bottomToolbar.getSelectedRoadType() == null) return;
+                    && !bottomToolbar.isRoadSelected()) return;
 
             mapPanel.drawGame(game);
             if (game.inBounds(tx, ty)) {
@@ -176,14 +180,29 @@ public class GameWindow {
                 gameController.onTileClicked(p);
                 return;
             }
-            if (bottomToolbar.getSelectedRoadType() == null) return;
-
-            // Road type from toolbar → set mode then click
-            if (bottomToolbar.getSelectedRoadType() == model.Road.RoadType.HORIZONTAL) {
-                gameController.setBuildMode(GameController.BuildMode.ROAD_HORIZONTAL);
-            } else {
-                gameController.setBuildMode(GameController.BuildMode.ROAD_VERTICAL);
+            if (bottomToolbar.isRouteSelected()) {
+                // Create a route from all placed stops with one click
+                if (game.getStops().size() >= 2) {
+                    Route r = gameController.onCreateRoute(game.getStops());
+                    if (r != null) {
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION,
+                                "Route \"" + r.getName() + "\" created with "
+                                + r.getStops().size() + " stops!");
+                        alert.setHeaderText(null);
+                        alert.showAndWait();
+                    }
+                } else {
+                    Alert alert = new Alert(Alert.AlertType.WARNING,
+                            "Place at least 2 stops first, then click the map to create a route.");
+                    alert.setHeaderText(null);
+                    alert.showAndWait();
+                }
+                bottomToolbar.clearSelection();
+                return;
             }
+            if (!bottomToolbar.isRoadSelected()) return;
+
+            gameController.setBuildMode(GameController.BuildMode.ROAD);
             gameController.onTileClicked(p);
         });
     }

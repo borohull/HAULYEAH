@@ -18,6 +18,8 @@ public class Game {
     private final List<Bridge>     bridges;
     private final List<Road>       roads;
     private final List<Stop>       stops;
+    private final List<Vehicle>    vehicles;
+    private final List<Route>      routes;
 
     public Game(int width, int height) {
         this.width  = width;
@@ -31,6 +33,8 @@ public class Game {
         this.bridges     = new ArrayList<>();
         this.roads       = new ArrayList<>();
         this.stops       = new ArrayList<>();
+        this.vehicles    = new ArrayList<>();
+        this.routes      = new ArrayList<>();
 
         
         for (int x = 0; x < width; x++) {
@@ -75,6 +79,11 @@ public class Game {
     public List<Bridge>    getBridges()     { return bridges; }
     public List<Road>      getRoads()       { return roads; }
     public List<Stop>      getStops()       { return stops; }
+    public List<Vehicle>   getVehicles()    { return vehicles; }
+    public List<Route>     getRoutes()      { return routes; }
+
+    public void addVehicle(Vehicle v) { vehicles.add(v); }
+    public void addRoute(Route r)     { routes.add(r); }
 
     public void addCity(City city) {
         cities.add(city);
