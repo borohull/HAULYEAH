@@ -14,6 +14,7 @@ public class City extends MapEntity {
 
 
     private final List<Position> buildingTiles;
+    private final List<Position> emptyTiles;
     private final List<Position> roadTiles;
     private final Set<Position> entrances;
 
@@ -25,6 +26,7 @@ public class City extends MapEntity {
         super(id, name, originX, originY, width, height);
 
         this.buildingTiles = new ArrayList<>();
+        this.emptyTiles = new ArrayList<>();
         this.roadTiles = new ArrayList<>();
         this.entrances = new HashSet<>();
 
@@ -59,8 +61,15 @@ public class City extends MapEntity {
         entrances.add(new Position(x, y));
     }
 
+    public void addEmptyTile(int x, int y) {
+        Position p = new Position(x, y);
+        tiles.add(p);
+        emptyTiles.add(p);
+    }
+
 
     public List<Position> getBuildingTiles() { return buildingTiles; }
+    public List<Position> getEmptyTiles() { return emptyTiles; }
     public List<Position> getRoadTiles() { return roadTiles; }
     public Set<Position> getEntrances() { return new HashSet<>(entrances); }
 

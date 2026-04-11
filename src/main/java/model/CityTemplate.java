@@ -23,8 +23,8 @@ public class CityTemplate {
 
             for (int x = 0; x < width; x++) {
                 char c = rows[y].charAt(x);
-                if (c != 'B' && c != 'H' && c != 'V' && c != 'X') {
-                    throw new IllegalArgumentException("Supported symbols: B, H, V, X");
+                if (c != 'B' && c != 'H' && c != 'V' && c != 'X' && c != '.') {
+                    throw new IllegalArgumentException("Supported symbols: B, H, V, X, .");
                 }
                 layout[x][y] = c;
             }
@@ -66,5 +66,9 @@ public class CityTemplate {
 
     public boolean isCrossroad(int x, int y) {
         return layout[x][y] == 'X';
+    }
+
+    public boolean isEmpty(int x, int y) {
+        return layout[x][y] == '.';
     }
 }

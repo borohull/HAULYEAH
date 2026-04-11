@@ -61,6 +61,7 @@ public class HudPanel extends HBox {
 
     private final Label lblMoney;
     private final Label lblWorldName;
+    private final Label lblSelectedTile;
 
     private boolean paused = false;
 
@@ -128,6 +129,25 @@ public class HudPanel extends HBox {
         moneyBox.setStyle(INFO_BOX_STYLE);
         moneyBox.getChildren().addAll(moneyTitle, lblMoney);
 
+        // Selected tile display
+        Label selectedTitle = new Label("Selected");
+        selectedTitle.setStyle(
+                "-fx-text-fill: #666666;" +
+                        "-fx-font-size: 11px;" +
+                        "-fx-font-weight: bold;"
+        );
+
+        lblSelectedTile = new Label("None");
+        lblSelectedTile.setStyle(
+                "-fx-text-fill: #202020;" +
+                        "-fx-font-size: 14px;" +
+                        "-fx-font-weight: bold;"
+        );
+
+        HBox selectedBox = new HBox(8, selectedTitle, lblSelectedTile);
+        selectedBox.setAlignment(Pos.CENTER_LEFT);
+        selectedBox.setStyle(INFO_BOX_STYLE);
+
         // Spacer
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -156,6 +176,7 @@ public class HudPanel extends HBox {
                 btnPause,
                 speedBox,
                 moneyBox,
+                selectedBox,
                 spacer,
                 worldBox
         );
@@ -195,6 +216,10 @@ public class HudPanel extends HBox {
         }
     }
 
+    public void setSelectedTile(String info) {
+        lblSelectedTile.setText(info);
+    }
+
     public Button getPauseButton() {
         return btnPause;
     }
@@ -217,5 +242,9 @@ public class HudPanel extends HBox {
 
     public Label getWorldNameLabel() {
         return lblWorldName;
+    }
+
+    public Label getSelectedTileLabel() {
+        return lblSelectedTile;
     }
 }

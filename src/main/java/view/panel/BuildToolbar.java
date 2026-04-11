@@ -44,6 +44,7 @@ public class BuildToolbar extends VBox {
     private boolean stopSelected;
     private boolean removeSelected;
     private boolean routeSelected;
+    private boolean selectSelected;
 
     // ── Main toolbar buttons ──────────────────────────────────────────────────
     private final Button btnSelect;
@@ -99,30 +100,36 @@ public class BuildToolbar extends VBox {
             stopSelected   = false;
             routeSelected  = false;
             removeSelected = false;
+            selectSelected = false;
             btnRoad.setStyle(SUB_BTN_ACTIVE);
             btnStop.setStyle(SUB_BTN_NORMAL);
             btnRoute.setStyle(SUB_BTN_NORMAL);
             btnRemove.setStyle(BTN_NORMAL);
+            btnSelect.setStyle(BTN_NORMAL);
         });
         btnStop.setOnAction(e -> {
             stopSelected   = true;
             roadSelected   = false;
             routeSelected  = false;
             removeSelected = false;
+            selectSelected = false;
             btnStop.setStyle(SUB_BTN_ACTIVE);
             btnRoad.setStyle(SUB_BTN_NORMAL);
             btnRoute.setStyle(SUB_BTN_NORMAL);
             btnRemove.setStyle(BTN_NORMAL);
+            btnSelect.setStyle(BTN_NORMAL);
         });
         btnRoute.setOnAction(e -> {
             routeSelected  = true;
             roadSelected   = false;
             stopSelected   = false;
             removeSelected = false;
+            selectSelected = false;
             btnRoute.setStyle(SUB_BTN_ACTIVE);
             btnRoad.setStyle(SUB_BTN_NORMAL);
             btnStop.setStyle(SUB_BTN_NORMAL);
             btnRemove.setStyle(BTN_NORMAL);
+            btnSelect.setStyle(BTN_NORMAL);
         });
 
         Label lblBuild = new Label("Build:");
@@ -139,10 +146,12 @@ public class BuildToolbar extends VBox {
         btnBuild.setOnAction(e -> {
             boolean show = !buildSubmenu.isVisible();
             removeSelected = false;
+            selectSelected = false;
             buildSubmenu.setVisible(show);
             buildSubmenu.setManaged(show);
             btnBuild.setStyle(show ? BTN_HIGHLIGHT : BTN_NORMAL);
             btnRemove.setStyle(BTN_NORMAL);
+            btnSelect.setStyle(BTN_NORMAL);
             if (!show) clearSelection();
         });
 
@@ -151,6 +160,7 @@ public class BuildToolbar extends VBox {
             roadSelected   = false;
             stopSelected   = false;
             routeSelected  = false;
+            selectSelected = false;
             buildSubmenu.setVisible(false);
             buildSubmenu.setManaged(false);
             btnBuild.setStyle(BTN_NORMAL);
@@ -158,13 +168,23 @@ public class BuildToolbar extends VBox {
             btnRoad.setStyle(SUB_BTN_NORMAL);
             btnStop.setStyle(SUB_BTN_NORMAL);
             btnRoute.setStyle(SUB_BTN_NORMAL);
+            btnSelect.setStyle(BTN_NORMAL);
         });
 
         btnSelect.setOnAction(e -> {
+            selectSelected = true;
+            roadSelected   = false;
+            stopSelected   = false;
+            routeSelected  = false;
+            removeSelected = false;
             buildSubmenu.setVisible(false);
             buildSubmenu.setManaged(false);
             btnBuild.setStyle(BTN_NORMAL);
-            clearSelection();
+            btnSelect.setStyle(BTN_HIGHLIGHT);
+            btnRoad.setStyle(SUB_BTN_NORMAL);
+            btnStop.setStyle(SUB_BTN_NORMAL);
+            btnRoute.setStyle(SUB_BTN_NORMAL);
+            btnRemove.setStyle(BTN_NORMAL);
         });
 
         // Submenu on top, toolbar on bottom
@@ -177,16 +197,19 @@ public class BuildToolbar extends VBox {
     public boolean isStopSelected()    { return stopSelected; }
     public boolean isRemoveSelected()  { return removeSelected; }
     public boolean isRouteSelected()   { return routeSelected; }
+    public boolean isSelectSelected()  { return selectSelected; }
 
     public void clearSelection() {
         roadSelected   = false;
         stopSelected   = false;
         removeSelected = false;
         routeSelected  = false;
+        selectSelected = false;
         btnRoad.setStyle(SUB_BTN_NORMAL);
         btnStop.setStyle(SUB_BTN_NORMAL);
         btnRoute.setStyle(SUB_BTN_NORMAL);
         btnRemove.setStyle(BTN_NORMAL);
+        btnSelect.setStyle(BTN_NORMAL);
     }
 
     // ── Button accessors (for GameWindow wiring) ──────────────────────────────
@@ -213,5 +236,21 @@ public class BuildToolbar extends VBox {
         Button b = new Button(text);
         b.setStyle(BTN_NORMAL);
         return b;
+    }
+
+    public void selectSelectMode() {
+        selectSelected = true;
+        roadSelected   = false;
+        stopSelected   = false;
+        routeSelected  = false;
+        removeSelected = false;
+        buildSubmenu.setVisible(false);
+        buildSubmenu.setManaged(false);
+        btnBuild.setStyle(BTN_NORMAL);
+        btnSelect.setStyle(BTN_HIGHLIGHT);
+        btnRoad.setStyle(SUB_BTN_NORMAL);
+        btnStop.setStyle(SUB_BTN_NORMAL);
+        btnRoute.setStyle(SUB_BTN_NORMAL);
+        btnRemove.setStyle(BTN_NORMAL);
     }
 }

@@ -97,6 +97,15 @@ public class Game {
             }
         }
 
+        for (Position p : city.getEmptyTiles()) {
+            Tile t = getTile(p);
+            if (t != null) {
+                t.setType(TileType.CITY_EMPTY);
+                t.setEntityId(city.getId());
+                t.setEntityName(city.getName());
+            }
+        }
+
         // City roads are removed - no internal roads
         for (Position p : city.getRoadTiles()) {
             Tile t = getTile(p);
