@@ -1,6 +1,8 @@
 package model.service;
 
+import model.Game;
 import model.GameState;
+import model.Player;
 import model.Road;
 import model.Stop;
 import model.Tile;
@@ -11,6 +13,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * SaveManager — handles persisting and loading the state of the game.
@@ -83,12 +87,124 @@ public class SaveManager {
     }
 
     /**
-     * Stub for loading a game.
+     * Loads a game from the given slot.
      * @param slot save slot index
-     * @return the loaded Game, or null if it failed
+     * @return the loaded GameState, or null if it failed
      */
     public GameState load(int slot) {
-        System.out.println("[SaveManager] load() not yet implemented");
-        return null;
+        try {
+            Path file = SAVE_FILE;
+            if (!Files.exists(file)) {
+                System.err.println("[SaveManager] Save file does not exist: " + file);
+                return null;
+            }
+
+            List<String> lines = Files.readAllLines(file);
+            if (lines.isEmpty()) {
+                System.err.println("[SaveManager] Save file is empty");
+                return null;
+            }
+
+            String worldName = null;
+            int width = 0, height = 0;
+            List<Road> roads = new ArrayList<>();
+            List<Stop> stops = new ArrayList<>();
+            TileType[][] tileTypes = null;
+
+            int section = 0; // 0: header, 1: roadList, 2: stopList, 3: tileTypes
+            int roadCount = 0, stopCount = 0;
+            int y = 0;
+
+            for (String line : lines) {
+                line = line.trim();
+                if (line.isEmpty() || line.startsWith("#")) continue;
+
+                if (line.startsWith("worldName=")) {
+                    worldName = line.substring(10);
+                } else if (line.startsWith("width=")) {
+                    width = Integer.parseInt(line.substring(6));
+                } else if (line.startsWith("height=")) {
+                    height = Integer.parseInt(line.substring(7));
+                } else if (line.startsWith("roads=")) {
+                    roadCount = Integer.parseInt(line.substring(6));
+                } else if (line.startsWith("stops=")) {
+                    stopCount = Integer.parseInt(line.substring(6));
+                } else if (line.equals("[roadList]")) {
+                    section = 1;
+                } else if (line.equals("[stopList]")) {
+                    section = 2;
+                } else if (line.equals("[tileTypes]")) {
+                    section = 3;
+                    tileTypes = new TileType[height][width];
+                } else {
+                    if (section == 1 && roads.size() < roadCount) {
+                        String[] parts = line.split(",");
+                        if (parts.length == 4) {
+                            String id = parts[0];
+                            int rx = Integer.parseInt(parts[1]);
+                            int ry = Integer.parseInt(parts[2]);
+                            Road.RoadType type = Road.RoadType.valueOf(parts[3]);
+                            roads.add(new Road(id, rx, ry, type));
+                        }
+                    } else if (section == 2 && stops.size() < stopCount) {
+                        String[] parts = line.split(",");
+                        if (parts.length == 4) {
+                            String id = parts[0];
+                            int sx = Integer.parseInt(parts[1]);
+                            int sy = Integer.parseInt(parts[2]);
+                            String name = parts[3];
+                            stops.add(new Stop(id, sx, sy, name));
+                        }
+                    } else if (section == 3 && y < height) {
+                        String[] types = line.split(",");
+                        for (int x = 0; x < width && x < types.length; x++) {
+                            tileTypes[y][x] = TileType.valueOf(types[x]);
+                        }
+                        y++;
+                    }
+                }
+            }
+
+            if (worldName == null || width == 0 || height == 0 || tileTypes == null) {
+                System.err.println("[SaveManager] Invalid save file format");
+                return null;
+            }
+
+            // Create Game
+            Game game = new Game(width, height);
+            game.setWorldName(worldName);
+
+            // Set tile types
+            for (int yy = 0; yy < height; yy++) {
+                for (int xx = 0; xx < width; xx++) {
+                    Tile tile = game.getTile(xx, yy);
+                    if (tile != null && tileTypes[yy][xx] != null) {
+                        tile.setType(tileTypes[yy][xx]);
+                    }
+                }
+            }
+
+            // Add roads
+            for (Road road : roads) {
+                game.getRoads().add(road);
+            }
+
+            // Add stops
+            for (Stop stop : stops) {
+                game.getStops().add(stop);
+            }
+
+            // Create GameState with default Player
+            Player player = new Player("Player 1", 100000);
+            GameState state = new GameState(game, player);
+
+            System.out.println("[SaveManager] Game loaded: " + SAVE_FILE);
+            return state;
+
+        } catch (Exception ex) {
+            System.err.println("[SaveManager] Failed to load game: " + ex.getMessage());
+            ex.printStackTrace();
+            return null;
+        }
     }
 }
