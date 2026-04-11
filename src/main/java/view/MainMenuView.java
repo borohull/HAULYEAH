@@ -147,7 +147,7 @@ public class MainMenuView {
                     "-fx-font-size: 15px;" +
                     "-fx-background-radius: 8;" +
                     "-fx-padding: 8;");
-            controller.startGame(name);   // controller handles the navigation
+            controller.confirmStartNewGame(name);   // check for existing save first
         });
 
         HBox buttonRow = new HBox(20, btnMenu, btnStart);
@@ -247,6 +247,115 @@ public class MainMenuView {
         btnOk.setOnAction(e -> show()); // back to menu
 
         panel.getChildren().addAll(message, btnOk);
+        root.getChildren().add(panel);
+        setScene(root);
+    }
+
+    // ── Confirmation screen for new game ─────────────────────────────────────
+
+    /**
+     * Builds and shows a confirmation screen warning about overwriting existing save.
+     *
+     * @param worldName the world name for the new game
+     */
+    public void showConfirmNewGame(String worldName) {
+        VBox root = new VBox();
+        root.setAlignment(Pos.CENTER);
+        root.setPrefSize(900, 650);
+        root.setFillWidth(false);
+        root.setBackground(loadBg("/images/menupic.jpg"));
+
+        VBox panel = new VBox(25);
+        panel.setAlignment(Pos.CENTER);
+        panel.setPrefSize(360, 280);
+        panel.setMaxWidth(Region.USE_PREF_SIZE);
+        panel.setStyle(
+                "-fx-background-color: rgba(20,20,20,0.72);" +
+                "-fx-background-radius: 18;" +
+                "-fx-border-color: rgba(255,255,255,0.20);" +
+                "-fx-border-radius: 18;" +
+                "-fx-padding: 30;");
+
+        Label warning = new Label("Existing Save Found");
+        warning.setStyle(
+                "-fx-text-fill: #ff9800;" +
+                "-fx-font-size: 26px;" +
+                "-fx-font-weight: bold;");
+
+        Label message = new Label("A previously saved game exists.\n\nStarting a new game will overwrite\nthe existing progress.\n\nDo you want to continue?");
+        message.setWrapText(true);
+        message.setMaxWidth(300);
+        message.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+        message.setStyle(
+                "-fx-text-fill: white;" +
+                "-fx-font-size: 15px;");
+
+        Button btnCancel = makeBtn("Cancel", "16px");
+        Button btnContinue = makeBtn("Continue", "16px");
+        btnCancel.setPrefWidth(120);
+        btnContinue.setPrefWidth(120);
+
+        btnCancel.setOnAction(e -> showNewGame()); // back to new game input
+        btnContinue.setOnAction(e -> controller.startGame(worldName)); // start new game
+
+        HBox buttonRow = new HBox(30, btnCancel, btnContinue);
+        buttonRow.setAlignment(Pos.CENTER);
+
+        panel.getChildren().addAll(warning, message, buttonRow);
+        root.getChildren().add(panel);
+        setScene(root);
+    }
+
+    // ── Confirmation screen for new game warning ────────────────────────────
+
+    /**
+     * Builds and shows a confirmation screen warning about existing save
+     * when the user clicks "New Game".
+     */
+    public void showConfirmNewGameWarning() {
+        VBox root = new VBox();
+        root.setAlignment(Pos.CENTER);
+        root.setPrefSize(900, 650);
+        root.setFillWidth(false);
+        root.setBackground(loadBg("/images/menupic.jpg"));
+
+        VBox panel = new VBox(25);
+        panel.setAlignment(Pos.CENTER);
+        panel.setPrefSize(360, 280);
+        panel.setMaxWidth(Region.USE_PREF_SIZE);
+        panel.setStyle(
+                "-fx-background-color: rgba(20,20,20,0.72);" +
+                "-fx-background-radius: 18;" +
+                "-fx-border-color: rgba(255,255,255,0.20);" +
+                "-fx-border-radius: 18;" +
+                "-fx-padding: 30;");
+
+        Label warning = new Label("Existing Save Found");
+        warning.setStyle(
+                "-fx-text-fill: #ff9800;" +
+                "-fx-font-size: 26px;" +
+                "-fx-font-weight: bold;");
+
+        Label message = new Label("A previously saved game exists.\n\nStarting a new game will overwrite\nthe existing progress.\n\nDo you want to continue?");
+        message.setWrapText(true);
+        message.setMaxWidth(300);
+        message.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+        message.setStyle(
+                "-fx-text-fill: white;" +
+                "-fx-font-size: 15px;");
+
+        Button btnCancel = makeBtn("Cancel", "16px");
+        Button btnContinue = makeBtn("Continue", "16px");
+        btnCancel.setPrefWidth(120);
+        btnContinue.setPrefWidth(120);
+
+        btnCancel.setOnAction(e -> show()); // back to main menu
+        btnContinue.setOnAction(e -> controller.showNewGameInput()); // proceed to world name input
+
+        HBox buttonRow = new HBox(30, btnCancel, btnContinue);
+        buttonRow.setAlignment(Pos.CENTER);
+
+        panel.getChildren().addAll(warning, message, buttonRow);
         root.getChildren().add(panel);
         setScene(root);
     }

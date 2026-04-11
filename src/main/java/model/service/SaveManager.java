@@ -207,4 +207,12 @@ public class SaveManager {
             return null;
         }
     }
+
+    /**
+     * Checks if a save file exists.
+     * @return true if save file exists, false otherwise
+     */
+    public boolean saveExists() {
+        return Files.exists(SAVE_FILE);
+    }
 }

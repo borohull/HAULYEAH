@@ -52,6 +52,7 @@ public class BuildToolbar extends VBox {
     private final Button btnGarage;
     private final Button btnFinance;
     private final Button btnSave;
+    private final Button btnExit;
     private final Button btnMenu;
 
     // ── Build submenu buttons ─────────────────────────────────────────────────
@@ -74,12 +75,13 @@ public class BuildToolbar extends VBox {
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         btnSave = makeBtn("Save");
+        btnExit = makeBtn("Exit");
         btnMenu = makeBtn("Menu");
 
         HBox toolbar = new HBox(8,
                 btnSelect, btnBuild, btnRemove, btnGarage, btnFinance,
                 spacer,
-                btnSave, btnMenu);
+                btnSave, btnExit, btnMenu);
         toolbar.setPadding(new Insets(8, 12, 8, 12));
         toolbar.setAlignment(Pos.CENTER_LEFT);
         toolbar.setStyle("-fx-background-color:#2b2b2b;");
@@ -195,6 +197,7 @@ public class BuildToolbar extends VBox {
     public Button getGarageButton()  { return btnGarage; }
     public Button getFinanceButton() { return btnFinance; }
     public Button getSaveButton()    { return btnSave; }
+    public Button getExitButton()    { return btnExit; }
     public Button getMenuButton()    { return btnMenu; }
 
     // kept for backwards compat — always returns true when road is selected
