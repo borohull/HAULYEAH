@@ -169,6 +169,14 @@ public class SimulationController {
      */
     public void saveGame(int slot) {
         new model.service.SaveManager().save(state, slot);
+        // Show success dialogue
+        javafx.application.Platform.runLater(() -> {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+            alert.setTitle("Save Game");
+            alert.setHeaderText(null);
+            alert.setContentText("Game saved successfully!");
+            alert.showAndWait();
+        });
     }
 
     // -----------------------------------------------------------------------

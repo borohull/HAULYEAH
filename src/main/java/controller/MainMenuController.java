@@ -73,14 +73,37 @@ public class MainMenuController {
     }
 
     /**
+     * Starts the game from a loaded GameState.
+     *
+     * @param state the loaded game state
+     */
+    public void startGameFromState(GameState state) {
+        // Build the controllers
+        GameController       gameController = new GameController(state);
+        SimulationController simController  = new SimulationController(state);
+
+        // Build and show the game window (View)
+        GameWindow gameWindow = new GameWindow(stage, gameController, simController);
+        gameWindow.show();
+    }
+
+    /**
      * Shows the load-game screen.
      * Called when the player clicks "Load Game".
      *
      * @param slot save-slot index (0-based)
      */
     public void loadGame(int slot) {
-        // TODO: call SaveManager.load(slot), then startGameFromState(state)
-        System.out.println("[MainMenuController] loadGame(slot=" + slot + ") — not yet implemented");
+        // Load the game state
+        model.service.SaveManager saveManager = new model.service.SaveManager();
+        GameState loadedState = saveManager.load(slot);
+        if (loadedState != null) {
+            startGameFromState(loadedState);
+        } else {
+            // Show error message
+            MainMenuView view = new MainMenuView(stage, this);
+            view.showLoadError();
+        }
     }
 
     /**

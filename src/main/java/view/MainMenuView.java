@@ -210,6 +210,47 @@ public class MainMenuView {
         setScene(root);
     }
 
+    // ── Error screen ────────────────────────────────────────────────────────
+
+    /**
+     * Builds and shows an error screen when loading fails.
+     */
+    public void showLoadError() {
+        VBox root = new VBox();
+        root.setAlignment(Pos.CENTER);
+        root.setPrefSize(900, 650);
+        root.setFillWidth(false);
+        root.setBackground(loadBg("/images/menupic.jpg"));
+
+        VBox panel = new VBox(25);
+        panel.setAlignment(Pos.CENTER);
+        panel.setPrefSize(360, 220);
+        panel.setMaxWidth(Region.USE_PREF_SIZE);
+        panel.setStyle(
+                "-fx-background-color: rgba(20,20,20,0.72);" +
+                "-fx-background-radius: 18;" +
+                "-fx-border-color: rgba(255,255,255,0.20);" +
+                "-fx-border-radius: 18;" +
+                "-fx-padding: 30;");
+
+        Label message = new Label("Failed to load game.\nNo save file found or corrupted.");
+        message.setWrapText(true);
+        message.setMaxWidth(300);
+        message.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+        message.setStyle(
+                "-fx-text-fill: white;" +
+                "-fx-font-size: 22px;" +
+                "-fx-font-weight: bold;");
+
+        Button btnOk = makeBtn("OK", "18px");
+        btnOk.setPrefWidth(120);
+        btnOk.setOnAction(e -> show()); // back to menu
+
+        panel.getChildren().addAll(message, btnOk);
+        root.getChildren().add(panel);
+        setScene(root);
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private Button makeBtn(String text, String fontSize) {
