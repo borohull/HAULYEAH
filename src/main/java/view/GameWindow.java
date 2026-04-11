@@ -5,6 +5,7 @@ import controller.SimulationController;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
@@ -12,6 +13,7 @@ import model.Game;
 import model.Position;
 import model.Route;
 import model.enums.TileType;
+import model.Tile;
 import view.panel.BuildToolbar;
 import view.panel.GaragePanel;
 import view.panel.HudPanel;
@@ -76,12 +78,14 @@ public class GameWindow {
         Group mapGroup = new Group(mapPanel);
         ScrollPane scroll = new ScrollPane(mapGroup);
         scroll.setPannable(true);
+        scroll.setFitToWidth(false);
+        scroll.setFitToHeight(false);
         scroll.setStyle("-fx-background: #87CEEB; -fx-background-color: #87CEEB;");
 
         // Centre the scroll after layout
         javafx.application.Platform.runLater(() -> {
-            scroll.setHvalue(0.5);
-            scroll.setVvalue(0.5);
+            scroll.setHvalue(0.8);
+            scroll.setVvalue(0.2);
         });
 
         // Ctrl+scroll to zoom
@@ -134,6 +138,7 @@ public class GameWindow {
 
     private void wireToolbar(Game game) {
         bottomToolbar.getSelectButton().setOnAction(e -> {
+            bottomToolbar.selectSelectMode();
             gameController.setBuildMode(GameController.BuildMode.SELECT);
             mapPanel.drawGame(game);
         });
@@ -224,6 +229,15 @@ public class GameWindow {
                 bottomToolbar.clearSelection();
                 return;
             }
+            if (bottomToolbar.isSelectSelected()) {
+                Tile selectedTile = game.getTile(tx, ty);
+                String info = String.format("Pos: (%d,%d) Type: %s", tx, ty, selectedTile.getType());
+                if (selectedTile.getEntityName() != null) {
+                    info += " Entity: " + selectedTile.getEntityName();
+                }
+                topHud.setSelectedTile(info);
+                return;
+            }
             if (!bottomToolbar.isRoadSelected()) return;
 
             gameController.setBuildMode(GameController.BuildMode.ROAD);
@@ -242,13 +256,13 @@ public class GameWindow {
             alert.setHeaderText("You have unsaved changes!");
             alert.setContentText("Would you like to save before exiting?");
 
-            javafx.scene.control.ButtonType btnSave = new javafx.scene.control.ButtonType("Save & Exit");
-            javafx.scene.control.ButtonType btnExit = new javafx.scene.control.ButtonType("Exit Without Saving");
-            javafx.scene.control.ButtonType btnCancel = javafx.scene.control.ButtonType.CANCEL;
+            ButtonType btnSave = new ButtonType("Save & Exit");
+            ButtonType btnExit = new ButtonType("Exit Without Saving");
+            ButtonType btnCancel = ButtonType.CANCEL;
 
             alert.getButtonTypes().setAll(btnSave, btnExit, btnCancel);
 
-            var result = alert.showAndWait();
+            java.util.Optional<ButtonType> result = alert.showAndWait();
             if (result.isPresent()) {
                 if (result.get() == btnSave) {
                     simController.saveGame(0);
@@ -264,8 +278,8 @@ public class GameWindow {
             alert.setHeaderText("Are you sure you want to exit?");
             alert.setContentText("");
 
-            var result = alert.showAndWait();
-            if (result.isPresent() && result.get() == javafx.scene.control.ButtonType.OK) {
+            java.util.Optional<ButtonType> result = alert.showAndWait();
+            if (result.isPresent() && result.get() == ButtonType.OK) {
                 stage.close();
             }
         }

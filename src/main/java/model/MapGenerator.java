@@ -44,118 +44,110 @@ public class MapGenerator {
     private void initializeCityTemplates() {
         cityTemplates.add(new CityTemplate(
                 "Debrecen",
-                "BBHBBVBBHBBVBBHB",
-                "VVXVVXVVXVVXVVXV",
-                "BBHBBVBBHBBVBBHB",
-                "BBHBVHBBHBVHBBHB",
-                "VVXVXVVVXVXVVVXV",
-                "BBHVBBBBHVBBBBHB",
-                "BBHVBBBBHVBBBBHB",
-                "VVXVVVVVXVVVVVXV",
-                "BBHBBVBBHBBVBBHB",
-                "BBHBVHBBHBVHBBHB",
-                "VVXVXVVVXVXVVVXV",
-                "BBHVBBBBHVBBBBHB",
-                "BBHBBVBBHBBVBBHB",
-                "VVXVVXVVXVVXVVXV",
-                "BBHBBVBBHBBVBBHB",
-                "BBHBBVBBHBBVBBHB"
+                "B.H.B",
+                ".B.B.",
+                "H.X.H",
+                ".B.B.",
+                "B.H.B"
         ));
 
         cityTemplates.add(new CityTemplate(
                 "Budapest",
-                "BBHBBVBBBHBBVBBBHBB",
-                "VVXVVXVVVXVVXVVVXVV",
-                "BBHBVHBBBHBVHBBBHBB",
-                "BBHVBBBBHBBVBBBBHBB",
-                "VVXVVXVVVXVVXVVVXVV",
-                "BBHBBVBBBHBBVBBBHBB",
-                "BBHBVHBBBHBVHBBBHBB",
-                "VVXVXVVVVXVXVVVVXVV",
-                "BBHVBBBBHBBVBBBBHBB",
-                "BBHBBVBBBHBBVBBBHBB",
-                "VVXVVXVVVXVVXVVVXVV",
-                "BBHBVHBBBHBVHBBBHBB",
-                "BBHVBBBBHBBVBBBBHBB",
-                "VVXVVXVVVXVVXVVVXVV",
-                "BBHBBVBBBHBBVBBBHBB",
-                "BBHBVHBBBHBVHBBBHBB",
-                "VVXVXVVVVXVXVVVVXVV",
-                "BBHVBBBBHBBVBBBBHBB",
-                "VVXVVXVVVXVVXVVVXVV",
-                "BBHBBVBBBHBBVBBBHBB"
+                "B.B.H.B.B.H.B.B",
+                ".B.B.B.B.B.B.B.",
+                "B.B.H.B.B.H.B.B",
+                ".B.B.B.B.B.B.B.",
+                "B.B.H.B.B.H.B.B",
+                ".B.B.B.B.B.B.B.",
+                "B.B.H.B.B.H.B.B",
+                ".B.B.B.B.B.B.B.",
+                "B.B.H.B.B.H.B.B",
+                ".B.B.B.B.B.B.B.",
+                "B.B.H.B.B.H.B.B",
+                ".B.B.B.B.B.B.B."
+        ));
+
+        cityTemplates.add(new CityTemplate(
+                "Szeged",
+                "B..H.",
+                ".B.B.",
+                "H.X.H",
+                ".B.B.",
+                ".H..B"
+        ));
+
+        cityTemplates.add(new CityTemplate(
+                "Pecs",
+                "B.H.B",
+                ".B.B.",
+                "H.X.H",
+                ".B.B.",
+                "B.H.B"
+        ));
+
+        cityTemplates.add(new CityTemplate(
+                "Miskolc",
+                "B..H.",
+                ".B.B.",
+                "H.X.H",
+                ".B.B.",
+                ".H..B"
+        ));
+
+        cityTemplates.add(new CityTemplate(
+                "Gyor",
+                "B.B.H.B.B",
+                ".B.B.B.B.",
+                "B.B.H.B.B",
+                ".B.B.B.B.",
+                "B.B.H.B.B",
+                ".B.B.B.B.",
+                "B.B.H.B.B",
+                ".B.B.B.B."
         ));
     }
 
     public Game generate(int width, int height, int numCities, int numFacilities) {
         Game game = new Game(width, height);
-        List<int[]> occupied = new ArrayList<>();
 
-        int numWater = 2 + rng.nextInt(2);
-        for (int i = 0; i < numWater; i++) {
-            int ww = 3 + rng.nextInt(3);
-            int wh = 2 + rng.nextInt(3);
+        // Fixed positions for cities
+        int[][] cityPositions = {
+            {10, 10}, // Debrecen
+            {50, 30}, // Budapest
+            {20, 50}, // Szeged
+            {60, 10}, // Pecs
+            {30, 70}, // Miskolc
+            {70, 60}  // Gyor
+        };
 
-            int[] pos = findFreePosition(width, height, ww, wh, occupied);
-            if (pos == null) continue;
-
-            String name = WATER_NAMES[i % WATER_NAMES.length];
-            WaterBody water = new WaterBody("water_" + i, name, pos[0], pos[1], ww, wh);
-            game.addWaterBody(water);
-
-            occupied.add(new int[]{pos[0] - 1, pos[1] - 1, ww + 2, wh + 2});
-            placeBridgesOnWater(game, water, i);
-        }
-
-        int numForests = 2 + rng.nextInt(3);
-        for (int i = 0; i < numForests; i++) {
-            int fw = 2 + rng.nextInt(3);
-            int fh = 2 + rng.nextInt(3);
-
-            int[] pos = findFreePosition(width, height, fw, fh, occupied);
-            if (pos == null) continue;
-
-            String name = FOREST_NAMES[i % FOREST_NAMES.length];
-            Forest forest = new Forest("forest_" + i, name, pos[0], pos[1], fw, fh);
-            game.addForest(forest);
-
-            occupied.add(new int[]{
-                    pos[0] - PADDING,
-                    pos[1] - PADDING,
-                    fw + PADDING * 2,
-                    fh + PADDING * 2
-            });
-        }
-
-        for (int i = 0; i < numCities; i++) {
+        for (int i = 0; i < Math.min(numCities, cityPositions.length); i++) {
             CityTemplate template = cityTemplates.get(i % cityTemplates.size());
-
-            int[] pos = findFreePosition(width, height, template.getWidth(), template.getHeight(), occupied);
-            if (pos == null) continue;
-
+            int[] pos = cityPositions[i];
             City city = createCityFromTemplate("city_" + i, template, pos[0], pos[1]);
             game.addCity(city);
-
-            occupied.add(new int[]{
-                    pos[0] - PADDING,
-                    pos[1] - PADDING,
-                    template.getWidth() + PADDING * 2,
-                    template.getHeight() + PADDING * 2
-            });
         }
 
-        for (int i = 0; i < numFacilities && i < FACILITY_DATA.length; i++) {
-            String[] data = FACILITY_DATA[i];
+        // Fixed positions for facilities
+        int[][] facilityPositions = {
+            {5, 40},
+            {15, 20},
+            {25, 60},
+            {35, 15},
+            {45, 55},
+            {55, 25},
+            {65, 45},
+            {75, 35},
+            {10, 65},
+            {40, 75}
+        };
 
+        for (int i = 0; i < Math.min(numFacilities, facilityPositions.length) && i < FACILITY_DATA.length; i++) {
+            String[] data = FACILITY_DATA[i % FACILITY_DATA.length];
             List<String> produces = new ArrayList<>();
             List<String> consumes = new ArrayList<>();
-
             if (!data[1].isEmpty()) produces.add(data[1]);
             if (!data[2].isEmpty()) consumes.add(data[2]);
-
-            int[] pos = findFreePosition(width, height, FAC_W, FAC_H, occupied);
-            if (pos == null) continue;
-
+            int[] pos = facilityPositions[i];
             Facility fac = new Facility(
                     "facility_" + i,
                     data[0],
@@ -166,16 +158,41 @@ public class MapGenerator {
                     produces,
                     consumes
             );
-
             game.addFacility(fac);
-
-            occupied.add(new int[]{
-                    pos[0] - PADDING,
-                    pos[1] - PADDING,
-                    FAC_W + PADDING * 2,
-                    FAC_H + PADDING * 2
-            });
         }
+
+        // Fixed water bodies
+        WaterBody water1 = new WaterBody("water_0", "River Danube", 5, 25, 15, 2); // longer river
+        game.addWaterBody(water1);
+        placeBridgesOnWater(game, water1, 0);
+
+        WaterBody water2 = new WaterBody("water_1", "Blue Lake", 35, 5, 6, 8);
+        game.addWaterBody(water2);
+        placeBridgesOnWater(game, water2, 1);
+
+        WaterBody water3 = new WaterBody("water_2", "Tisza River", 25, 10, 2, 20); // vertical river
+        game.addWaterBody(water3);
+        placeBridgesOnWater(game, water3, 2);
+
+        WaterBody water4 = new WaterBody("water_3", "Balaton Lake", 10, 30, 8, 5);
+        game.addWaterBody(water4);
+        placeBridgesOnWater(game, water4, 3);
+
+        // Fixed forests
+        Forest forest1 = new Forest("forest_0", "Dark Wood", 15, 35, 4, 3);
+        game.addForest(forest1);
+
+        Forest forest2 = new Forest("forest_1", "Pine Forest", 55, 15, 3, 4);
+        game.addForest(forest2);
+
+        Forest forest3 = new Forest("forest_2", "Oak Grove", 45, 5, 2, 2);
+        game.addForest(forest3);
+
+        Forest forest4 = new Forest("forest_3", "Birch Woods", 5, 60, 3, 2);
+        game.addForest(forest4);
+
+        Forest forest5 = new Forest("forest_4", "Maple Forest", 65, 70, 2, 3);
+        game.addForest(forest5);
 
         return game;
     }
@@ -191,6 +208,7 @@ public class MapGenerator {
 
                 switch (symbol) {
                     case 'B' -> city.addBuildingTile(worldX, worldY);
+                    case '.' -> city.addEmptyTile(worldX, worldY);
                     case 'H' -> city.addRoadTile(worldX, worldY, City.CityRoadType.HORIZONTAL);
                     case 'V' -> city.addRoadTile(worldX, worldY, City.CityRoadType.VERTICAL);
                     case 'X' -> city.addRoadTile(worldX, worldY, City.CityRoadType.CROSSROAD);
@@ -198,7 +216,7 @@ public class MapGenerator {
             }
         }
 
-        for (Position p : city.getRoadTiles()) {
+        for (Position p : city.getEmptyTiles()) {
             if (p.getX() == startX ||
                     p.getX() == startX + template.getWidth() - 1 ||
                     p.getY() == startY ||

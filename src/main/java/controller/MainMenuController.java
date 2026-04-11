@@ -73,9 +73,13 @@ public class MainMenuController {
      * @param worldName the name the player entered
      */
     public void startGame(String worldName) {
+        // Delete any existing save before starting new game
+        model.service.SaveManager saveManager = new model.service.SaveManager();
+        saveManager.delete(0);
+
         // Build the model
         MapGenerator generator = new MapGenerator();
-        Game game = generator.generate(55, 55, 4, 5);
+        Game game = generator.generate(80, 80, 6, 10);
         game.setWorldName(worldName);
 
         // Build the controllers
@@ -141,8 +145,8 @@ public class MainMenuController {
      * @param slot save-slot index (0-based)
      */
     public void confirmDeleteSave(int slot) {
-        // TODO: call SaveManager.delete(slot)
-        System.out.println("[MainMenuController] confirmDeleteSave(slot=" + slot + ") — save deleted");
+        model.service.SaveManager saveManager = new model.service.SaveManager();
+        saveManager.delete(slot);
         showMainMenu();
     }
 
@@ -153,15 +157,8 @@ public class MainMenuController {
      * @param worldName the name the player entered
      */
     public void confirmStartNewGame(String worldName) {
-        model.service.SaveManager saveManager = new model.service.SaveManager();
-        if (saveManager.saveExists()) {
-            // Show confirmation that existing save will be lost
-            MainMenuView view = new MainMenuView(stage, this);
-            view.showConfirmNewGame(worldName);
-        } else {
-            // No existing save, start directly
-            startGame(worldName);
-        }
+        // Since the user already confirmed starting a new game, proceed directly
+        startGame(worldName);
     }
 
     /**

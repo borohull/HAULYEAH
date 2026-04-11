@@ -17,6 +17,8 @@ import model.enums.TileType;
 import model.Road;
 import javafx.scene.image.Image;
 
+import java.util.Random;
+
 
 public class MapPanel extends Canvas {
 
@@ -103,6 +105,8 @@ public class MapPanel extends Canvas {
     private Game currentGame;
     private int  storedOriginX;
     private int  storedOriginY;
+
+    private final Random rng = new Random();
 
     private Image loadTileImage(String path) {
         try {
@@ -201,7 +205,7 @@ public class MapPanel extends Canvas {
             case WATER     -> waterImage;
             case FOREST    -> grassImage;
             case FACILITY  -> fieldImage;
-            case CITY, ROAD, CITY_ROAD -> null;
+            case CITY, CITY_EMPTY, ROAD, CITY_ROAD -> null;
             case STOP, CITY_STOP -> stopImage != null ? stopImage : plantationImage;
             case BRIDGE    -> waterImage;
             case EMPTY     -> grassImage;
@@ -272,7 +276,7 @@ public class MapPanel extends Canvas {
         return switch (type) {
             case ROAD, CITY_ROAD     -> COL_ROAD_TOP;
             case STOP, CITY_STOP     -> COL_STOP_TOP;
-            case CITY                -> COL_CITY_TOP;
+            case CITY, CITY_EMPTY    -> COL_CITY_TOP;
             case FACILITY            -> COL_FAC_TOP;
             case WATER               -> COL_WATER_TOP;
             case FOREST              -> COL_FOREST_TOP;
@@ -369,24 +373,33 @@ public class MapPanel extends Canvas {
         double hw  = TILE_W / 2.0 * 0.45;
         double hh  = TILE_H / 2.0 * 0.45;
 
-        gc.setFill(Color.rgb(80, 50, 20));
-        gc.fillRect(cx - 3, cy + hh - 2, 6, WALL_H * 0.3);
+        // Draw 1-4 trees per forest tile
+        int numTrees = 1 + rng.nextInt(4); // 1 to 4
+        for (int i = 0; i < numTrees; i++) {
+            double offsetX = (rng.nextDouble() - 0.5) * TILE_W * 0.6;
+            double offsetY = (rng.nextDouble() - 0.5) * TILE_H * 0.6;
+            double treeCx = cx + offsetX;
+            double treeCy = cy + offsetY;
 
-        double treeH = WALL_H * 1.1;
-        gc.setFill(COL_FOREST_LEFT);
-        gc.fillPolygon(
-                new double[]{ cx - hw, cx,       cx },
-                new double[]{ cy + hh, cy - treeH, cy + hh }, 3);
-        gc.setFill(COL_FOREST_ROOF);
-        gc.fillPolygon(
-                new double[]{ cx,  cx + hw, cx },
-                new double[]{ cy - treeH, cy + hh, cy + hh }, 3);
+            gc.setFill(Color.rgb(80, 50, 20));
+            gc.fillRect(treeCx - 1.5, treeCy + hh - 1, 3, WALL_H * 0.2);
 
-        gc.setStroke(Color.rgb(0, 0, 0, 0.20));
-        gc.setLineWidth(0.5);
-        gc.strokePolygon(
-                new double[]{ cx - hw, cx + hw, cx },
-                new double[]{ cy + hh, cy + hh, cy - treeH }, 3);
+            double treeH = WALL_H * 0.8;
+            gc.setFill(COL_FOREST_LEFT);
+            gc.fillPolygon(
+                    new double[]{ treeCx - hw, treeCx,       treeCx },
+                    new double[]{ treeCy + hh, treeCy - treeH, treeCy + hh }, 3);
+            gc.setFill(COL_FOREST_ROOF);
+            gc.fillPolygon(
+                    new double[]{ treeCx,  treeCx + hw, treeCx },
+                    new double[]{ treeCy - treeH, treeCy + hh, treeCy + hh }, 3);
+
+            gc.setStroke(Color.rgb(0, 0, 0, 0.20));
+            gc.setLineWidth(0.3);
+            gc.strokePolygon(
+                    new double[]{ treeCx - hw, treeCx + hw, treeCx },
+                    new double[]{ treeCy + hh, treeCy + hh, treeCy - treeH }, 3);
+        }
     }
 
     private void drawLabel(GraphicsContext gc, int tx, int ty, String text,

@@ -7,6 +7,7 @@ package model.enums;
 public enum TileType {
     EMPTY,
     CITY,
+    CITY_EMPTY,
     FACILITY,
     ROAD,
     STOP,

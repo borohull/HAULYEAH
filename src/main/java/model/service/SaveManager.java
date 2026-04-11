@@ -215,4 +215,23 @@ public class SaveManager {
     public boolean saveExists() {
         return Files.exists(SAVE_FILE);
     }
+
+    /**
+     * Deletes the save file for the given slot.
+     * @param slot save slot index
+     */
+    public void delete(int slot) {
+        try {
+            Path file = SAVE_FILE;
+            if (Files.exists(file)) {
+                Files.delete(file);
+                System.out.println("[SaveManager] Save file deleted: " + file);
+            } else {
+                System.out.println("[SaveManager] Save file does not exist: " + file);
+            }
+        } catch (IOException ex) {
+            System.err.println("[SaveManager] Failed to delete save file: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
 }
