@@ -50,6 +50,7 @@ public class SimulationController {
     private final GameState state;
     private Speed      speed   = Speed.PAUSED;
     private boolean    running = false;
+    private boolean hasUnsavedChanges = false;
 
     private final SimulationEngine engine = new SimulationEngine();
     private AnimationTimer timer;
@@ -169,6 +170,7 @@ public class SimulationController {
      */
     public void saveGame(int slot) {
         new model.service.SaveManager().save(state, slot);
+        clearUnsavedChanges();
         // Show success dialogue
         javafx.application.Platform.runLater(() -> {
             javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
@@ -177,6 +179,27 @@ public class SimulationController {
             alert.setContentText("Game saved successfully!");
             alert.showAndWait();
         });
+    }
+
+    /**
+     * Marks that there are unsaved changes.
+     */
+    public void markUnsavedChanges() {
+        hasUnsavedChanges = true;
+    }
+
+    /**
+     * Checks if there are unsaved changes.
+     */
+    public boolean hasUnsavedChanges() {
+        return hasUnsavedChanges;
+    }
+
+    /**
+     * Clears the unsaved changes flag (called after saving).
+     */
+    public void clearUnsavedChanges() {
+        hasUnsavedChanges = false;
     }
 
     // -----------------------------------------------------------------------

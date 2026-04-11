@@ -46,11 +46,18 @@ public class GameController {
     private int routeCounter = 0;
 
     private Runnable onStateChanged;
+    private SimulationController simController;
 
     public GameController(GameState state) {
         this.state = state;
     }
 
+    /**
+     * Sets the SimulationController reference so GameController can mark unsaved changes.
+     */
+    public void setSimulationController(SimulationController simController) {
+        this.simController = simController;
+    }
 
     /**
      * The View registers this callback so the controller can trigger a redraw
@@ -106,6 +113,9 @@ public class GameController {
     public void onBuildRoad(Position p) {
         if (constructionService.buildRoad(state.getMap(), p, Road.RoadType.HORIZONTAL)) {
             System.out.println("[GameController] Road placed at " + p);
+            if (simController != null) {
+                simController.markUnsavedChanges();
+            }
             notifyView();
         }
     }
@@ -116,6 +126,9 @@ public class GameController {
         String stopName = "Stop at " + p.getX() + "," + p.getY();
         if (constructionService.buildStop(state.getMap(), p, stopName)) {
             System.out.println("[GameController] Stop placed at " + p);
+            if (simController != null) {
+                simController.markUnsavedChanges();
+            }
             notifyView();
         }
     }
@@ -124,6 +137,9 @@ public class GameController {
     public void onDemolish(Position p) {
         if (constructionService.removeRoad(state.getMap(), p) || constructionService.removeStop(state.getMap(), p)) {
             System.out.println("[GameController] Demolished at " + p);
+            if (simController != null) {
+                simController.markUnsavedChanges();
+            }
             notifyView();
         }
     }

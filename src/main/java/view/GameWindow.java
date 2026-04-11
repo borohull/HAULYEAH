@@ -65,6 +65,10 @@ public class GameWindow {
      */
     public void show() {
         Game game = gameController.getState().getMap();
+
+        // Set the simulation controller in game controller for tracking changes
+        gameController.setSimulationController(simController);
+
         // ── Map ──────────────────────────────────────────────────────────────
         mapPanel = new MapPanel();
         mapPanel.drawGame(game);
@@ -116,6 +120,13 @@ public class GameWindow {
 
         stage.setTitle("Haul Yea!");
         stage.setScene(new Scene(root, 900, 650));
+
+        // Handle window close (X button)
+        stage.setOnCloseRequest(e -> {
+            e.consume(); // Don't close yet
+            handleExit();
+        });
+
         stage.show();
     }
 
@@ -136,6 +147,8 @@ public class GameWindow {
         });
 
         bottomToolbar.getSaveButton().setOnAction(e -> simController.saveGame(0));
+
+        bottomToolbar.getExitButton().setOnAction(e -> handleExit());
 
         // Garage — opens the vehicle purchase modal
         bottomToolbar.getGarageButton().setOnAction(e ->
@@ -216,5 +229,45 @@ public class GameWindow {
             gameController.setBuildMode(GameController.BuildMode.ROAD);
             gameController.onTileClicked(p);
         });
+    }
+
+    /**
+     * Handles exit with warning if there are unsaved changes.
+     */
+    private void handleExit() {
+        if (simController.hasUnsavedChanges()) {
+            // Show warning about unsaved changes
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("Unsaved Changes");
+            alert.setHeaderText("You have unsaved changes!");
+            alert.setContentText("Would you like to save before exiting?");
+
+            javafx.scene.control.ButtonType btnSave = new javafx.scene.control.ButtonType("Save & Exit");
+            javafx.scene.control.ButtonType btnExit = new javafx.scene.control.ButtonType("Exit Without Saving");
+            javafx.scene.control.ButtonType btnCancel = javafx.scene.control.ButtonType.CANCEL;
+
+            alert.getButtonTypes().setAll(btnSave, btnExit, btnCancel);
+
+            var result = alert.showAndWait();
+            if (result.isPresent()) {
+                if (result.get() == btnSave) {
+                    simController.saveGame(0);
+                    stage.close();
+                } else if (result.get() == btnExit) {
+                    stage.close();
+                }
+            }
+        } else {
+            // No unsaved changes, ask for confirmation
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("Exit Game");
+            alert.setHeaderText("Are you sure you want to exit?");
+            alert.setContentText("");
+
+            var result = alert.showAndWait();
+            if (result.isPresent() && result.get() == javafx.scene.control.ButtonType.OK) {
+                stage.close();
+            }
+        }
     }
 }

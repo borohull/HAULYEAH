@@ -45,6 +45,23 @@ public class MainMenuController {
      * Called when the player clicks "New Game".
      */
     public void newGame() {
+        // Check if a save file exists first
+        model.service.SaveManager saveManager = new model.service.SaveManager();
+        if (saveManager.saveExists()) {
+            // Show warning that existing save will be lost
+            MainMenuView view = new MainMenuView(stage, this);
+            view.showConfirmNewGameWarning();
+        } else {
+            // No existing save, go directly to world name input
+            showNewGameInput();
+        }
+    }
+
+    /**
+     * Shows the world name input screen.
+     * Called after confirming that new game will be started (or no existing save exists).
+     */
+    public void showNewGameInput() {
         MainMenuView view = new MainMenuView(stage, this);
         view.showNewGame();
     }
@@ -127,6 +144,24 @@ public class MainMenuController {
         // TODO: call SaveManager.delete(slot)
         System.out.println("[MainMenuController] confirmDeleteSave(slot=" + slot + ") — save deleted");
         showMainMenu();
+    }
+
+    /**
+     * Shows the confirmation screen when starting a new game with an existing save.
+     * Called when the player confirms they want to start a new game.
+     *
+     * @param worldName the name the player entered
+     */
+    public void confirmStartNewGame(String worldName) {
+        model.service.SaveManager saveManager = new model.service.SaveManager();
+        if (saveManager.saveExists()) {
+            // Show confirmation that existing save will be lost
+            MainMenuView view = new MainMenuView(stage, this);
+            view.showConfirmNewGame(worldName);
+        } else {
+            // No existing save, start directly
+            startGame(worldName);
+        }
     }
 
     /**
