@@ -79,7 +79,7 @@ public class MainMenuController {
 
         // Build the model
         MapGenerator generator = new MapGenerator();
-        Game game = generator.generate(80, 80, 6, 10);
+        Game game = generator.generate(80, 80, 7, 15);
         game.setWorldName(worldName);
 
         // Build the controllers

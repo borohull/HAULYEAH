@@ -437,8 +437,9 @@ public class MapPanel extends Canvas {
     public int getTileH() { return TILE_H; }
 
     public int[] screenToTile(double screenX, double screenY) {
-        double dx = screenX - storedOriginX;
-        double dy = screenY - storedOriginY;
+        double scale = getScaleX(); // Assuming uniform scaling
+        double dx = (screenX / scale) - storedOriginX;
+        double dy = (screenY / scale) - storedOriginY;
         double txRaw = (dx / (TILE_W / 2.0) + dy / (TILE_H / 2.0)) / 2.0;
         double tyRaw = (dy / (TILE_H / 2.0) - dx / (TILE_W / 2.0)) / 2.0;
         return new int[]{ (int) Math.floor(txRaw), (int) Math.floor(tyRaw) };

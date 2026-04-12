@@ -66,14 +66,18 @@ public class GameWindow {
      * Builds the game scene and shows it on the stage.
      */
     public void show() {
+        System.out.println("GameWindow.show() called");
         Game game = gameController.getState().getMap();
+        System.out.println("Game loaded, size: " + game.getWidth() + "x" + game.getHeight());
 
         // Set the simulation controller in game controller for tracking changes
         gameController.setSimulationController(simController);
 
         // ── Map ──────────────────────────────────────────────────────────────
         mapPanel = new MapPanel();
+        System.out.println("MapPanel created");
         mapPanel.drawGame(game);
+        System.out.println("Map drawn");
 
         Group mapGroup = new Group(mapPanel);
         ScrollPane scroll = new ScrollPane(mapGroup);
@@ -131,7 +135,9 @@ public class GameWindow {
             handleExit();
         });
 
+        System.out.println("About to call stage.show()");
         stage.show();
+        System.out.println("Stage shown");
     }
 
     // ── Toolbar wiring ───────────────────────────────────────────────────────
