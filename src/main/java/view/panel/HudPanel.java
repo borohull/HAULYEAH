@@ -62,6 +62,7 @@ public class HudPanel extends HBox {
     private final Label lblMoney;
     private final Label lblWorldName;
     private final Label lblSelectedTile;
+    private final Label lblTileTitle;
 
     private boolean paused = false;
 
@@ -130,8 +131,8 @@ public class HudPanel extends HBox {
         moneyBox.getChildren().addAll(moneyTitle, lblMoney);
 
         // Selected tile display
-        Label selectedTitle = new Label("Selected");
-        selectedTitle.setStyle(
+        lblTileTitle = new Label("Hover");
+        lblTileTitle.setStyle(
                 "-fx-text-fill: #666666;" +
                         "-fx-font-size: 11px;" +
                         "-fx-font-weight: bold;"
@@ -144,7 +145,7 @@ public class HudPanel extends HBox {
                         "-fx-font-weight: bold;"
         );
 
-        HBox selectedBox = new HBox(8, selectedTitle, lblSelectedTile);
+        HBox selectedBox = new HBox(8, lblTileTitle, lblSelectedTile);
         selectedBox.setAlignment(Pos.CENTER_LEFT);
         selectedBox.setStyle(INFO_BOX_STYLE);
 
@@ -216,7 +217,13 @@ public class HudPanel extends HBox {
         }
     }
 
+    public void setHoverTile(String info) {
+        lblTileTitle.setText("Hover");
+        lblSelectedTile.setText(info);
+    }
+
     public void setSelectedTile(String info) {
+        lblTileTitle.setText("Selected");
         lblSelectedTile.setText(info);
     }
 
