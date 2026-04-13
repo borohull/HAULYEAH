@@ -12,13 +12,11 @@ import javafx.stage.Stage;
 import model.Game;
 import model.Position;
 import model.Route;
-import model.enums.TileType;
 import model.Tile;
 import view.panel.BuildToolbar;
 import view.panel.GaragePanel;
 import view.panel.HudPanel;
 import view.panel.MapPanel;
-import model.service.ConstructionService;
 
 /**
  * GameWindow — builds and shows the in-game scene.
@@ -79,7 +77,8 @@ public class GameWindow {
         mapPanel.drawGame(game);
         System.out.println("Map drawn");
 
-        Group mapGroup = new Group(mapPanel);
+        mapPanel.getOverlayCanvas().setMouseTransparent(true);
+        Group mapGroup = new Group(mapPanel, mapPanel.getOverlayCanvas());
         ScrollPane scroll = new ScrollPane(mapGroup);
         scroll.setPannable(true);
         scroll.setFitToWidth(false);
@@ -144,18 +143,19 @@ public class GameWindow {
 
     private void wireToolbar(Game game) {
         bottomToolbar.getSelectButton().setOnAction(e -> {
-            bottomToolbar.selectSelectMode();
-            gameController.setBuildMode(GameController.BuildMode.SELECT);
-            mapPanel.drawGame(game);
+            if (bottomToolbar.isSelectSelected()) {
+                // toggle off — back to normal mode
+                bottomToolbar.clearSelection();
+                gameController.setBuildMode(GameController.BuildMode.SELECT);
+                mapPanel.clearHoverOverlay();
+            } else {
+                bottomToolbar.selectSelectMode();
+                gameController.setBuildMode(GameController.BuildMode.SELECT);
+            }
         });
 
-        bottomToolbar.getBuildButton().addEventHandler(javafx.event.ActionEvent.ACTION,
-                e -> mapPanel.drawGame(game));
-
-        bottomToolbar.getRemoveButton().setOnAction(e -> {
-            gameController.setBuildMode(GameController.BuildMode.DEMOLISH);
-            mapPanel.drawGame(game);
-        });
+        bottomToolbar.getRemoveButton().setOnAction(e ->
+                gameController.setBuildMode(GameController.BuildMode.DEMOLISH));
 
         bottomToolbar.getSaveButton().setOnAction(e -> simController.saveGame(0));
 
@@ -171,27 +171,52 @@ public class GameWindow {
     // ── Map mouse wiring ─────────────────────────────────────────────────────
 
     private void wireMapEvents(Game game) {
-        // Hover overlay
+        // Hover — show tile info in HUD + overlay in build mode
+        int[] lastHover = {-1, -1};
         mapPanel.setOnMouseMoved(e -> {
             int[] tile = mapPanel.screenToTile(e.getX(), e.getY());
             int tx = tile[0], ty = tile[1];
 
-            if (!bottomToolbar.isRemoveSelected()
-                    && !bottomToolbar.isStopSelected()
-                    && !bottomToolbar.isRoadSelected()) return;
+            // Update HUD label
+            if (game.inBounds(tx, ty)) {
+                model.Tile t = game.getTile(tx, ty);
+                String info = "(" + tx + ", " + ty + ")  " + t.getType();
+                if (t.getEntityName() != null) info += "  " + t.getEntityName();
+                topHud.setHoverTile(info);
+            } else {
+                topHud.setHoverTile("—");
+            }
 
-            mapPanel.drawGame(game);
+            // Draw tile highlight in build mode and select mode
+            boolean showOverlay = bottomToolbar.isRoadSelected()
+                    || bottomToolbar.isStopSelected()
+                    || bottomToolbar.isRemoveSelected()
+                    || bottomToolbar.isSelectSelected();
+            if (!showOverlay) {
+                mapPanel.clearHoverOverlay();
+                lastHover[0] = -1; lastHover[1] = -1;
+                return;
+            }
+
+            if (tx == lastHover[0] && ty == lastHover[1]) return;
+            lastHover[0] = tx;
+            lastHover[1] = ty;
+
             if (game.inBounds(tx, ty)) {
                 boolean valid;
-                if (bottomToolbar.isRemoveSelected()) {
+                if (bottomToolbar.isSelectSelected()) {
+                    mapPanel.drawHoverOverlay(tx, ty, true, true);
+                    return;
+                } else if (bottomToolbar.isRemoveSelected()) {
                     Position p = new Position(tx, ty);
                     valid = game.getRoadAt(p) != null || game.getStopAt(p) != null;
                 } else if (bottomToolbar.isStopSelected()) {
-                    valid = game.getTile(tx, ty).getType() == TileType.EMPTY
-                            && new ConstructionService().isAdjacentToRoadCityOrFacility(game, new Position(tx, ty));
+                    valid = game.getTile(tx, ty).getType() == model.enums.TileType.EMPTY
+                            && new model.service.ConstructionService()
+                                .isAdjacentToRoadCityOrFacility(game, new Position(tx, ty));
                 } else {
-                    TileType t = game.getTile(tx, ty).getType();
-                    valid = t == TileType.EMPTY || t == TileType.FOREST;
+                    model.enums.TileType type = game.getTile(tx, ty).getType();
+                    valid = type == model.enums.TileType.EMPTY || type == model.enums.TileType.FOREST;
                 }
                 mapPanel.drawHoverOverlay(tx, ty, valid);
             }

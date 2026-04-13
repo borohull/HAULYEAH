@@ -107,6 +107,9 @@ public class MapPanel extends Canvas {
     private int  storedOriginY;
 
     private final Random rng = new Random();
+    private final javafx.scene.canvas.Canvas overlayCanvas = new javafx.scene.canvas.Canvas();
+
+    public javafx.scene.canvas.Canvas getOverlayCanvas() { return overlayCanvas; }
 
     private Image loadTileImage(String path) {
         try {
@@ -130,6 +133,8 @@ public class MapPanel extends Canvas {
         double canvasH = (cols + rows) * (TILE_H / 2.0) + WALL_H + 60;
         setWidth(canvasW);
         setHeight(canvasH);
+        overlayCanvas.setWidth(canvasW);
+        overlayCanvas.setHeight(canvasH);
 
         
         int originX = rows * (TILE_W / 2) + ORIGIN_X;
@@ -373,11 +378,12 @@ public class MapPanel extends Canvas {
         double hw  = TILE_W / 2.0 * 0.45;
         double hh  = TILE_H / 2.0 * 0.45;
 
-        // Draw 1-4 trees per forest tile
-        int numTrees = 1 + rng.nextInt(4); // 1 to 4
+        // Use a deterministic seed per tile so trees don't change position on redraw
+        Random tileRng = new Random((long) tx * 10000 + ty);
+        int numTrees = 1 + tileRng.nextInt(4); // 1 to 4
         for (int i = 0; i < numTrees; i++) {
-            double offsetX = (rng.nextDouble() - 0.5) * TILE_W * 0.6;
-            double offsetY = (rng.nextDouble() - 0.5) * TILE_H * 0.6;
+            double offsetX = (tileRng.nextDouble() - 0.5) * TILE_W * 0.6;
+            double offsetY = (tileRng.nextDouble() - 0.5) * TILE_H * 0.6;
             double treeCx = cx + offsetX;
             double treeCy = cy + offsetY;
 
@@ -445,13 +451,41 @@ public class MapPanel extends Canvas {
         return new int[]{ (int) Math.floor(txRaw), (int) Math.floor(tyRaw) };
     }
 
-    public void drawHoverOverlay(int tx, int ty, boolean valid) {
+    /**
+     * Redraws only a single tile (ground + structure) to erase a hover overlay
+     * without redrawing the entire map.
+     */
+    public void redrawTile(int tx, int ty) {
+        if (currentGame == null || !currentGame.inBounds(tx, ty)) return;
+        Tile tile = currentGame.getTile(tx, ty);
         GraphicsContext gc = getGraphicsContext2D();
+        drawGround(gc, tile, tx, ty, storedOriginX, storedOriginY);
+        drawStructure(gc, tile, tx, ty, storedOriginX, storedOriginY);
+    }
+
+    public void clearHoverOverlay() {
+        overlayCanvas.getGraphicsContext2D()
+                .clearRect(0, 0, overlayCanvas.getWidth(), overlayCanvas.getHeight());
+    }
+
+    public void drawHoverOverlay(int tx, int ty, boolean valid) {
+        drawHoverOverlay(tx, ty, valid, false);
+    }
+
+    public void drawHoverOverlay(int tx, int ty, boolean valid, boolean grey) {
+        GraphicsContext gc = overlayCanvas.getGraphicsContext2D();
+        gc.clearRect(0, 0, overlayCanvas.getWidth(), overlayCanvas.getHeight());
         double[] xs = diamondXs(tx, ty, storedOriginX);
         double[] ys = diamondYs(tx, ty, storedOriginY);
-        gc.setFill(valid ? Color.rgb(0, 255, 0, 0.25) : Color.rgb(255, 0, 0, 0.25));
-        gc.fillPolygon(xs, ys, 4);
-        gc.setStroke(valid ? Color.LIMEGREEN : Color.RED);
+        if (grey) {
+            gc.setFill(Color.rgb(180, 180, 180, 0.35));
+            gc.fillPolygon(xs, ys, 4);
+            gc.setStroke(Color.rgb(160, 160, 160, 0.8));
+        } else {
+            gc.setFill(valid ? Color.rgb(0, 255, 0, 0.25) : Color.rgb(255, 0, 0, 0.25));
+            gc.fillPolygon(xs, ys, 4);
+            gc.setStroke(valid ? Color.LIMEGREEN : Color.RED);
+        }
         gc.setLineWidth(1.5);
         gc.strokePolygon(xs, ys, 4);
     }
