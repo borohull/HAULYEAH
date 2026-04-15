@@ -181,9 +181,9 @@ public class MapPanel extends Canvas {
     }
 
     private void drawVehicle(GraphicsContext gc, Vehicle vehicle, int ox, int oy) {
-        Position cur = vehicle.getPosition();
-        double   cx  = isoScreenX(cur.getX(), cur.getY(), ox);
-        double   cy  = isoScreenY(cur.getX(), cur.getY(), oy);
+        // Use smooth (interpolated) position for fluid animation between tiles
+        double   cx  = isoScreenXd(vehicle.getSmoothX(), vehicle.getSmoothY(), ox);
+        double   cy  = isoScreenYd(vehicle.getSmoothX(), vehicle.getSmoothY(), oy);
 
         boolean isPassenger = vehicle.getType().isPassenger();
         Image   img         = isPassenger ? busImage : truckImage;
@@ -429,6 +429,15 @@ public class MapPanel extends Canvas {
         return oy + (tx + ty) * (TILE_H / 2.0);
     }
 
+    /** Double-precision versions for smooth vehicle interpolation. */
+    private double isoScreenXd(double tx, double ty, int ox) {
+        return ox + (tx - ty) * (TILE_W / 2.0);
+    }
+
+    private double isoScreenYd(double tx, double ty, int oy) {
+        return oy + (tx + ty) * (TILE_H / 2.0);
+    }
+
     private double[] diamondXs(int tx, int ty, int ox) {
         double cx = isoScreenX(tx, ty, ox);
         return new double[]{ cx, cx + TILE_W / 2.0, cx, cx - TILE_W / 2.0 };
@@ -463,6 +472,49 @@ public class MapPanel extends Canvas {
         drawStructure(gc, tile, tx, ty, storedOriginX, storedOriginY);
     }
 
+    /**
+     * Draws the route path the player is currently tracing as a yellow/orange
+     * highlight on the overlay canvas.
+     */
+    public void drawRoutePathOverlay(java.util.List<model.Position> path) {
+        GraphicsContext gc = overlayCanvas.getGraphicsContext2D();
+        gc.clearRect(0, 0, overlayCanvas.getWidth(), overlayCanvas.getHeight());
+        if (path == null || path.isEmpty()) return;
+
+        for (int i = 0; i < path.size(); i++) {
+            model.Position p = path.get(i);
+            double[] xs = diamondXs(p.getX(), p.getY(), storedOriginX);
+            double[] ys = diamondYs(p.getX(), p.getY(), storedOriginY);
+
+            // Highlight each tile orange-yellow
+            gc.setFill(Color.rgb(255, 200, 0, 0.40));
+            gc.fillPolygon(xs, ys, 4);
+            gc.setStroke(Color.rgb(255, 160, 0, 0.90));
+            gc.setLineWidth(2.0);
+            gc.strokePolygon(xs, ys, 4);
+
+            // Draw step number in the center
+            double cx = isoScreenX(p.getX(), p.getY(), storedOriginX);
+            double cy = isoScreenY(p.getX(), p.getY(), storedOriginY) + TILE_H * 0.25;
+            gc.setFill(Color.WHITE);
+            gc.setFont(javafx.scene.text.Font.font("Monospace", 10));
+            gc.setTextAlign(javafx.scene.text.TextAlignment.CENTER);
+            gc.fillText(String.valueOf(i + 1), cx, cy);
+
+            // Draw arrow line to next tile
+            if (i < path.size() - 1) {
+                model.Position next = path.get(i + 1);
+                double x1 = isoScreenX(p.getX(),    p.getY(),    storedOriginX);
+                double y1 = isoScreenY(p.getX(),    p.getY(),    storedOriginY) + TILE_H * 0.5;
+                double x2 = isoScreenX(next.getX(), next.getY(), storedOriginX);
+                double y2 = isoScreenY(next.getX(), next.getY(), storedOriginY) + TILE_H * 0.5;
+                gc.setStroke(Color.rgb(255, 220, 50, 0.85));
+                gc.setLineWidth(2.5);
+                gc.strokeLine(x1, y1, x2, y2);
+            }
+        }
+    }
+
     public void clearHoverOverlay() {
         overlayCanvas.getGraphicsContext2D()
                 .clearRect(0, 0, overlayCanvas.getWidth(), overlayCanvas.getHeight());
@@ -475,6 +527,19 @@ public class MapPanel extends Canvas {
     public void drawHoverOverlay(int tx, int ty, boolean valid, boolean grey) {
         GraphicsContext gc = overlayCanvas.getGraphicsContext2D();
         gc.clearRect(0, 0, overlayCanvas.getWidth(), overlayCanvas.getHeight());
+        drawHoverTile(gc, tx, ty, valid, grey);
+    }
+
+    /**
+     * Draws a hover highlight on top of whatever is already on the overlay canvas
+     * (used during route drawing to keep the path visible while hovering).
+     */
+    public void drawHoverOnTopOfRoute(int tx, int ty, boolean valid) {
+        GraphicsContext gc = overlayCanvas.getGraphicsContext2D();
+        drawHoverTile(gc, tx, ty, valid, false);
+    }
+
+    private void drawHoverTile(GraphicsContext gc, int tx, int ty, boolean valid, boolean grey) {
         double[] xs = diamondXs(tx, ty, storedOriginX);
         double[] ys = diamondYs(tx, ty, storedOriginY);
         if (grey) {

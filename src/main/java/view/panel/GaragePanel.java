@@ -17,6 +17,8 @@ import javafx.stage.StageStyle;
 import model.Game;
 import model.Route;
 import model.enums.VehicleType;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import java.util.List;
 
@@ -50,8 +52,11 @@ public class GaragePanel {
         dialog.initStyle(StageStyle.UNDECORATED);
         dialog.setTitle("Garage");
 
-        // ── Route selector ────────────────────────────────────────────────────
-        List<Route> routes = game.getRoutes();
+        // ── Route selector — always read live from game so new routes show up ──
+        // game.getRoutes() returns the live list, filter to only drawn routes (hasTilePath)
+        List<Route> drawnRoutes = game.getRoutes().stream()
+                .filter(Route::hasTilePath)
+                .collect(java.util.stream.Collectors.toList());
 
         Label routeLabel = styledLabel("Assign to route:", SUBTEXT, 12);
         ComboBox<String> routeBox = new ComboBox<>();
@@ -60,28 +65,17 @@ public class GaragePanel {
             "-fx-prompt-text-fill:" + SUBTEXT + "; -fx-font-size:13px;");
         routeBox.setPrefWidth(220);
 
-        if (routes.isEmpty()) {
-            routeBox.getItems().add("— No routes yet —");
+        if (drawnRoutes.isEmpty()) {
+            routeBox.getItems().add("— Draw a route first —");
             routeBox.getSelectionModel().selectFirst();
         } else {
-            for (Route r : routes) routeBox.getItems().add(r.getName());
+            for (Route r : drawnRoutes) {
+                routeBox.getItems().add(r.getName() + " (" + r.getTilePath().size() + " tiles)");
+            }
             routeBox.getSelectionModel().selectFirst();
         }
 
         HBox routeRow = new HBox(10, routeLabel, routeBox);
-
-        // Add an Auto-route button if there are no routes but there are stops
-        if (routes.isEmpty() && game.getStops().size() >= 2) {
-            Button autoRouteBtn = new Button("+ Auto Route");
-            autoRouteBtn.setStyle("-fx-background-color:#4a9c6d; -fx-text-fill:white; -fx-cursor:hand;");
-            autoRouteBtn.setOnAction(e -> {
-                gameController.onCreateRoute(game.getStops());
-                dialog.close();
-                new GaragePanel(gameController, game).show(owner); // Reload panel
-            });
-            routeRow.getChildren().add(autoRouteBtn);
-        }
-
         routeRow.setAlignment(Pos.CENTER_LEFT);
         routeRow.setPadding(new Insets(0, 0, 12, 0));
 
@@ -96,7 +90,7 @@ public class GaragePanel {
         VehicleType[] types = VehicleType.values();
         for (int i = 0; i < types.length; i++) {
             VehicleType t = types[i];
-            VBox card = buildCard(t, routeBox, routes, dialog);
+            VBox card = buildCard(t, routeBox, drawnRoutes, dialog);
             grid.add(card, i % 3, i / 3);
         }
 
@@ -146,17 +140,18 @@ public class GaragePanel {
             "-fx-background-radius:5; -fx-cursor:hand;");
 
         buyBtn.setOnAction(e -> {
-            // Find the selected route
             int idx = routeBox.getSelectionModel().getSelectedIndex();
             if (!routes.isEmpty() && idx >= 0 && idx < routes.size()) {
                 Route route = routes.get(idx);
-                // Spawn vehicle at first stop and assign to chosen route
-                if (!game.getStops().isEmpty()) {
-                    model.Vehicle v = gameController.spawnAndAssign(type, route);
-                    System.out.println("[Garage] Bought " + type + " on " + route.getName());
+                model.Vehicle v = gameController.spawnAndAssign(type, route);
+                if (v != null) {
+                    System.out.println("[Garage] Bought " + type + " on route: " + route.getName()
+                            + " (" + route.getTilePath().size() + " tiles)");
+                } else {
+                    System.out.println("[Garage] Failed to spawn vehicle");
                 }
             } else {
-                System.out.println("[Garage] No route selected — create stops and use Garage first");
+                System.out.println("[Garage] No drawn route selected");
             }
             dialog.close();
         });

@@ -62,6 +62,11 @@ public class BuildToolbar extends VBox {
     private final Button btnRoute;
     private final HBox   buildSubmenu;
 
+    // ── Route-draw toolbar (shown while player is drawing a route) ────────────
+    private final Button btnDoneRoute;
+    private final Button btnCancelRoute;
+    private final HBox   routeDrawBar;
+
     public BuildToolbar() {
         super();
 
@@ -187,8 +192,28 @@ public class BuildToolbar extends VBox {
             btnRemove.setStyle(BTN_NORMAL);
         });
 
-        // Submenu on top, toolbar on bottom
-        getChildren().addAll(buildSubmenu, toolbar);
+        // ── Route-draw bar (visible only while drawing a route) ───────────────
+        btnDoneRoute   = new Button("✔  Done Route");
+        btnCancelRoute = new Button("✕  Cancel");
+        btnDoneRoute.setStyle(
+            "-fx-background-color:#4a9c6d; -fx-text-fill:white;" +
+            "-fx-font-size:12px; -fx-padding:6 16; -fx-background-radius:5; -fx-cursor:hand;");
+        btnCancelRoute.setStyle(
+            "-fx-background-color:#9c4a4a; -fx-text-fill:white;" +
+            "-fx-font-size:12px; -fx-padding:6 16; -fx-background-radius:5; -fx-cursor:hand;");
+
+        Label lblDrawing = new Label("🖊  Drawing route — click road/stop tiles to trace the path:");
+        lblDrawing.setStyle("-fx-text-fill:#ffdd88; -fx-font-size:12px; -fx-font-weight:bold;");
+
+        routeDrawBar = new HBox(12, lblDrawing, btnDoneRoute, btnCancelRoute);
+        routeDrawBar.setPadding(new Insets(8, 12, 8, 12));
+        routeDrawBar.setAlignment(Pos.CENTER_LEFT);
+        routeDrawBar.setStyle("-fx-background-color:#1a3a2a;");
+        routeDrawBar.setVisible(false);
+        routeDrawBar.setManaged(false);
+
+        // Submenu on top, route-draw bar next, toolbar on bottom
+        getChildren().addAll(buildSubmenu, routeDrawBar, toolbar);
     }
 
     // ── State getters ─────────────────────────────────────────────────────────
@@ -222,6 +247,25 @@ public class BuildToolbar extends VBox {
     public Button getSaveButton()    { return btnSave; }
     public Button getExitButton()    { return btnExit; }
     public Button getMenuButton()    { return btnMenu; }
+    public Button getRouteButton()      { return btnRoute; }
+    public Button getDoneRouteButton()  { return btnDoneRoute; }
+    public Button getCancelRouteButton(){ return btnCancelRoute; }
+
+    /** Show the route-draw instruction bar (hides build submenu). */
+    public void showRouteDrawBar() {
+        buildSubmenu.setVisible(false);
+        buildSubmenu.setManaged(false);
+        btnBuild.setStyle(BTN_NORMAL);
+        routeDrawBar.setVisible(true);
+        routeDrawBar.setManaged(true);
+    }
+
+    /** Hide the route-draw bar and go back to normal state. */
+    public void hideRouteDrawBar() {
+        routeDrawBar.setVisible(false);
+        routeDrawBar.setManaged(false);
+        clearSelection();
+    }
 
     // kept for backwards compat — always returns true when road is selected
     /** @deprecated use {@link #isRoadSelected()} */

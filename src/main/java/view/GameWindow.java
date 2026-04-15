@@ -52,12 +52,30 @@ public class GameWindow {
 
     private void wireHud() {
         topHud.getPauseButton().setOnAction(e -> {
-            topHud.setPaused(!topHud.isPaused());
+            if (simController.isRunning()) {
+                simController.pause();
+                topHud.setPaused(true);
+            } else {
+                simController.play();
+                topHud.setPaused(false);
+            }
         });
 
-        topHud.getSpeed1xButton().setOnAction(e -> topHud.setActiveSpeedButton("1x"));
-        topHud.getSpeed2xButton().setOnAction(e -> topHud.setActiveSpeedButton("2x"));
-        topHud.getSpeed4xButton().setOnAction(e -> topHud.setActiveSpeedButton("4x"));
+        topHud.getSpeed1xButton().setOnAction(e -> {
+            simController.setSpeed(SimulationController.Speed.X1);
+            topHud.setActiveSpeedButton("1x");
+            topHud.setPaused(false);
+        });
+        topHud.getSpeed2xButton().setOnAction(e -> {
+            simController.setSpeed(SimulationController.Speed.X2);
+            topHud.setActiveSpeedButton("2x");
+            topHud.setPaused(false);
+        });
+        topHud.getSpeed4xButton().setOnAction(e -> {
+            simController.setSpeed(SimulationController.Speed.X4);
+            topHud.setActiveSpeedButton("4x");
+            topHud.setPaused(false);
+        });
     }
 
     /**
@@ -118,6 +136,9 @@ public class GameWindow {
         // Tell GameController to call mapPanel.drawGame() on any state change
         gameController.setOnStateChanged(() -> mapPanel.drawGame(game));
 
+        // Tell SimulationController to redraw map on every simulation tick (vehicles move)
+        simController.setOnStateChanged(() -> mapPanel.drawGame(game));
+
 
         // ── Assemble layout ──────────────────────────────────────────────────
         BorderPane root = new BorderPane();
@@ -166,6 +187,34 @@ public class GameWindow {
                 new GaragePanel(gameController, game).show(stage));
         bottomToolbar.getFinanceButton().setOnAction(e ->
                 gameController.onOpenFinanceDetails());
+
+        // Route — enter tile-by-tile route drawing mode
+        bottomToolbar.getRouteButton().setOnAction(e -> {
+            bottomToolbar.showRouteDrawBar();
+            gameController.startRouteDraw("Route " + (game.getRoutes().size() + 1));
+        });
+
+        // Done — finish drawing the route
+        bottomToolbar.getDoneRouteButton().setOnAction(e -> {
+            Route r = gameController.finishRouteDraw();
+            bottomToolbar.hideRouteDrawBar();
+            mapPanel.clearHoverOverlay();
+            if (r != null) {
+                Alert info = new Alert(Alert.AlertType.INFORMATION,
+                        "Route \"" + r.getName() + "\" created!\n"
+                        + r.getTilePath().size() + " tiles, "
+                        + r.getStops().size() + " stops.");
+                info.setHeaderText(null);
+                info.showAndWait();
+            }
+        });
+
+        // Cancel — discard the route being drawn
+        bottomToolbar.getCancelRouteButton().setOnAction(e -> {
+            gameController.cancelRouteDraw();
+            bottomToolbar.hideRouteDrawBar();
+            mapPanel.clearHoverOverlay();
+        });
     }
 
     // ── Map mouse wiring ─────────────────────────────────────────────────────
@@ -185,6 +234,26 @@ public class GameWindow {
                 topHud.setHoverTile(info);
             } else {
                 topHud.setHoverTile("—");
+            }
+
+            // ── Route-draw mode: redraw full path + hover tile together ──────
+            if (gameController.getBuildMode() == GameController.BuildMode.ROUTE_DRAW) {
+                if (tx != lastHover[0] || ty != lastHover[1]) {
+                    lastHover[0] = tx;
+                    lastHover[1] = ty;
+                    // Redraw the accumulated path first, then add hover highlight on top
+                    mapPanel.drawRoutePathOverlay(gameController.getCurrentRoutePath());
+                    if (game.inBounds(tx, ty)) {
+                        model.enums.TileType ttype = game.getTile(tx, ty).getType();
+                        boolean walkable = ttype == model.enums.TileType.ROAD
+                                || ttype == model.enums.TileType.STOP
+                                || ttype == model.enums.TileType.CITY_ROAD
+                                || ttype == model.enums.TileType.CITY_STOP
+                                || ttype == model.enums.TileType.BRIDGE;
+                        mapPanel.drawHoverOnTopOfRoute(tx, ty, walkable);
+                    }
+                }
+                return;
             }
 
             // Draw tile highlight in build mode and select mode
@@ -230,6 +299,15 @@ public class GameWindow {
 
             Position p = new Position(tx, ty);
 
+            // Route-draw mode: every click adds a tile to the route path
+            if (gameController.getBuildMode() == GameController.BuildMode.ROUTE_DRAW) {
+                gameController.onTileClicked(p);
+                // Redraw full path + hover tile so the new tile immediately shows
+                mapPanel.drawRoutePathOverlay(gameController.getCurrentRoutePath());
+                lastHover[0] = -1; lastHover[1] = -1; // force hover redraw on next move
+                return;
+            }
+
             if (bottomToolbar.isRemoveSelected()) {
                 gameController.setBuildMode(GameController.BuildMode.DEMOLISH);
                 gameController.onTileClicked(p);
@@ -240,32 +318,9 @@ public class GameWindow {
                 gameController.onTileClicked(p);
                 return;
             }
-            if (bottomToolbar.isRouteSelected()) {
-                // Create a route from all placed stops with one click
-                if (game.getStops().size() >= 2) {
-                    Route r = gameController.onCreateRoute(game.getStops());
-                    if (r != null) {
-                        Alert alert = new Alert(Alert.AlertType.INFORMATION,
-                                "Route \"" + r.getName() + "\" created with "
-                                + r.getStops().size() + " stops!");
-                        alert.setHeaderText(null);
-                        alert.showAndWait();
-                    }
-                } else {
-                    Alert alert = new Alert(Alert.AlertType.WARNING,
-                            "Place at least 2 stops first, then click the map to create a route.");
-                    alert.setHeaderText(null);
-                    alert.showAndWait();
-                }
-                bottomToolbar.clearSelection();
-                return;
-            }
             if (bottomToolbar.isSelectSelected()) {
                 Tile selectedTile = game.getTile(tx, ty);
-                String info = String.format("Pos: (%d,%d) Type: %s", tx, ty, selectedTile.getType());
-                if (selectedTile.getEntityName() != null) {
-                    info += " Entity: " + selectedTile.getEntityName();
-                }
+                String info = buildTileInfo(game, selectedTile, tx, ty);
                 topHud.setSelectedTile(info);
                 return;
             }
@@ -274,6 +329,58 @@ public class GameWindow {
             gameController.setBuildMode(GameController.BuildMode.ROAD);
             gameController.onTileClicked(p);
         });
+    }
+
+    /**
+     * Builds a rich info string for the HUD when the player clicks a tile in SELECT mode.
+     * - STOP / CITY_STOP: show stop name + which routes pass through it
+     * - Tiles occupied by a vehicle: show vehicle type + assigned route
+     * - Everything else: tile type + entity name
+     */
+    private String buildTileInfo(model.Game game, Tile tile, int tx, int ty) {
+        model.enums.TileType type = tile.getType();
+
+        // ── Stop tile ────────────────────────────────────────────────────────
+        if (type == model.enums.TileType.STOP || type == model.enums.TileType.CITY_STOP) {
+            model.Stop stop = game.getStopAt(new Position(tx, ty));
+            if (stop != null) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("Stop: ").append(stop.getName());
+                // List routes that include this stop
+                java.util.List<String> routeNames = new java.util.ArrayList<>();
+                for (model.Route r : game.getRoutes()) {
+                    for (model.Stop s : r.getStops()) {
+                        if (s.getId().equals(stop.getId())) {
+                            routeNames.add(r.getName());
+                            break;
+                        }
+                    }
+                }
+                if (!routeNames.isEmpty()) {
+                    sb.append("  |  Routes: ").append(String.join(", ", routeNames));
+                } else {
+                    sb.append("  |  No routes assigned");
+                }
+                return sb.toString();
+            }
+        }
+
+        // ── Vehicle on tile ──────────────────────────────────────────────────
+        for (model.Vehicle v : game.getVehicles()) {
+            if (v.getPosition().getX() == tx && v.getPosition().getY() == ty) {
+                String routeInfo = (v.getRoute() != null)
+                        ? v.getRoute().getName()
+                        : "No route";
+                return "Vehicle: " + v.getType().name().replace('_', ' ')
+                        + "  |  Route: " + routeInfo
+                        + "  |  Speed: " + v.getSpeed();
+            }
+        }
+
+        // ── Default ──────────────────────────────────────────────────────────
+        String info = String.format("(%d,%d)  %s", tx, ty, type);
+        if (tile.getEntityName() != null) info += "  " + tile.getEntityName();
+        return info;
     }
 
     /**
