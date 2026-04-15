@@ -5,7 +5,9 @@ import model.Position;
 import model.Road;
 import model.Route;
 import model.Stop;
+import model.Tile;
 import model.Vehicle;
+import model.enums.TileType;
 import model.enums.VehicleType;
 import model.service.ConstructionService;
 import model.service.VehicleService;
@@ -18,32 +20,34 @@ import java.util.List;
  *
  * Handles all in-game user interactions:
  *   - Mouse clicks on the map (tile selection, building, demolishing)
- *   - Switching build modes via the toolbar
- *   - Delegating build/remove actions to model services (ConstructionService, etc.)
- *
- * After any state change the controller fires an onStateChanged callback
- * so the View knows to redraw without the controller touching JavaFX directly.
+ *   - Route drawing: player clicks road/stop tiles to define the exact path
+ *   - Delegating build/remove actions to model services
  */
 public class GameController {
 
-    /**
-     * What the player is currently doing on the map.
-     * Matches the BuildMode enum in the UML diagram.
-     */
     public enum BuildMode {
         SELECT,
         ROAD,
         STOP,
         BRIDGE,
-        DEMOLISH
+        DEMOLISH,
+        ROUTE_DRAW   // player is drawing a route tile-by-tile on the map
     }
 
     private final GameState state;
-    private BuildMode  buildMode = BuildMode.SELECT;
+    private BuildMode buildMode = BuildMode.SELECT;
 
     private final ConstructionService constructionService = new ConstructionService();
-    private       VehicleService      vehicleService      = new VehicleService();
+    private final VehicleService      vehicleService      = new VehicleService();
     private int routeCounter = 0;
+
+    // ── Route drawing state ───────────────────────────────────────────────────
+    /** Tiles the player has clicked so far while drawing a route. */
+    private final List<Position> currentRoutePath  = new ArrayList<>();
+    /** Stops detected along currentRoutePath. */
+    private final List<Stop>     currentRouteStops = new ArrayList<>();
+    /** Name to give the route when finished. */
+    private String pendingRouteName = "";
 
     private Runnable onStateChanged;
     private SimulationController simController;
@@ -52,125 +56,180 @@ public class GameController {
         this.state = state;
     }
 
-    /**
-     * Sets the SimulationController reference so GameController can mark unsaved changes.
-     */
-    public void setSimulationController(SimulationController simController) {
-        this.simController = simController;
+    public void setSimulationController(SimulationController sc) {
+        this.simController = sc;
     }
 
-    /**
-     * The View registers this callback so the controller can trigger a redraw
-     * without importing any JavaFX drawing classes.
-     */
     public void setOnStateChanged(Runnable callback) {
         this.onStateChanged = callback;
     }
 
-    // -----------------------------------------------------------------------
-    // Main entry point — called by MapPanel's mouse click handler in the View
-    // -----------------------------------------------------------------------
+    // ── Main tile-click dispatcher ────────────────────────────────────────────
 
-    /**
-     * Called when the player clicks a tile.
-     * Dispatches to the correct action based on the current BuildMode.
-     *
-     * @param p the grid position that was clicked
-     */
     public void onTileClicked(Position p) {
         switch (buildMode) {
-            case ROAD     -> onBuildRoad(p);
-            case STOP     -> onBuildStop(p);
-            case DEMOLISH -> onDemolish(p);
-            case SELECT   -> onSelect(p);
-            default       -> { /* bridge — handled separately */ }
+            case ROAD       -> onBuildRoad(p);
+            case STOP       -> onBuildStop(p);
+            case DEMOLISH   -> onDemolish(p);
+            case SELECT     -> onSelect(p);
+            case ROUTE_DRAW -> onRouteDrawClick(p);
+            default         -> { }
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Build mode
-    // -----------------------------------------------------------------------
+    // ── Build mode ────────────────────────────────────────────────────────────
 
-    /**
-     * Switches the active build mode.
-     * Called when the player clicks a toolbar button (Build, Remove, Select, etc.).
-     */
     public void setBuildMode(BuildMode mode) {
         this.buildMode = mode;
         System.out.println("[GameController] buildMode -> " + mode);
         notifyView();
     }
 
-    public BuildMode getBuildMode() {
-        return buildMode;
-    }
+    public BuildMode getBuildMode() { return buildMode; }
 
-    // -----------------------------------------------------------------------
-    // Construction actions  (will delegate to ConstructionService in Issue 6)
-    // -----------------------------------------------------------------------
+    // ── Construction ──────────────────────────────────────────────────────────
 
-    /** Places a road at position p. */
     public void onBuildRoad(Position p) {
         if (constructionService.buildRoad(state.getMap(), p, Road.RoadType.HORIZONTAL)) {
-            System.out.println("[GameController] Road placed at " + p);
-            if (simController != null) {
-                simController.markUnsavedChanges();
-            }
+            markUnsaved();
             notifyView();
         }
     }
 
-    /** Places a stop at position p. */
     public void onBuildStop(Position p) {
-        // Find a stop counter logic or rely on service to count
-        String stopName = "Stop at " + p.getX() + "," + p.getY();
+        String stopName = "Stop-" + (state.getMap().getStops().size() + 1);
         if (constructionService.buildStop(state.getMap(), p, stopName)) {
-            System.out.println("[GameController] Stop placed at " + p);
-            if (simController != null) {
-                simController.markUnsavedChanges();
-            }
+            markUnsaved();
             notifyView();
         }
     }
 
-    /** Removes a road or stop at position p. */
     public void onDemolish(Position p) {
-        if (constructionService.removeRoad(state.getMap(), p) || constructionService.removeStop(state.getMap(), p)) {
-            System.out.println("[GameController] Demolished at " + p);
-            if (simController != null) {
-                simController.markUnsavedChanges();
-            }
+        if (constructionService.removeRoad(state.getMap(), p)
+                || constructionService.removeStop(state.getMap(), p)) {
+            markUnsaved();
             notifyView();
         }
     }
 
-    /** Selects a tile (e.g. to show info in InfoPanel). */
     public void onSelect(Position p) {
-        // TODO: notify InfoPanel with tile data
         System.out.println("[GameController] Selected tile at " + p);
     }
 
-    // -----------------------------------------------------------------------
-    // Route / Vehicle stubs  (will be filled in later issues)
-    // -----------------------------------------------------------------------
+    // ── Route drawing ─────────────────────────────────────────────────────────
 
-    public Route onCreateRoute(List<Stop> stops) {
-        if (stops == null || stops.size() < 2) {
-            System.out.println("[GameController] Route needs at least 2 stops");
+    /**
+     * Enters route-draw mode.
+     * @param routeName the name to give the finished route
+     */
+    public void startRouteDraw(String routeName) {
+        currentRoutePath.clear();
+        currentRouteStops.clear();
+        pendingRouteName = (routeName == null || routeName.isBlank())
+                ? "Route " + (routeCounter + 1) : routeName;
+        setBuildMode(BuildMode.ROUTE_DRAW);
+        System.out.println("[GameController] Route draw started: " + pendingRouteName);
+    }
+
+    /**
+     * Called when the player clicks a tile while in ROUTE_DRAW mode.
+     * Only walkable tiles (ROAD, STOP, CITY_ROAD, CITY_STOP, BRIDGE) are accepted.
+     */
+    public void onRouteDrawClick(Position p) {
+        Tile tile = state.getMap().getTile(p.getX(), p.getY());
+        if (tile == null) return;
+
+        TileType type = tile.getType();
+        boolean walkable = type == TileType.ROAD
+                || type == TileType.STOP
+                || type == TileType.CITY_ROAD
+                || type == TileType.CITY_STOP
+                || type == TileType.BRIDGE;
+        if (!walkable) {
+            System.out.println("[GameController] Route draw: tile not walkable " + p);
+            return;
+        }
+
+        // Prevent duplicate consecutive tiles
+        if (!currentRoutePath.isEmpty()
+                && currentRoutePath.get(currentRoutePath.size() - 1).equals(p)) {
+            return;
+        }
+
+        currentRoutePath.add(p);
+
+        // Auto-detect stops along the path
+        Stop stop = state.getMap().getStopAt(p);
+        if (stop != null && !currentRouteStops.contains(stop)) {
+            currentRouteStops.add(stop);
+        }
+
+        System.out.println("[GameController] Route path: " + currentRoutePath.size() + " tiles");
+        notifyView();
+    }
+
+    /**
+     * Finishes route drawing, creates the Route, and returns to SELECT mode.
+     * @return the created Route, or null if path is too short
+     */
+    public Route finishRouteDraw() {
+        if (currentRoutePath.size() < 2) {
+            System.out.println("[GameController] Route needs at least 2 tiles");
+            cancelRouteDraw();
             return null;
         }
+
         String id   = "route-" + (++routeCounter);
-        String name = "Route " + routeCounter;
-        Route route = new Route(id, name, new ArrayList<>(stops));
+        String name = pendingRouteName.isBlank() ? "Route " + routeCounter : pendingRouteName;
+
+        Route route = new Route(id, name,
+                new ArrayList<>(currentRouteStops),
+                new ArrayList<>(currentRoutePath));
         state.getMap().addRoute(route);
-        System.out.println("[GameController] Created " + name);
+
+        System.out.println("[GameController] Route '" + name + "' created with "
+                + currentRoutePath.size() + " tiles, "
+                + currentRouteStops.size() + " stops");
+
+        currentRoutePath.clear();
+        currentRouteStops.clear();
+        setBuildMode(BuildMode.SELECT);
+        markUnsaved();
+        return route;
+    }
+
+    /** Cancels route drawing without saving. */
+    public void cancelRouteDraw() {
+        currentRoutePath.clear();
+        currentRouteStops.clear();
+        setBuildMode(BuildMode.SELECT);
+        notifyView();
+    }
+
+    /** Returns a live (uncopied) view of the path being drawn — for overlay rendering. */
+    public List<Position> getCurrentRoutePath() {
+        return currentRoutePath;
+    }
+
+    // ── Backward-compat route creation (used by GaragePanel auto-route) ───────
+
+    public Route onCreateRoute(List<Stop> stops) {
+        return onCreateRoute(stops, null);
+    }
+
+    public Route onCreateRoute(List<Stop> stops, String customName) {
+        if (stops == null || stops.size() < 2) return null;
+        String id   = "route-" + (++routeCounter);
+        String name = (customName != null && !customName.isBlank())
+                ? customName : "Route " + routeCounter;
+        // No tilePath — vehicle will not move until a proper drawn route is used
+        Route route = new Route(id, name, new ArrayList<>(stops), new ArrayList<>());
+        state.getMap().addRoute(route);
         notifyView();
         return route;
     }
 
-    public void onModifyRoute(Route route, List<Stop> newOrder) {
-        System.out.println("[GameController] onModifyRoute() — not yet implemented");
-    }
+    // ── Vehicle management ────────────────────────────────────────────────────
 
     public void onBuyVehicle(VehicleType type) {
         List<Stop> stops = state.getMap().getStops();
@@ -181,12 +240,26 @@ public class GameController {
         notifyView();
     }
 
-    /** Spawns a vehicle and assigns it to the given route. Used by GaragePanel. */
     public Vehicle spawnAndAssign(VehicleType type, Route route) {
-        List<Stop> stops = state.getMap().getStops();
-        if (stops.isEmpty()) return null;
-        Vehicle v = vehicleService.spawnVehicle(state.getMap(), type, stops.get(0));
+        Position spawnPos = null;
+
+        // Prefer the first tile of the drawn route so vehicle starts exactly on path
+        if (route != null && route.hasTilePath()) {
+            spawnPos = route.getTilePath().get(0);
+        } else {
+            // Fallback: first stop on the map
+            List<Stop> stops = state.getMap().getStops();
+            if (!stops.isEmpty()) spawnPos = stops.get(0).getPosition();
+        }
+
+        if (spawnPos == null) {
+            System.out.println("[GameController] Cannot spawn vehicle — route has no path and no stops exist");
+            return null;
+        }
+
+        Vehicle v = vehicleService.spawnAtPosition(state.getMap(), type, spawnPos);
         vehicleService.assignRoute(state.getMap(), v, route);
+        markUnsaved();
         notifyView();
         return v;
     }
@@ -196,31 +269,22 @@ public class GameController {
         notifyView();
     }
 
-    // -----------------------------------------------------------------------
-    // UI panel stubs
-    // -----------------------------------------------------------------------
+    // ── Misc ──────────────────────────────────────────────────────────────────
 
-    public void onOpenMinimap() {
-        // TODO: open MinimapPanel
-        System.out.println("[GameController] onOpenMinimap() — not yet implemented");
+    public void onOpenMinimap()        { }
+    public void onOpenFinanceDetails() { }
+
+    public void onModifyRoute(Route route, List<Stop> newOrder) {
+        System.out.println("[GameController] onModifyRoute() — not yet implemented");
     }
 
-    public void onOpenFinanceDetails() {
-        // TODO: open FinancePanel
-        System.out.println("[GameController] onOpenFinanceDetails() — not yet implemented");
+    private void markUnsaved() {
+        if (simController != null) simController.markUnsavedChanges();
     }
-
-    // -----------------------------------------------------------------------
-    // Internal
-    // -----------------------------------------------------------------------
 
     private void notifyView() {
-        if (onStateChanged != null) {
-            onStateChanged.run();
-        }
+        if (onStateChanged != null) onStateChanged.run();
     }
 
-    public GameState getState() {
-        return state;
-    }
+    public GameState getState() { return state; }
 }
