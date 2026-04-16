@@ -64,6 +64,31 @@ public class GameController {
         this.onStateChanged = callback;
     }
 
+    public Vehicle onBuyVehicleDirect(VehicleType type) {
+        Position spawnPos = null;
+
+        List<Stop> stops = state.getMap().getStops();
+        if (!stops.isEmpty()) {
+            spawnPos = stops.get(0).getPosition();
+        } else {
+            List<Road> roads = state.getMap().getRoads();
+            if (!roads.isEmpty()) {
+                spawnPos = roads.get(0).getPosition();
+            }
+        }
+
+        if (spawnPos == null) {
+            System.out.println("[GameController] Cannot buy vehicle - no stop or road exists to place it");
+            return null;
+        }
+
+        Vehicle v = vehicleService.spawnAtPosition(state.getMap(), type, spawnPos);
+        markUnsaved();
+        notifyView();
+        return v;
+    }
+
+
     // ── Main tile-click dispatcher ────────────────────────────────────────────
 
     public void onTileClicked(Position p) {

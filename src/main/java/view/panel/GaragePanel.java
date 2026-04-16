@@ -8,191 +8,328 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import model.Game;
 import model.Route;
+import model.Vehicle;
 import model.enums.VehicleType;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
-import java.util.List;
-
-/**
- * GaragePanel — modal window for buying vehicles and assigning them to routes.
- *
- * Shows all 6 vehicle types with their stats.
- * Player picks a route then clicks "Buy" on any vehicle type.
- */
 public class GaragePanel {
 
-    private static final String DARK_BG  = "#1e1e2e";
-    private static final String CARD_BG  = "#2a2a3c";
-    private static final String ACCENT   = "#5a8fd8";
-    private static final String TEXT     = "#e0e0f0";
-    private static final String SUBTEXT  = "#9090b0";
+    private static final String ROOT_STYLE =
+            "-fx-background-color: linear-gradient(to right, #d9edf9, #f7dcc0);" +
+                    "-fx-border-color: #d8c3a8;" +
+                    "-fx-border-width: 1;" +
+                    "-fx-border-radius: 14;" +
+                    "-fx-background-radius: 14;";
+
+    private static final String HEADER_STYLE =
+            "-fx-background-color: rgba(255,255,255,0.55);" +
+                    "-fx-border-color: rgba(0,0,0,0.08);" +
+                    "-fx-border-width: 0 0 1 0;" +
+                    "-fx-background-radius: 14 14 0 0;";
+
+    private static final String LEFT_PANEL_STYLE =
+            "-fx-background-color: rgba(255,255,255,0.18);" +
+                    "-fx-border-color: rgba(0,0,0,0.08);" +
+                    "-fx-border-width: 0 1 0 0;";
+
+    private static final String RIGHT_PANEL_STYLE =
+            "-fx-background-color: rgba(255,255,255,0.12);";
+
+    private static final String TAB_ACTIVE_STYLE =
+            "-fx-background-color: #b83a3a;" +
+                    "-fx-text-fill: white;" +
+                    "-fx-font-size: 16px;" +
+                    "-fx-font-weight: bold;" +
+                    "-fx-background-radius: 12;" +
+                    "-fx-padding: 14 22;" +
+                    "-fx-cursor: hand;";
+
+    private static final String TAB_INACTIVE_STYLE =
+            "-fx-background-color: #9aab64;" +
+                    "-fx-text-fill: white;" +
+                    "-fx-font-size: 16px;" +
+                    "-fx-font-weight: bold;" +
+                    "-fx-background-radius: 12;" +
+                    "-fx-padding: 14 22;" +
+                    "-fx-cursor: hand;";
+
+    private static final String PRIMARY_BUTTON_STYLE =
+            "-fx-background-color: #b83a3a;" +
+                    "-fx-text-fill: white;" +
+                    "-fx-font-size: 14px;" +
+                    "-fx-font-weight: bold;" +
+                    "-fx-background-radius: 10;" +
+                    "-fx-padding: 10 22;" +
+                    "-fx-cursor: hand;";
+
+    private static final String SECONDARY_BUTTON_STYLE =
+            "-fx-background-color: #9aab64;" +
+                    "-fx-text-fill: white;" +
+                    "-fx-font-size: 14px;" +
+                    "-fx-font-weight: bold;" +
+                    "-fx-background-radius: 10;" +
+                    "-fx-padding: 10 22;" +
+                    "-fx-cursor: hand;";
+
+    private static final String FIELD_STYLE =
+            "-fx-font-size: 15px;" +
+                    "-fx-background-color: rgba(255,255,255,0.90);" +
+                    "-fx-border-color: rgba(0,0,0,0.10);" +
+                    "-fx-border-radius: 10;" +
+                    "-fx-background-radius: 10;";
+
+    private static final String CARD_STYLE =
+            "-fx-background-color: rgba(255,255,255,0.55);" +
+                    "-fx-border-color: rgba(0,0,0,0.08);" +
+                    "-fx-border-radius: 12;" +
+                    "-fx-background-radius: 12;" +
+                    "-fx-padding: 18;";
 
     private final GameController gameController;
-    private final Game           game;
+    private final Game game;
 
     public GaragePanel(GameController gameController, Game game) {
         this.gameController = gameController;
-        this.game           = game;
+        this.game = game;
     }
 
-    /** Opens the garage as a modal window on top of the game. */
     public void show(Stage owner) {
         Stage dialog = new Stage();
         dialog.initOwner(owner);
         dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.initStyle(StageStyle.UNDECORATED);
         dialog.setTitle("Garage");
 
-        // ── Route selector — always read live from game so new routes show up ──
-        // game.getRoutes() returns the live list, filter to only drawn routes (hasTilePath)
         List<Route> drawnRoutes = game.getRoutes().stream()
                 .filter(Route::hasTilePath)
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
 
-        Label routeLabel = styledLabel("Assign to route:", SUBTEXT, 12);
-        ComboBox<String> routeBox = new ComboBox<>();
-        routeBox.setStyle(
-            "-fx-background-color:#3a3a50; -fx-text-fill:" + TEXT + ";" +
-            "-fx-prompt-text-fill:" + SUBTEXT + "; -fx-font-size:13px;");
-        routeBox.setPrefWidth(220);
+        Label title = new Label("Garage");
+        title.setStyle("-fx-font-size: 30px; -fx-font-weight: bold; -fx-text-fill: #2f2a24;");
+        Label subtitle = new Label("Manage your vehicles");
+        subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #666666;");
 
-        if (drawnRoutes.isEmpty()) {
-            routeBox.getItems().add("— Draw a route first —");
-            routeBox.getSelectionModel().selectFirst();
-        } else {
-            for (Route r : drawnRoutes) {
-                routeBox.getItems().add(r.getName() + " (" + r.getTilePath().size() + " tiles)");
-            }
-            routeBox.getSelectionModel().selectFirst();
-        }
+        VBox header = new VBox(4, title, subtitle);
+        header.setAlignment(Pos.CENTER);
+        header.setPadding(new Insets(18, 20, 18, 20));
+        header.setStyle(HEADER_STYLE);
 
-        HBox routeRow = new HBox(10, routeLabel, routeBox);
-        routeRow.setAlignment(Pos.CENTER_LEFT);
-        routeRow.setPadding(new Insets(0, 0, 12, 0));
+        Button btnPurchase = new Button("Purchase");
+        Button btnItems = new Button("Items");
+        btnPurchase.setMaxWidth(Double.MAX_VALUE);
+        btnItems.setMaxWidth(Double.MAX_VALUE);
+        btnPurchase.setPrefHeight(56);
+        btnItems.setPrefHeight(56);
 
-        // ── Vehicle cards ─────────────────────────────────────────────────────
-        Label title = styledLabel("🚗  Garage", TEXT, 20);
-        title.setFont(Font.font("System", FontWeight.BOLD, 20));
+        VBox leftPanel = new VBox(14, btnPurchase, btnItems);
+        leftPanel.setPadding(new Insets(26));
+        leftPanel.setPrefWidth(210);
+        leftPanel.setStyle(LEFT_PANEL_STYLE);
 
-        GridPane grid = new GridPane();
-        grid.setHgap(12);
-        grid.setVgap(12);
+        VBox purchaseView = buildPurchaseView(dialog);
+        VBox itemsView = buildItemsView(dialog, drawnRoutes);
 
-        VehicleType[] types = VehicleType.values();
-        for (int i = 0; i < types.length; i++) {
-            VehicleType t = types[i];
-            VBox card = buildCard(t, routeBox, drawnRoutes, dialog);
-            grid.add(card, i % 3, i / 3);
-        }
+        itemsView.setVisible(false);
+        itemsView.setManaged(false);
 
-        // ── Close button ──────────────────────────────────────────────────────
-        Button closeBtn = new Button("✕  Close");
-        closeBtn.setStyle(
-            "-fx-background-color:#444460; -fx-text-fill:" + TEXT + ";" +
-            "-fx-font-size:13px; -fx-padding:7 20; -fx-background-radius:6; -fx-cursor:hand;");
-        closeBtn.setOnAction(e -> dialog.close());
+        Region spacer = new Region();
+        VBox.setVgrow(spacer, Priority.ALWAYS);
 
-        HBox closeRow = new HBox(closeBtn);
-        closeRow.setAlignment(Pos.CENTER_RIGHT);
-        closeRow.setPadding(new Insets(12, 0, 0, 0));
+        Button closeButton = new Button("Close");
+        closeButton.setStyle(SECONDARY_BUTTON_STYLE);
+        closeButton.setOnAction(e -> dialog.close());
 
-        // ── Layout ────────────────────────────────────────────────────────────
-        VBox root = new VBox(16, title, routeRow, grid, closeRow);
-        root.setPadding(new Insets(24));
-        root.setStyle("-fx-background-color:" + DARK_BG + "; -fx-background-radius:12;");
+        VBox rightPanel = new VBox(20, purchaseView, itemsView, spacer, closeButton);
+        rightPanel.setPadding(new Insets(26));
+        rightPanel.setStyle(RIGHT_PANEL_STYLE);
 
-        Scene scene = new Scene(root);
-        scene.setFill(Color.TRANSPARENT);
+        btnPurchase.setStyle(TAB_ACTIVE_STYLE);
+        btnItems.setStyle(TAB_INACTIVE_STYLE);
+
+        btnPurchase.setOnAction(e -> {
+            btnPurchase.setStyle(TAB_ACTIVE_STYLE);
+            btnItems.setStyle(TAB_INACTIVE_STYLE);
+            purchaseView.setVisible(true);
+            purchaseView.setManaged(true);
+            itemsView.setVisible(false);
+            itemsView.setManaged(false);
+        });
+
+        btnItems.setOnAction(e -> {
+            btnPurchase.setStyle(TAB_INACTIVE_STYLE);
+            btnItems.setStyle(TAB_ACTIVE_STYLE);
+            purchaseView.setVisible(false);
+            purchaseView.setManaged(false);
+            itemsView.setVisible(true);
+            itemsView.setManaged(true);
+        });
+
+        HBox content = new HBox(leftPanel, rightPanel);
+        HBox.setHgrow(rightPanel, Priority.ALWAYS);
+
+        BorderPane root = new BorderPane();
+        root.setTop(header);
+        root.setCenter(content);
+        root.setStyle(ROOT_STYLE);
+
+        Scene scene = new Scene(root, 760, 470);
         dialog.setScene(scene);
-        dialog.setResizable(false);
+        dialog.setResizable(true);
+        dialog.setMinWidth(680);
+        dialog.setMinHeight(420);
         dialog.showAndWait();
     }
 
-    // ── Card builder ──────────────────────────────────────────────────────────
+    private VBox buildPurchaseView(Stage dialog) {
+        Label sectionTitle = new Label("Buy New Vehicle");
+        sectionTitle.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #4b3a2d;");
 
-    private VBox buildCard(VehicleType type, ComboBox<String> routeBox,
-                           List<Route> routes, Stage dialog) {
+        Label hint = new Label("Choose a vehicle type to add to your fleet.");
+        hint.setStyle("-fx-font-size: 13px; -fx-text-fill: #7b6553;");
 
-        String emoji = emojiFor(type);
-        String colorHex = colorFor(type);
+        Label vehicleLabel = new Label("Vehicle type");
+        vehicleLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #4b3a2d;");
 
-        Label nameLabel = styledLabel(emoji + "  " + formatName(type), TEXT, 13);
-        nameLabel.setFont(Font.font("System", FontWeight.BOLD, 13));
+        ComboBox<String> vehicleTypeBox = new ComboBox<>();
+        vehicleTypeBox.setPrefWidth(280);
+        vehicleTypeBox.setStyle(FIELD_STYLE);
 
-        Label catLabel  = styledLabel("Category: " + type.getCategory(), SUBTEXT, 11);
-        Label spdLabel  = styledLabel("Speed:     " + type.getSpeed(), SUBTEXT, 11);
-        Label capLabel  = styledLabel("Capacity:  " + type.getCapacity(), SUBTEXT, 11);
-        Label costLabel = styledLabel("Maint/min: " + type.getMaintenanceCost(), SUBTEXT, 11);
+        for (VehicleType type : VehicleType.values()) {
+            vehicleTypeBox.getItems().add(formatName(type));
+        }
+        vehicleTypeBox.getSelectionModel().selectFirst();
 
-        Button buyBtn = new Button("Buy");
-        buyBtn.setStyle(
-            "-fx-background-color:" + colorHex + "; -fx-text-fill:white;" +
-            "-fx-font-size:12px; -fx-font-weight:bold; -fx-padding:6 18;" +
-            "-fx-background-radius:5; -fx-cursor:hand;");
+        Label categoryLabel = new Label();
+        Label speedLabel = new Label();
+        Label capacityLabel = new Label();
+        Label priceLabel = new Label();
 
-        buyBtn.setOnAction(e -> {
-            int idx = routeBox.getSelectionModel().getSelectedIndex();
-            if (!routes.isEmpty() && idx >= 0 && idx < routes.size()) {
-                Route route = routes.get(idx);
-                model.Vehicle v = gameController.spawnAndAssign(type, route);
-                if (v != null) {
-                    System.out.println("[Garage] Bought " + type + " on route: " + route.getName()
-                            + " (" + route.getTilePath().size() + " tiles)");
-                } else {
-                    System.out.println("[Garage] Failed to spawn vehicle");
-                }
+        String statStyle = "-fx-font-size: 14px; -fx-text-fill: #5d4b3d;";
+        categoryLabel.setStyle(statStyle);
+        speedLabel.setStyle(statStyle);
+        capacityLabel.setStyle(statStyle);
+        priceLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #3d3026;");
+
+        Runnable updateStats = () -> {
+            int idx = vehicleTypeBox.getSelectionModel().getSelectedIndex();
+            if (idx < 0) return;
+            VehicleType selected = VehicleType.values()[idx];
+            categoryLabel.setText("Category: " + selected.getCategory());
+            speedLabel.setText("Speed: " + selected.getSpeed());
+            capacityLabel.setText("Capacity: " + selected.getCapacity());
+            priceLabel.setText("Price: " + selected.getMaintenanceCost());
+        };
+        updateStats.run();
+        vehicleTypeBox.setOnAction(e -> updateStats.run());
+
+        Button buyButton = new Button("Buy Vehicle");
+        buyButton.setStyle(PRIMARY_BUTTON_STYLE);
+        buyButton.setOnAction(e -> {
+            int idx = vehicleTypeBox.getSelectionModel().getSelectedIndex();
+            if (idx < 0) return;
+
+            VehicleType selectedType = VehicleType.values()[idx];
+            Vehicle vehicle = gameController.onBuyVehicleDirect(selectedType);
+
+            if (vehicle != null) {
+                System.out.println("[Garage] Bought " + selectedType);
+                dialog.close();
             } else {
-                System.out.println("[Garage] No drawn route selected");
+                System.out.println("[Garage] Failed to buy vehicle");
             }
+        });
+
+        VBox statsCard = new VBox(10, categoryLabel, speedLabel, capacityLabel, priceLabel);
+        statsCard.setStyle(CARD_STYLE);
+
+        return new VBox(14,
+                sectionTitle,
+                hint,
+                vehicleLabel,
+                vehicleTypeBox,
+                statsCard,
+                buyButton
+        );
+    }
+
+    private VBox buildItemsView(Stage dialog, List<Route> drawnRoutes) {
+        Label sectionTitle = new Label("Your Vehicles");
+        sectionTitle.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #4b3a2d;");
+
+        Label hint = new Label("Select an owned vehicle and assign it to a route.");
+        hint.setStyle("-fx-font-size: 13px; -fx-text-fill: #7b6553;");
+
+        Label ownedVehicleLabel = new Label("Owned vehicle");
+        ownedVehicleLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #4b3a2d;");
+
+        ComboBox<String> ownedVehicleBox = new ComboBox<>();
+        ownedVehicleBox.setPrefWidth(320);
+        ownedVehicleBox.setStyle(FIELD_STYLE);
+
+        List<Vehicle> ownedVehicles = game.getVehicles();
+        if (ownedVehicles.isEmpty()) {
+            ownedVehicleBox.getItems().add("No vehicles owned");
+            ownedVehicleBox.getSelectionModel().selectFirst();
+        } else {
+            for (Vehicle vehicle : ownedVehicles) {
+                String routeName = vehicle.getRoute() != null ? vehicle.getRoute().getName() : "Unassigned";
+                ownedVehicleBox.getItems().add(formatName(vehicle.getType()) + " - " + routeName);
+            }
+            ownedVehicleBox.getSelectionModel().selectFirst();
+        }
+
+        Label routeLabel = new Label("Assign to route");
+        routeLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #4b3a2d;");
+
+        ComboBox<String> routeBox = new ComboBox<>();
+        routeBox.setPrefWidth(320);
+        routeBox.setStyle(FIELD_STYLE);
+
+        if (drawnRoutes.isEmpty()) {
+            routeBox.getItems().add("Draw a route first");
+            routeBox.getSelectionModel().selectFirst();
+        } else {
+            for (Route route : drawnRoutes) {
+                routeBox.getItems().add(route.getName());
+            }
+            routeBox.getSelectionModel().selectFirst();
+        }
+
+        Button assignButton = new Button("Assign Route");
+        assignButton.setStyle(PRIMARY_BUTTON_STYLE);
+        assignButton.setOnAction(e -> {
+            int vehicleIdx = ownedVehicleBox.getSelectionModel().getSelectedIndex();
+            int routeIdx = routeBox.getSelectionModel().getSelectedIndex();
+
+            if (ownedVehicles.isEmpty() || drawnRoutes.isEmpty()) return;
+            if (vehicleIdx < 0 || vehicleIdx >= ownedVehicles.size()) return;
+            if (routeIdx < 0 || routeIdx >= drawnRoutes.size()) return;
+
+            Vehicle selectedVehicle = ownedVehicles.get(vehicleIdx);
+            Route selectedRoute = drawnRoutes.get(routeIdx);
+            gameController.onAssignVehicle(selectedVehicle, selectedRoute);
+
+            System.out.println("[Garage] Assigned vehicle to route: " + selectedRoute.getName());
             dialog.close();
         });
 
-        VBox card = new VBox(6, nameLabel, catLabel, spdLabel, capLabel, costLabel, buyBtn);
-        card.setPadding(new Insets(14));
-        card.setPrefWidth(170);
-        card.setStyle(
-            "-fx-background-color:" + CARD_BG + ";" +
-            "-fx-background-radius:8;" +
-            "-fx-border-color:" + colorHex + ";" +
-            "-fx-border-width:1.5;" +
-            "-fx-border-radius:8;");
-        return card;
-    }
+        VBox assignCard = new VBox(12, ownedVehicleLabel, ownedVehicleBox, routeLabel, routeBox);
+        assignCard.setStyle(CARD_STYLE);
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private static Label styledLabel(String text, String colorHex, double size) {
-        Label l = new Label(text);
-        l.setStyle("-fx-text-fill:" + colorHex + "; -fx-font-size:" + size + "px;");
-        return l;
+        return new VBox(14,
+                sectionTitle,
+                hint,
+                assignCard,
+                assignButton
+        );
     }
 
     private static String formatName(VehicleType t) {
         return t.name().replace('_', ' ');
-    }
-
-    private static String emojiFor(VehicleType t) {
-        return switch (t) {
-            case CITY_BUS, EXPRESS_BUS   -> "🚌";
-            case LOG_TRUCK, FLATBED_TRUCK -> "🚛";
-            case FOOD_TRUCK, GOODS_TRUCK  -> "🚚";
-        };
-    }
-
-    private static String colorFor(VehicleType t) {
-        return switch (t.getCategory()) {
-            case "Passenger"    -> "#3a7bd5";
-            case "Raw material" -> "#c97820";
-            default/*Product*/  -> "#2e9e6e";
-        };
     }
 }
