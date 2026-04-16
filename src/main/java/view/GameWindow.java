@@ -55,9 +55,11 @@ public class GameWindow {
             if (simController.isRunning()) {
                 simController.pause();
                 topHud.setPaused(true);
+                topHud.setActiveSpeedButton("");
             } else {
                 simController.play();
                 topHud.setPaused(false);
+                topHud.setActiveSpeedButton("1x");
             }
         });
 
@@ -66,17 +68,20 @@ public class GameWindow {
             topHud.setActiveSpeedButton("1x");
             topHud.setPaused(false);
         });
+
         topHud.getSpeed2xButton().setOnAction(e -> {
             simController.setSpeed(SimulationController.Speed.X2);
             topHud.setActiveSpeedButton("2x");
             topHud.setPaused(false);
         });
+
         topHud.getSpeed4xButton().setOnAction(e -> {
             simController.setSpeed(SimulationController.Speed.X4);
             topHud.setActiveSpeedButton("4x");
             topHud.setPaused(false);
         });
     }
+
 
     /**
      * Builds the game scene and shows it on the stage.
@@ -123,9 +128,10 @@ public class GameWindow {
 
 
         // ── HUD components ───────────────────────────────────────────────────
-        topHud       = new HudPanel(game.getWorldName());
+        topHud        = new HudPanel(game.getWorldName());
         bottomToolbar = new BuildToolbar();
-        topHud.setActiveSpeedButton("1x");
+        topHud.setPaused(true);
+        topHud.setActiveSpeedButton("");
 
         wireHud();
         // ── Wire toolbar → GameController / SimulationController ─────────────

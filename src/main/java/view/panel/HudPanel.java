@@ -64,7 +64,7 @@ public class HudPanel extends HBox {
     private final Label lblSelectedTile;
     private final Label lblTileTitle;
 
-    private boolean paused = false;
+    private boolean paused = true;
 
     public HudPanel() {
         this("Unnamed World");
@@ -89,7 +89,7 @@ public class HudPanel extends HBox {
         setStyle(PANEL_STYLE);
 
         // Pause button
-        btnPause = new Button("Pause");
+        btnPause = new Button("Continue");
         btnPause.setStyle(ROUND_BUTTON_STYLE);
         btnPause.setMinHeight(38);
         btnPause.setMinWidth(90);
@@ -101,9 +101,10 @@ public class HudPanel extends HBox {
         btnSpeed2x = new Button("2x");
         btnSpeed4x = new Button("4x");
 
-        btnSpeed1x.setStyle(SPEED_BUTTON_ACTIVE_STYLE);
+        btnSpeed1x.setStyle(SPEED_BUTTON_STYLE);
         btnSpeed2x.setStyle(SPEED_BUTTON_STYLE);
         btnSpeed4x.setStyle(SPEED_BUTTON_STYLE);
+
 
         HBox speedBox = new HBox(8, btnSpeed1x, btnSpeed2x, btnSpeed4x);
         speedBox.setAlignment(Pos.CENTER_LEFT);
@@ -211,11 +212,13 @@ public class HudPanel extends HBox {
         btnSpeed4x.setStyle(SPEED_BUTTON_STYLE);
 
         switch (speed) {
+            case "1x" -> btnSpeed1x.setStyle(SPEED_BUTTON_ACTIVE_STYLE);
             case "2x" -> btnSpeed2x.setStyle(SPEED_BUTTON_ACTIVE_STYLE);
             case "4x" -> btnSpeed4x.setStyle(SPEED_BUTTON_ACTIVE_STYLE);
-            default -> btnSpeed1x.setStyle(SPEED_BUTTON_ACTIVE_STYLE);
         }
     }
+
+
 
     public void setHoverTile(String info) {
         lblTileTitle.setText("Hover");

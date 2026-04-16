@@ -188,16 +188,17 @@ public class MapPanel extends Canvas {
         boolean isPassenger = vehicle.getType().isPassenger();
         Image   img         = isPassenger ? busImage : truckImage;
 
-        double imgW = TILE_W * 1.3;
-        double imgH = imgW * 0.85;
-        double imgY = cy - imgH * 0.6;
+        double imgW = TILE_W * 0.95;
+        double imgH = imgW * 0.70;
+        double imgX = cx - imgW / 2.0;
+        double imgY = cy + TILE_H * 0.02 - imgH / 2.0;
 
-        // Shadow
-        gc.setFill(Color.rgb(0, 0, 0, 0.20));
-        gc.fillOval(cx - imgW * 0.3, cy + TILE_H * 0.2, imgW * 0.6, TILE_H * 0.28);
+        // Shadow sits directly on the road center
+        gc.setFill(Color.rgb(0, 0, 0, 0.22));
+        gc.fillOval(cx - imgW * 0.28, cy + TILE_H * 0.18, imgW * 0.56, TILE_H * 0.18);
 
         if (img != null) {
-            gc.drawImage(img, cx - imgW / 2.0, imgY, imgW, imgH);
+            gc.drawImage(img, imgX, imgY, imgW, imgH);
         } else {
             // Fallback dot
             gc.setFill(isPassenger ? Color.rgb(30, 120, 220) : Color.rgb(220, 100, 30));

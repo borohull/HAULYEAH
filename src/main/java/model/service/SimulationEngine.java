@@ -24,7 +24,7 @@ public class SimulationEngine {
 
     // Speed values in VehicleType are 25–60 (game units).
     // Divide by SPEED_SCALE → tiles per second  (40 → 4 t/s).
-    private static final double SPEED_SCALE = 10.0;
+    private static final double SPEED_SCALE = 40.0;
 
     /** Per-vehicle progress from current tile toward next tile (0.0 – <1.0). */
     private final Map<String, Double> tileProgress = new HashMap<>();
