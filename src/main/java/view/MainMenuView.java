@@ -55,7 +55,7 @@ public class MainMenuView {
     public void show() {
         VBox menu = new VBox(20);
         menu.setAlignment(Pos.CENTER);
-        menu.setBackground(loadBg("/images/menupic.jpg"));
+        menu.setBackground(loadBg("/images/mainmenug.gif"));
         menu.setPrefSize(900, 650);
 
         // Title
@@ -97,7 +97,7 @@ public class MainMenuView {
         root.setAlignment(Pos.CENTER);
         root.setPrefSize(900, 650);
         root.setFillWidth(false);
-        root.setBackground(loadBg("/images/newGameBack.jpg"));
+        root.setBackground(loadBg("/images/othermenu.gif"));
 
         // Panel
         VBox panel = new VBox(20);
@@ -263,7 +263,7 @@ public class MainMenuView {
         root.setAlignment(Pos.CENTER);
         root.setPrefSize(900, 650);
         root.setFillWidth(false);
-        root.setBackground(loadBg("/images/menupic.jpg"));
+        root.setBackground(loadBg("/images/othermenu.gif"));
 
         VBox panel = new VBox(25);
         panel.setAlignment(Pos.CENTER);
@@ -317,7 +317,7 @@ public class MainMenuView {
         root.setAlignment(Pos.CENTER);
         root.setPrefSize(900, 650);
         root.setFillWidth(false);
-        root.setBackground(loadBg("/images/menupic.jpg"));
+        root.setBackground(loadBg("/images/othermenu.gif"));
 
         VBox panel = new VBox(25);
         panel.setAlignment(Pos.CENTER);

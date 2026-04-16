@@ -267,8 +267,14 @@ public class MapPanel extends Canvas {
 
         Image tileImage = getGroundImage(tile);
         if (tileImage != null) {
-            gc.drawImage(tileImage, cx - TILE_W / 2.0, cy, TILE_W, TILE_H + WALL_H);
+            double imageX = cx - TILE_W / 2.0;
+            double imageY = cy - TILE_H / 2.0;
+            double imageW = TILE_W;
+            double imageH = TILE_H * 2.0;
+
+            gc.drawImage(tileImage, imageX, imageY, imageW, imageH);
         }
+
     }
 
     /** Returns the road PNG — single image used for all road tiles. */
@@ -452,12 +458,49 @@ public class MapPanel extends Canvas {
     public int getTileH() { return TILE_H; }
 
     public int[] screenToTile(double screenX, double screenY) {
-        double scale = getScaleX(); // Assuming uniform scaling
-        double dx = (screenX / scale) - storedOriginX;
-        double dy = (screenY / scale) - storedOriginY;
+        double dx = screenX - storedOriginX;
+        double dy = screenY - storedOriginY - TILE_H / 2.0;
+
         double txRaw = (dx / (TILE_W / 2.0) + dy / (TILE_H / 2.0)) / 2.0;
         double tyRaw = (dy / (TILE_H / 2.0) - dx / (TILE_W / 2.0)) / 2.0;
-        return new int[]{ (int) Math.floor(txRaw), (int) Math.floor(tyRaw) };
+
+        int baseX = (int) Math.floor(txRaw);
+        int baseY = (int) Math.floor(tyRaw);
+
+        int bestX = baseX;
+        int bestY = baseY;
+        double bestDistance = Double.MAX_VALUE;
+
+        for (int y = baseY - 1; y <= baseY + 1; y++) {
+            for (int x = baseX - 1; x <= baseX + 1; x++) {
+                if (pointInsideDiamond(screenX, screenY, x, y)) {
+                    return new int[]{x, y};
+                }
+
+                double centerX = isoScreenX(x, y, storedOriginX);
+                double centerY = isoScreenY(x, y, storedOriginY) + TILE_H / 2.0;
+                double distance = Math.hypot(screenX - centerX, screenY - centerY);
+
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    bestX = x;
+                    bestY = y;
+                }
+            }
+        }
+
+        return new int[]{bestX, bestY};
+    }
+
+    private boolean pointInsideDiamond(double px, double py, int tx, int ty) {
+        double centerX = isoScreenX(tx, ty, storedOriginX);
+        double centerY = isoScreenY(tx, ty, storedOriginY) + TILE_H / 2.0;
+
+        double normalized =
+                Math.abs(px - centerX) / (TILE_W / 2.0) +
+                        Math.abs(py - centerY) / (TILE_H / 2.0);
+
+        return normalized <= 1.0;
     }
 
     /**
