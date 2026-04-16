@@ -114,12 +114,13 @@ public class GameWindow {
             if (e.isControlDown()) {
                 e.consume();
                 double factor   = e.getDeltaY() > 0 ? 1.1 : 1 / 1.1;
-                double newScale = mapPanel.getScaleX() * factor;
+                double newScale = mapGroup.getScaleX() * factor;
                 newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newScale));
-                mapPanel.setScaleX(newScale);
-                mapPanel.setScaleY(newScale);
+                mapGroup.setScaleX(newScale);
+                mapGroup.setScaleY(newScale);
             }
         });
+
 
         // ── HUD components ───────────────────────────────────────────────────
         topHud       = new HudPanel(game.getWorldName());
