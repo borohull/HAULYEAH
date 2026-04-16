@@ -60,6 +60,9 @@
                         <id>default-cli</id>
                         <configuration>
                             <mainClass>view.App</mainClass>
+                            <options>
+                                <option>-Dprism.order=sw</option>
+                            </options>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>
                             <jlinkImageName>app</jlinkImageName>

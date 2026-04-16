@@ -7,7 +7,10 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ScrollPane;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import model.Game;
 import model.Position;
@@ -17,6 +20,7 @@ import view.panel.BuildToolbar;
 import view.panel.GaragePanel;
 import view.panel.HudPanel;
 import view.panel.MapPanel;
+import view.panel.MinimapPanel;
 
 /**
  * GameWindow — builds and shows the in-game scene.
@@ -114,6 +118,10 @@ public class GameWindow {
             scroll.setVvalue(0.2);
         });
 
+        // ── Minimap ──────────────────────────────────────────────────────────
+        MinimapPanel minimap = new MinimapPanel(scroll, mapGroup, mapPanel);
+        minimap.drawMinimap(game);
+
         // Ctrl+scroll to zoom
         scroll.addEventFilter(javafx.scene.input.ScrollEvent.SCROLL, e -> {
             if (e.isControlDown()) {
@@ -123,6 +131,7 @@ public class GameWindow {
                 newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newScale));
                 mapGroup.setScaleX(newScale);
                 mapGroup.setScaleY(newScale);
+                minimap.refreshViewport();
             }
         });
 
@@ -141,16 +150,25 @@ public class GameWindow {
         wireMapEvents(game);
 
         // Tell GameController to call mapPanel.drawGame() on any state change
-        gameController.setOnStateChanged(() -> mapPanel.drawGame(game));
+        gameController.setOnStateChanged(() -> {
+            mapPanel.drawGame(game);
+            minimap.drawMinimap(game);
+        });
 
-        // Tell SimulationController to redraw map on every simulation tick (vehicles move)
+        // Tell SimulationController to redraw map on every simulation tick (vehicles move).
+        // Minimap only reflects static tiles — scroll listeners inside MinimapPanel
+        // already refresh the viewport rectangle, so no per-tick redraw needed.
         simController.setOnStateChanged(() -> mapPanel.drawGame(game));
 
-
         // ── Assemble layout ──────────────────────────────────────────────────
+        StackPane centerStack = new StackPane(scroll, minimap);
+        StackPane.setAlignment(minimap, Pos.BOTTOM_RIGHT);
+        StackPane.setMargin(minimap, new Insets(10));
+        minimap.bindSize(centerStack);
+
         BorderPane root = new BorderPane();
         root.setTop(topHud);
-        root.setCenter(scroll);
+        root.setCenter(centerStack);
         root.setBottom(bottomToolbar);
 
         stage.setTitle("Haul Yea!");
