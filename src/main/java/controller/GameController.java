@@ -6,6 +6,7 @@ import model.Road;
 import model.Route;
 import model.Stop;
 import model.Tile;
+import model.TrafficLight;
 import model.Vehicle;
 import model.enums.TileType;
 import model.enums.VehicleType;
@@ -30,8 +31,9 @@ public class GameController {
         ROAD,
         STOP,
         BRIDGE,
+        TRAFFIC_LIGHT,
         DEMOLISH,
-        ROUTE_DRAW   // player is drawing a route tile-by-tile on the map
+        ROUTE_DRAW
     }
 
     private final GameState state;
@@ -51,6 +53,7 @@ public class GameController {
 
     private Runnable onStateChanged;
     private SimulationController simController;
+    private java.util.function.Consumer<TrafficLight> onTrafficLightSelected;
 
     public GameController(GameState state) {
         this.state = state;
@@ -62,6 +65,15 @@ public class GameController {
 
     public void setOnStateChanged(Runnable callback) {
         this.onStateChanged = callback;
+    }
+
+    public void setOnTrafficLightSelected(java.util.function.Consumer<TrafficLight> callback) {
+        this.onTrafficLightSelected = callback;
+    }
+
+    /** Directly fires the traffic-light-selected callback (used by GameWindow for quick-cycle clicks). */
+    public void fireTrafficLightSelected(TrafficLight tl) {
+        if (onTrafficLightSelected != null) onTrafficLightSelected.accept(tl);
     }
 
     public Vehicle onBuyVehicleDirect(VehicleType type) {
@@ -93,12 +105,13 @@ public class GameController {
 
     public void onTileClicked(Position p) {
         switch (buildMode) {
-            case ROAD       -> onBuildRoad(p);
-            case STOP       -> onBuildStop(p);
-            case DEMOLISH   -> onDemolish(p);
-            case SELECT     -> onSelect(p);
-            case ROUTE_DRAW -> onRouteDrawClick(p);
-            default         -> { }
+            case ROAD          -> onBuildRoad(p);
+            case STOP          -> onBuildStop(p);
+            case TRAFFIC_LIGHT -> onBuildTrafficLight(p);
+            case DEMOLISH      -> onDemolish(p);
+            case SELECT        -> onSelect(p);
+            case ROUTE_DRAW    -> onRouteDrawClick(p);
+            default            -> { }
         }
     }
 
@@ -129,8 +142,18 @@ public class GameController {
         }
     }
 
+    public void onBuildTrafficLight(Position p) {
+        if (constructionService.buildTrafficLight(state.getMap(), p)) {
+            markUnsaved();
+            notifyView();
+        } else {
+            System.out.println("[GameController] Traffic light requires a 3- or 4-way junction: " + p);
+        }
+    }
+
     public void onDemolish(Position p) {
-        if (constructionService.removeRoad(state.getMap(), p)
+        if (constructionService.removeTrafficLight(state.getMap(), p)
+                || constructionService.removeRoad(state.getMap(), p)
                 || constructionService.removeStop(state.getMap(), p)) {
             markUnsaved();
             notifyView();
@@ -138,7 +161,16 @@ public class GameController {
     }
 
     public void onSelect(Position p) {
-        System.out.println("[GameController] Selected tile at " + p);
+        TrafficLight tl = state.getMap().getTrafficLightAt(p);
+        if (tl != null) {
+            // Manually cycle to next phase so the light color changes immediately on click
+            tl.cycleToNextPhase();
+            notifyView();
+            // Then open the config panel so the player can adjust green durations
+            if (onTrafficLightSelected != null) {
+                onTrafficLightSelected.accept(tl);
+            }
+        }
     }
 
     // ── Route drawing ─────────────────────────────────────────────────────────

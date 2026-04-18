@@ -12,11 +12,15 @@ import model.City;
 import model.Position;
 import model.Stop;
 import model.Tile;
+import model.TrafficLight;
 import model.Vehicle;
+import model.enums.Direction;
+import model.enums.LightState;
 import model.enums.TileType;
 import model.Road;
 import javafx.scene.image.Image;
 
+import java.util.List;
 import java.util.Random;
 
 
@@ -174,12 +178,84 @@ public class MapPanel extends Canvas {
             drawLabel(gc, c.getX(), c.getY(), stop.getName(), originX, originY);
         }
 
+        // ── Draw traffic lights ───────────────────────────────────────────────
+        for (TrafficLight tl : game.getTrafficLights().values()) {
+            drawTrafficLight(gc, tl, originX, originY);
+        }
+
         // ── Draw vehicles ────────────────────────────────────────────────────
         for (Vehicle vehicle : game.getVehicles()) {
             drawVehicle(gc, vehicle, originX, originY);
         }
     }
 
+    /**
+     * Draws one small traffic light at each corner of the junction diamond,
+     * one per active direction. The corner that matches the current green
+     * direction shows a bright green bulb; all others show red.
+     */
+    private void drawTrafficLight(GraphicsContext gc, TrafficLight tl, int ox, int oy) {
+        int tx = tl.getPosition().getX();
+        int ty = tl.getPosition().getY();
+
+        double isoX = isoScreenX(tx, ty, ox);
+        double isoY = isoScreenY(tx, ty, oy);
+
+        Direction curGreen = tl.getCurrentGreenDirection();
+        List<Direction> active = tl.getActiveDirections();
+
+        // Determine overall green/red using the 50 % phase-timer threshold
+        double phaseDuration = curGreen != null ? tl.getGreenDuration(curGreen) : 10.0;
+        boolean phaseIsGreen = tl.getPhaseTimer() > phaseDuration * 0.50;
+
+        for (Direction dir : active) {
+            // Each road arm connects to the junction along one EDGE of the diamond.
+            // Place the light at the midpoint of that edge — the true entry point.
+            //   NE edge midpoint (NORTH road) = (isoX + TW/4, isoY + TH/4)
+            //   SE edge midpoint (EAST road)  = (isoX + TW/4, isoY + 3*TH/4)
+            //   SW edge midpoint (SOUTH road) = (isoX - TW/4, isoY + 3*TH/4)
+            //   NW edge midpoint (WEST road)  = (isoX - TW/4, isoY + TH/4)
+            double cx, cy;
+            switch (dir) {
+                case NORTH -> { cx = isoX + TILE_W / 4.0;  cy = isoY + TILE_H / 4.0; }
+                case EAST  -> { cx = isoX + TILE_W / 4.0;  cy = isoY + TILE_H * 0.75; }
+                case SOUTH -> { cx = isoX - TILE_W / 4.0;  cy = isoY + TILE_H * 0.75; }
+                case WEST  -> { cx = isoX - TILE_W / 4.0;  cy = isoY + TILE_H / 4.0; }
+                default    -> { cx = isoX;                  cy = isoY + TILE_H / 2.0; }
+            }
+            boolean isGreen = (dir == curGreen) && phaseIsGreen;
+            drawMiniLight(gc, cx, cy, isGreen);
+        }
+    }
+
+    /** Draws a red dot and green dot side-by-side (no pole, no housing). */
+    private void drawMiniLight(GraphicsContext gc, double cx, double cy, boolean isGreen) {
+        double r = 4.0;          // dot radius
+        double gap = 2.0;        // gap between dots
+        double totalW = r * 4 + gap;
+        double startX = cx - totalW / 2.0;
+
+        // Red dot (left)
+        Color redColor = isGreen ? Color.rgb(60, 10, 10) : Color.rgb(255, 40, 40);
+        gc.setFill(redColor);
+        gc.fillOval(startX, cy - r, r * 2, r * 2);
+
+        // Green dot (right)
+        Color greenColor = isGreen ? Color.rgb(30, 215, 70) : Color.rgb(10, 45, 10);
+        gc.setFill(greenColor);
+        gc.fillOval(startX + r * 2 + gap, cy - r, r * 2, r * 2);
+
+        // Soft glow on the active dot
+        gc.setGlobalAlpha(0.35);
+        if (isGreen) {
+            gc.setFill(Color.rgb(30, 220, 70));
+            gc.fillOval(startX + r * 2 + gap - r * 0.4, cy - r * 1.4, r * 2.8, r * 2.8);
+        } else {
+            gc.setFill(Color.rgb(255, 40, 40));
+            gc.fillOval(startX - r * 0.4, cy - r * 1.4, r * 2.8, r * 2.8);
+        }
+        gc.setGlobalAlpha(1.0);
+    }
     private void drawVehicle(GraphicsContext gc, Vehicle vehicle, int ox, int oy) {
         // Use smooth (interpolated) position for fluid animation between tiles
         double   cx  = isoScreenXd(vehicle.getSmoothX(), vehicle.getSmoothY(), ox);

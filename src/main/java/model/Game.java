@@ -3,7 +3,9 @@ package model;
 import model.enums.TileType;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Game {
     private final int width;
@@ -20,6 +22,7 @@ public class Game {
     private final List<Stop>       stops;
     private final List<Vehicle>    vehicles;
     private final List<Route>      routes;
+    private final Map<Position, TrafficLight> trafficLights;
 
     public Game(int width, int height) {
         this.width  = width;
@@ -33,8 +36,9 @@ public class Game {
         this.bridges     = new ArrayList<>();
         this.roads       = new ArrayList<>();
         this.stops       = new ArrayList<>();
-        this.vehicles    = new ArrayList<>();
-        this.routes      = new ArrayList<>();
+        this.vehicles      = new ArrayList<>();
+        this.routes        = new ArrayList<>();
+        this.trafficLights = new HashMap<>();
 
         
         for (int x = 0; x < width; x++) {
@@ -81,6 +85,19 @@ public class Game {
     public List<Stop>      getStops()       { return stops; }
     public List<Vehicle>   getVehicles()    { return vehicles; }
     public List<Route>     getRoutes()      { return routes; }
+    public Map<Position, TrafficLight> getTrafficLights() { return trafficLights; }
+
+    public void addTrafficLight(TrafficLight tl) {
+        trafficLights.put(tl.getPosition(), tl);
+    }
+
+    public void removeTrafficLight(Position p) {
+        trafficLights.remove(p);
+    }
+
+    public TrafficLight getTrafficLightAt(Position p) {
+        return trafficLights.get(p);
+    }
 
     public void addVehicle(Vehicle v) { vehicles.add(v); }
     public void addRoute(Route r)     { routes.add(r); }

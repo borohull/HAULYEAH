@@ -7,7 +7,12 @@ import model.Position;
 import model.Road;
 import model.Stop;
 import model.Tile;
+import model.TrafficLight;
+import model.enums.Direction;
 import model.enums.TileType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * ConstructionService — handles validation and execution of building operations.
@@ -121,6 +126,52 @@ public class ConstructionService {
             t.setEntityName(bridge.getName());
         }
         return true;
+    }
+
+    // --- Traffic Light construction ---
+
+    /**
+     * Installs a traffic light at position p.
+     * Requires p to be a ROAD tile that is a 3- or 4-way junction.
+     */
+    public boolean buildTrafficLight(Game game, Position p) {
+        if (!isJunction(game, p)) return false;
+        if (game.getTrafficLightAt(p) != null) return false; // already has one
+
+        List<Direction> dirs = getActiveDirections(game, p);
+        int count = game.getTrafficLights().size();
+        TrafficLight tl = new TrafficLight("tl-" + (count + 1), p, dirs);
+        game.addTrafficLight(tl);
+        return true;
+    }
+
+    public boolean removeTrafficLight(Game game, Position p) {
+        if (game.getTrafficLightAt(p) == null) return false;
+        game.removeTrafficLight(p);
+        return true;
+    }
+
+    /** Returns true if p is a ROAD tile with 3 or 4 adjacent ROAD neighbors. */
+    public boolean isJunction(Game game, Position p) {
+        Tile t = game.getTile(p);
+        if (t == null || t.getType() != TileType.ROAD) return false;
+        return game.getAdjacentRoads(p).size() >= 3;
+    }
+
+    /** Returns the Direction list corresponding to which neighbors are roads. */
+    private List<Direction> getActiveDirections(Game game, Position p) {
+        List<Direction> dirs = new ArrayList<>();
+        int x = p.getX(), y = p.getY();
+        if (isRoad(game, x,     y - 1)) dirs.add(Direction.NORTH);
+        if (isRoad(game, x,     y + 1)) dirs.add(Direction.SOUTH);
+        if (isRoad(game, x - 1, y    )) dirs.add(Direction.WEST);
+        if (isRoad(game, x + 1, y    )) dirs.add(Direction.EAST);
+        return dirs;
+    }
+
+    private boolean isRoad(Game game, int x, int y) {
+        Tile t = game.getTile(x, y);
+        return t != null && t.getType() == TileType.ROAD;
     }
 
     // --- Validation logic ---
