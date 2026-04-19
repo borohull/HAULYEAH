@@ -8,8 +8,9 @@ import java.util.Random;
 import java.util.Set;
 
 public class MapGenerator {
-    private static final int FAC_W = 2;
-    private static final int FAC_H = 2;
+    private static final int FAC_W = 4;
+    private static final int FAC_H = 3;
+;
     private static final int PADDING = 2;
 
     private static final String[][] FACILITY_DATA = {
@@ -152,22 +153,24 @@ public class MapGenerator {
         }
 
         int[][] facilityPositions = {
-                {5, 40},
-                {15, 20},
-                {25, 60},
-                {33, 15},
-                {45, 55},
-                {55, 25},
-                {65, 45},
-                {75, 35},
-                {10, 65},
-                {40, 75},
-                {0, 10},
-                {5, 5},
-                {70, 5},
-                {20, 10},
-                {50, 50}
+                {6, 42},
+                {14, 22},
+                {22, 62},
+                {31, 16},
+                {47, 58},
+                {58, 24},
+                {62, 42},
+                {66, 30},
+                {10, 66},
+                {50, 72},
+                {4, 14},
+                {8, 8},
+                {62, 8},
+                {20, 12},
+                {56, 52}
         };
+
+
 
         for (int i = 0; i < Math.min(numFacilities, facilityPositions.length) && i < FACILITY_DATA.length; i++) {
             String[] data = FACILITY_DATA[i % FACILITY_DATA.length];
@@ -199,13 +202,14 @@ public class MapGenerator {
         Facility specialFac = new Facility(
                 "facility_special",
                 "Large Factory",
-                0,
-                0,
+                4,
+                4,
                 3,
                 3,
                 List.of("STEEL"),
                 List.of("IRON")
         );
+
         game.addFacility(specialFac);
 
         generateFixedWater(game);
