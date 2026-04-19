@@ -68,9 +68,11 @@ public class SimulationEngine {
         int            pathSize = path.size();
         if (pathSize < 2) return;
 
-        String vid         = vehicle.getId();
-        double tilesPerSec = Math.max(0.5, vehicle.getSpeed() / SPEED_SCALE);
-        double progress    = tileProgress.getOrDefault(vid, 0.0) + tilesPerSec * dt;
+        String vid          = vehicle.getId();
+        double tilesPerSec  = Math.max(0.5, vehicle.getSpeed() / SPEED_SCALE);
+        double storedProgress = tileProgress.getOrDefault(vid, 0.0); // progress before this tick
+        double progress       = storedProgress + tilesPerSec * dt;
+        final  double STOP_LINE = 0.30; // vehicle waits here (clearly inside previous tile)
 
         int curIdx  = vehicle.getRoutePathIndex();
         int nextIdx = (curIdx + 1) % pathSize;
@@ -83,9 +85,12 @@ public class SimulationEngine {
             if (tl != null) {
                 Direction approachDir = approachDirection(path.get(curIdx), path.get(nextIdx));
                 if (approachDir != null && tl.getStateFor(approachDir) == LightState.RED) {
-                    // Clamp but preserve any previously accumulated progress above the old clamp
-                    // so on the very next GREEN frame the vehicle always advances past 1.0.
-                    progress = Math.min(progress, 0.50);
+                    // Only clamp if the vehicle hasn't yet committed to crossing.
+                    // storedProgress > STOP_LINE means it moved past the stop line
+                    // during a GREEN tick → allow it to complete; don't drag it back.
+                    if (storedProgress <= STOP_LINE) {
+                        progress = Math.min(progress, STOP_LINE);
+                    }
                 }
             }
         }
@@ -103,7 +108,9 @@ public class SimulationEngine {
             if (tl != null) {
                 Direction approachDir = approachDirection(path.get(curIdx), path.get(nextIdx));
                 if (approachDir != null && tl.getStateFor(approachDir) == LightState.RED) {
-                    progress = Math.min(progress, 0.50);
+                    // After advancing a tile, progress is small (just subtracted 1.0).
+                    // Vehicle just arrived — unconditional clamp is safe here.
+                    progress = Math.min(progress, STOP_LINE);
                     break;
                 }
             }
