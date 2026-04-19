@@ -137,16 +137,19 @@ public class GaragePanel {
         itemsView.setVisible(false);
         itemsView.setManaged(false);
 
-        Region spacer = new Region();
-        VBox.setVgrow(spacer, Priority.ALWAYS);
 
         Button closeButton = new Button("Close");
         closeButton.setStyle(SECONDARY_BUTTON_STYLE);
         closeButton.setOnAction(e -> dialog.close());
 
-        VBox rightPanel = new VBox(20, purchaseView, itemsView, spacer, closeButton);
+        VBox buttonRow = new VBox(closeButton);
+        buttonRow.setAlignment(Pos.CENTER_LEFT);
+        buttonRow.setPadding(new Insets(0, 0, 0, 0));
+
+        VBox rightPanel = new VBox(20, purchaseView, itemsView, buttonRow);
         rightPanel.setPadding(new Insets(26));
         rightPanel.setStyle(RIGHT_PANEL_STYLE);
+
 
         btnPurchase.setStyle(TAB_ACTIVE_STYLE);
         btnItems.setStyle(TAB_INACTIVE_STYLE);
@@ -177,11 +180,12 @@ public class GaragePanel {
         root.setCenter(content);
         root.setStyle(ROOT_STYLE);
 
-        Scene scene = new Scene(root, 760, 470);
+        Scene scene = new Scene(root, 760, 560);
+
         dialog.setScene(scene);
         dialog.setResizable(true);
         dialog.setMinWidth(680);
-        dialog.setMinHeight(420);
+        dialog.setMinHeight(520);
         dialog.showAndWait();
     }
 

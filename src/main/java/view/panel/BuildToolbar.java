@@ -19,25 +19,37 @@ import model.Road;
 public class BuildToolbar extends VBox {
 
     // ── Style constants ───────────────────────────────────────────────────────
+    private static final String BAR_BG =
+            "-fx-background-color: linear-gradient(to right, #99D2FB, #FBD3AC);" +
+                    "-fx-border-color: #d0d0d0;" +
+                    "-fx-border-width: 1 0 0 0;";
+
+    private static final String PANEL_BOX =
+            "-fx-background-color: rgba(255,255,255,0.70);" +
+                    "-fx-background-radius: 12;" +
+                    "-fx-border-color: rgba(0,0,0,0.08);" +
+                    "-fx-border-radius: 12;";
+
     private static final String BTN_NORMAL =
-        "-fx-background-color:#3c3c3c; -fx-text-fill:white; " +
-        "-fx-font-size:13px; -fx-padding:8 18; " +
-        "-fx-background-radius:6; -fx-cursor:hand;";
+            "-fx-background-color:#9AAB64; -fx-text-fill:white; " +
+                    "-fx-font-size:13px; -fx-font-weight:bold; -fx-padding:8 18; " +
+                    "-fx-background-radius:10; -fx-cursor:hand;";
 
     private static final String BTN_HIGHLIGHT =
-        "-fx-background-color:#5a8fd8; -fx-text-fill:white; " +
-        "-fx-font-size:13px; -fx-padding:8 18; " +
-        "-fx-background-radius:6; -fx-cursor:hand;";
+            "-fx-background-color:#AA333C; -fx-text-fill:white; " +
+                    "-fx-font-size:13px; -fx-font-weight:bold; -fx-padding:8 18; " +
+                    "-fx-background-radius:10; -fx-cursor:hand;";
 
     private static final String SUB_BTN_NORMAL =
-        "-fx-background-color:#4a4a4a; -fx-text-fill:white; " +
-        "-fx-font-size:12px; -fx-padding:6 14; " +
-        "-fx-background-radius:5; -fx-cursor:hand;";
+            "-fx-background-color:#9AAB64; -fx-text-fill:white; " +
+                    "-fx-font-size:12px; -fx-font-weight:bold; -fx-padding:6 14; " +
+                    "-fx-background-radius:8; -fx-cursor:hand;";
 
     private static final String SUB_BTN_ACTIVE =
-        "-fx-background-color:#5a8fd8; -fx-text-fill:white; " +
-        "-fx-font-size:12px; -fx-padding:6 14; " +
-        "-fx-background-radius:5; -fx-cursor:hand;";
+            "-fx-background-color:#AA333C; -fx-text-fill:white; " +
+                    "-fx-font-size:12px; -fx-font-weight:bold; -fx-padding:6 14; " +
+                    "-fx-background-radius:8; -fx-cursor:hand;";
+
 
     // ── State ─────────────────────────────────────────────────────────────────
     private boolean roadSelected;
@@ -92,7 +104,8 @@ public class BuildToolbar extends VBox {
                 btnSave, btnExit, btnMenu);
         toolbar.setPadding(new Insets(8, 12, 8, 12));
         toolbar.setAlignment(Pos.CENTER_LEFT);
-        toolbar.setStyle("-fx-background-color:#2b2b2b;");
+        toolbar.setStyle(BAR_BG);
+
 
         // Build submenu (Road + Stop + Route + Traffic Light)
         btnRoad         = new Button("Road");
@@ -159,12 +172,14 @@ public class BuildToolbar extends VBox {
         });
 
         Label lblBuild = new Label("Build:");
-        lblBuild.setStyle("-fx-text-fill:#cccccc; -fx-font-size:13px; -fx-padding:0 8 0 0;");
+        lblBuild.setStyle("-fx-text-fill:#666666; -fx-font-size:13px; -fx-font-weight:bold; -fx-padding:0 8 0 0;");
+
 
         buildSubmenu = new HBox(10, lblBuild, btnRoad, btnStop, btnRoute, btnTrafficLight);
         buildSubmenu.setPadding(new Insets(8, 12, 8, 12));
         buildSubmenu.setAlignment(Pos.CENTER_LEFT);
-        buildSubmenu.setStyle("-fx-background-color:#3a3a3a;");
+        buildSubmenu.setStyle(PANEL_BOX);
+
         buildSubmenu.setVisible(false);
         buildSubmenu.setManaged(false);
 
@@ -217,19 +232,22 @@ public class BuildToolbar extends VBox {
         btnDoneRoute   = new Button("✔  Done Route");
         btnCancelRoute = new Button("✕  Cancel");
         btnDoneRoute.setStyle(
-            "-fx-background-color:#4a9c6d; -fx-text-fill:white;" +
-            "-fx-font-size:12px; -fx-padding:6 16; -fx-background-radius:5; -fx-cursor:hand;");
+                "-fx-background-color:#9AAB64; -fx-text-fill:white;" +
+                        "-fx-font-size:12px; -fx-font-weight:bold; -fx-padding:6 16; -fx-background-radius:8; -fx-cursor:hand;");
         btnCancelRoute.setStyle(
-            "-fx-background-color:#9c4a4a; -fx-text-fill:white;" +
-            "-fx-font-size:12px; -fx-padding:6 16; -fx-background-radius:5; -fx-cursor:hand;");
+                "-fx-background-color:#AA333C; -fx-text-fill:white;" +
+                        "-fx-font-size:12px; -fx-font-weight:bold; -fx-padding:6 16; -fx-background-radius:8; -fx-cursor:hand;");
+
 
         Label lblDrawing = new Label("🖊  Drawing route — click road/stop tiles to trace the path:");
-        lblDrawing.setStyle("-fx-text-fill:#ffdd88; -fx-font-size:12px; -fx-font-weight:bold;");
+        lblDrawing.setStyle("-fx-text-fill:#666666; -fx-font-size:12px; -fx-font-weight:bold;");
+
 
         routeDrawBar = new HBox(12, lblDrawing, btnDoneRoute, btnCancelRoute);
         routeDrawBar.setPadding(new Insets(8, 12, 8, 12));
         routeDrawBar.setAlignment(Pos.CENTER_LEFT);
-        routeDrawBar.setStyle("-fx-background-color:#1a3a2a;");
+        routeDrawBar.setStyle(PANEL_BOX);
+
         routeDrawBar.setVisible(false);
         routeDrawBar.setManaged(false);
 
@@ -259,6 +277,8 @@ public class BuildToolbar extends VBox {
         btnTrafficLight.setStyle(SUB_BTN_NORMAL);
         btnRemove.setStyle(BTN_NORMAL);
         btnSelect.setStyle(BTN_NORMAL);
+        btnBuild.setStyle(BTN_NORMAL);
+
     }
 
     // ── Button accessors (for GameWindow wiring) ──────────────────────────────
@@ -313,6 +333,8 @@ public class BuildToolbar extends VBox {
         stopSelected   = false;
         routeSelected  = false;
         removeSelected = false;
+        trafficLightSelected = false;
+
         buildSubmenu.setVisible(false);
         buildSubmenu.setManaged(false);
         btnBuild.setStyle(BTN_NORMAL);
@@ -320,6 +342,8 @@ public class BuildToolbar extends VBox {
         btnRoad.setStyle(SUB_BTN_NORMAL);
         btnStop.setStyle(SUB_BTN_NORMAL);
         btnRoute.setStyle(SUB_BTN_NORMAL);
+        btnTrafficLight.setStyle(SUB_BTN_NORMAL);
+
         btnRemove.setStyle(BTN_NORMAL);
     }
 }
