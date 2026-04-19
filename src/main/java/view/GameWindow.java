@@ -21,6 +21,7 @@ import view.panel.GaragePanel;
 import view.panel.HudPanel;
 import view.panel.MapPanel;
 import view.panel.MinimapPanel;
+import view.panel.TrafficLightPanel;
 
 /**
  * GameWindow — builds and shows the in-game scene.
@@ -155,6 +156,10 @@ public class GameWindow {
             minimap.drawMinimap(game);
         });
 
+        // Open config panel when player clicks a traffic light in SELECT mode
+        gameController.setOnTrafficLightSelected(tl ->
+                TrafficLightPanel.show(stage, tl, () -> mapPanel.drawGame(game)));
+
         // Tell SimulationController to redraw map on every simulation tick (vehicles move).
         // Minimap only reflects static tiles — scroll listeners inside MinimapPanel
         // already refresh the viewport rectangle, so no per-tick redraw needed.
@@ -285,7 +290,8 @@ public class GameWindow {
             boolean showOverlay = bottomToolbar.isRoadSelected()
                     || bottomToolbar.isStopSelected()
                     || bottomToolbar.isRemoveSelected()
-                    || bottomToolbar.isSelectSelected();
+                    || bottomToolbar.isSelectSelected()
+                    || bottomToolbar.isTrafficLightSelected();
             if (!showOverlay) {
                 mapPanel.clearHoverOverlay();
                 lastHover[0] = -1; lastHover[1] = -1;
@@ -303,7 +309,10 @@ public class GameWindow {
                     return;
                 } else if (bottomToolbar.isRemoveSelected()) {
                     Position p = new Position(tx, ty);
-                    valid = game.getRoadAt(p) != null || game.getStopAt(p) != null;
+                    valid = game.getRoadAt(p) != null || game.getStopAt(p) != null
+                            || game.getTrafficLightAt(p) != null;
+                } else if (bottomToolbar.isTrafficLightSelected()) {
+                    valid = new model.service.ConstructionService().isJunction(game, new Position(tx, ty));
                 } else if (bottomToolbar.isStopSelected()) {
                     valid = game.getTile(tx, ty).getType() == model.enums.TileType.EMPTY
                             && new model.service.ConstructionService()
@@ -333,8 +342,32 @@ public class GameWindow {
                 return;
             }
 
+            // ── Traffic light quick-cycle ─────────────────────────────────────
+            // Clicking a TL tile in any non-construction mode cycles its phase
+            // immediately so the color change is always visible on screen.
+            boolean isConstructing = bottomToolbar.isRoadSelected()
+                    || bottomToolbar.isStopSelected()
+                    || bottomToolbar.isTrafficLightSelected();
+            if (!isConstructing) {
+                model.TrafficLight tl = game.getTrafficLightAt(p);
+                if (tl != null) {
+                    tl.cycleToNextPhase();
+                    mapPanel.drawGame(game);
+                    // In SELECT mode also show the config panel
+                    if (bottomToolbar.isSelectSelected()) {
+                        gameController.fireTrafficLightSelected(tl);
+                    }
+                    return;
+                }
+            }
+
             if (bottomToolbar.isRemoveSelected()) {
                 gameController.setBuildMode(GameController.BuildMode.DEMOLISH);
+                gameController.onTileClicked(p);
+                return;
+            }
+            if (bottomToolbar.isTrafficLightSelected()) {
+                gameController.setBuildMode(GameController.BuildMode.TRAFFIC_LIGHT);
                 gameController.onTileClicked(p);
                 return;
             }
@@ -347,6 +380,7 @@ public class GameWindow {
                 Tile selectedTile = game.getTile(tx, ty);
                 String info = buildTileInfo(game, selectedTile, tx, ty);
                 topHud.setSelectedTile(info);
+                gameController.onTileClicked(p); // opens traffic light config panel if TL present
                 return;
             }
             if (!bottomToolbar.isRoadSelected()) return;
@@ -354,6 +388,7 @@ public class GameWindow {
             gameController.setBuildMode(GameController.BuildMode.ROAD);
             gameController.onTileClicked(p);
         });
+
     }
 
     /**
