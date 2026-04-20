@@ -37,8 +37,6 @@ build:compile:
   only:
     - merge_requests
     - master
-  tags:
-    - docker
 
 # ────────────────────────────────────────────────────────────────
 # TEST JOB: Run unit tests
@@ -57,8 +55,6 @@ test:unit:
   only:
     - merge_requests
     - master
-  tags:
-    - docker
   allow_failure: false  # Fail the pipeline if tests don't pass
 
 # ────────────────────────────────────────────────────────────────
@@ -73,8 +69,6 @@ test:quality:
   only:
     - merge_requests
     - master
-  tags:
-    - docker
 
 # ────────────────────────────────────────────────────────────────
 # PACKAGE JOB: Create executable JAR/modules
@@ -93,8 +87,6 @@ package:jar:
   only:
     - master
     - tags
-  tags:
-    - docker
 
 # ────────────────────────────────────────────────────────────────
 # DEPLOY JOB: Deploy to development server (example)
@@ -111,8 +103,6 @@ deploy:dev:
   only:
     - master
   when: manual  # Require manual approval before deploying
-  tags:
-    - docker
 
 # ────────────────────────────────────────────────────────────────
 # RELEASE JOB: Create release when tag is pushed
@@ -130,6 +120,4 @@ release:build:
     expire_in: 365 days
   only:
     - tags  # Only run when a tag is pushed (e.g., git tag v1.0.0)
-  tags:
-    - docker
 
