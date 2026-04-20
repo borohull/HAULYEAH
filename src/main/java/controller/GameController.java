@@ -170,6 +170,14 @@ public class GameController {
             if (onTrafficLightSelected != null) {
                 onTrafficLightSelected.accept(tl);
             }
+            return;
+        }
+
+        model.Stop stop = state.getMap().getStopAt(p);
+        if (stop != null) {
+            stop.cycleOrientation();
+            markUnsaved();
+            notifyView();
         }
     }
 

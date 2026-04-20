@@ -17,6 +17,7 @@ import model.Vehicle;
 import model.enums.Direction;
 import model.enums.LightState;
 import model.enums.TileType;
+import model.enums.VehicleType;
 import model.Road;
 import javafx.scene.image.Image;
 
@@ -80,8 +81,13 @@ public class MapPanel extends Canvas {
     private final Image stopImage        = loadTileImage("/images/stop.png");
     private final Image roadHorImage     = loadTileImage("/images/roadHor.png");
     private final Image roadVertImage    = loadTileImage("/images/roadVert.png");
-    private final Image busImage         = loadTileImage("/images/bus.png");
-    private final Image truckImage       = loadTileImage("/images/truck.png");
+    // ── Vehicle sprites — one per VehicleType ────────────────────────────────
+    private final Image cityBusImage     = loadTileImage("/images/vehicles/city_bus.png");
+    private final Image expressBusImage  = loadTileImage("/images/vehicles/express_bus.png");
+    private final Image logTruckImage    = loadTileImage("/images/vehicles/log_truck.png");
+    private final Image flatbedImage     = loadTileImage("/images/vehicles/flatbed_truck.png");
+    private final Image foodTruckImage   = loadTileImage("/images/vehicles/food_truck.png");
+    private final Image goodsTruckImage  = loadTileImage("/images/vehicles/goods_truck.png");
 
     private final Image[] cityBuildingImages = {
             loadTileImage("/images/buildings/building.png"),
@@ -258,25 +264,69 @@ public class MapPanel extends Canvas {
     }
     private void drawVehicle(GraphicsContext gc, Vehicle vehicle, int ox, int oy) {
         // Use smooth (interpolated) position for fluid animation between tiles
-        double   cx  = isoScreenXd(vehicle.getSmoothX(), vehicle.getSmoothY(), ox);
-        double   cy  = isoScreenYd(vehicle.getSmoothX(), vehicle.getSmoothY(), oy);
+        double cx = isoScreenXd(vehicle.getSmoothX(), vehicle.getSmoothY(), ox);
+        double cy = isoScreenYd(vehicle.getSmoothX(), vehicle.getSmoothY(), oy);
 
-        boolean isPassenger = vehicle.getType().isPassenger();
-        Image   img         = isPassenger ? busImage : truckImage;
+        // Select the correct 2.5D sprite for this vehicle type
+        Image img = switch (vehicle.getType()) {
+            case CITY_BUS      -> cityBusImage;
+            case EXPRESS_BUS   -> expressBusImage;
+            case LOG_TRUCK     -> logTruckImage;
+            case FLATBED_TRUCK -> flatbedImage;
+            case FOOD_TRUCK    -> foodTruckImage;
+            case GOODS_TRUCK   -> goodsTruckImage;
+        };
 
         double imgW = TILE_W * 0.95;
         double imgH = imgW * 0.70;
         double imgX = cx - imgW / 2.0;
         double imgY = cy + TILE_H * 0.02 - imgH / 2.0;
 
+        // Determine exact travel direction from the grid path
+        Direction travelDir = Direction.EAST; // Default fallback for newly bought vehicles
+        if (vehicle.getRoute() != null && vehicle.getRoute().hasTilePath()) {
+            java.util.List<Position> path = vehicle.getRoute().getTilePath();
+            int curIdx  = vehicle.getRoutePathIndex();
+            int nextIdx = (curIdx + 1) % path.size();
+            Position curPos  = path.get(curIdx);
+            Position nextPos = path.get(nextIdx);
+
+            int dx = nextPos.getX() - curPos.getX();
+            int dy = nextPos.getY() - curPos.getY();
+
+            if      (dx > 0) travelDir = Direction.EAST;  // moving +X (down-right)
+            else if (dx < 0) travelDir = Direction.WEST;  // moving -X (up-left)
+            else if (dy > 0) travelDir = Direction.SOUTH; // moving +Y (down-left)
+            else if (dy < 0) travelDir = Direction.NORTH; // moving -Y (up-right)
+
+            // Override with Stop orientation if currently at/leaving a stop
+            if (currentGame != null) {
+                model.Stop currentStop = currentGame.getStopAt(curPos);
+                if (currentStop != null) {
+                    travelDir = currentStop.getOrientation();
+                }
+            }
+        }
+
+        // In 2.5D isometric: WEST and SOUTH directions travel "left" across the screen.
+        // If the sprite natively faces EAST/NORTH (right), we must flip it horizontally.
+        boolean flipX = (travelDir == Direction.WEST || travelDir == Direction.SOUTH);
+
+
         // Shadow sits directly on the road center
         gc.setFill(Color.rgb(0, 0, 0, 0.22));
         gc.fillOval(cx - imgW * 0.28, cy + TILE_H * 0.18, imgW * 0.56, TILE_H * 0.18);
 
         if (img != null) {
-            gc.drawImage(img, imgX, imgY, imgW, imgH);
+            if (flipX) {
+                // Draw mirrored: start from right edge, use negative width
+                gc.drawImage(img, imgX + imgW, imgY, -imgW, imgH);
+            } else {
+                gc.drawImage(img, imgX, imgY, imgW, imgH);
+            }
         } else {
-            // Fallback dot
+            // Fallback: coloured dot if image failed to load
+            boolean isPassenger = vehicle.getType().isPassenger();
             gc.setFill(isPassenger ? Color.rgb(30, 120, 220) : Color.rgb(220, 100, 30));
             gc.fillOval(cx - 8, cy, 16, 10);
         }
@@ -381,8 +431,37 @@ public class MapPanel extends Canvas {
             case WATER    -> drawWaterSurface(gc, tx, ty, ox, oy);
             case FOREST   -> drawForestTree(gc, tx, ty, ox, oy);
             case BRIDGE   -> drawBox(gc, tx, ty, ox, oy, COL_BRIDGE_LEFT, COL_BRIDGE_RIGHT, COL_BRIDGE_ROOF);
-            case ROAD, CITY_ROAD, STOP, CITY_STOP -> { }
+            case ROAD, CITY_ROAD -> { }
+            case STOP, CITY_STOP -> drawStopArrow(gc, tx, ty, ox, oy);
             default -> { }
+        }
+    }
+
+    private void drawStopArrow(GraphicsContext gc, int tx, int ty, int ox, int oy) {
+        if (currentGame == null) return;
+        model.Stop stop = currentGame.getStopAt(new model.Position(tx, ty));
+        if (stop == null) return;
+
+        double cx = isoScreenX(tx, ty, ox);
+        double cy = isoScreenY(tx, ty, oy);
+        
+        // Draw a small white triangle indicating the departure direction
+        gc.setFill(Color.rgb(255, 255, 255, 0.7));
+        double size = 12.0;
+
+        switch (stop.getOrientation()) {
+            case EAST -> gc.fillPolygon(
+                    new double[]{cx, cx + size, cx},
+                    new double[]{cy - size/2, cy, cy + size/2}, 3);
+            case SOUTH -> gc.fillPolygon(
+                    new double[]{cx - size/2, cx, cx + size/2},
+                    new double[]{cy, cy + size, cy}, 3);
+            case WEST -> gc.fillPolygon(
+                    new double[]{cx, cx - size, cx},
+                    new double[]{cy - size/2, cy, cy + size/2}, 3);
+            case NORTH -> gc.fillPolygon(
+                    new double[]{cx - size/2, cx, cx + size/2},
+                    new double[]{cy, cy - size, cy}, 3);
         }
     }
 
