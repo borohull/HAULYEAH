@@ -28,7 +28,7 @@ variables:
 build:compile:
   stage: build
   script:
-    - echo "🔨 Building Haul Yea! Game..."
+    - echo "Building Haul Yea! Game..."
     - mvn clean compile
   artifacts:
     paths:
@@ -36,8 +36,7 @@ build:compile:
     expire_in: 1 day
   only:
     - merge_requests
-    - main
-    - develop
+    - master
   tags:
     - docker
 
@@ -47,7 +46,7 @@ build:compile:
 test:unit:
   stage: test
   script:
-    - echo "🧪 Running unit tests..."
+    - echo "Running unit tests..."
     - mvn test
   artifacts:
     paths:
@@ -57,8 +56,7 @@ test:unit:
     expire_in: 30 days
   only:
     - merge_requests
-    - main
-    - develop
+    - master
   tags:
     - docker
   allow_failure: false  # Fail the pipeline if tests don't pass
@@ -69,13 +67,12 @@ test:unit:
 test:quality:
   stage: test
   script:
-    - echo "📊 Running code quality checks..."
-    - mvn checkstyle:check 2>/dev/null || echo "⚠️  Checkstyle warnings found (non-blocking)"
+    - echo "Running code quality checks..."
+    - mvn checkstyle:check 2>/dev/null || echo "Checkstyle warnings found (non-blocking)"
   allow_failure: true  # Don't block merge if quality issues exist
   only:
     - merge_requests
-    - main
-    - develop
+    - master
   tags:
     - docker
 
@@ -85,7 +82,7 @@ test:quality:
 package:jar:
   stage: package
   script:
-    - echo "📦 Packaging game into JAR..."
+    - echo "Packaging game into JAR..."
     - mvn package -DskipTests
     - ls -lh target/*.jar || echo "No JAR generated"
   artifacts:
@@ -94,8 +91,7 @@ package:jar:
       - target/classes/
     expire_in: 90 days
   only:
-    - main
-    - develop
+    - master
     - tags
   tags:
     - docker
@@ -106,13 +102,14 @@ package:jar:
 deploy:dev:
   stage: deploy-dev
   script:
-    - echo "🚀 Deploying to development environment..."
-    - echo "   - Game artifacts ready at: $CI_PROJECT_DIR/target/"
-    - echo "   - Version: $CI_COMMIT_SHA"
-    - echo "   - Branch: $CI_COMMIT_REF_NAME"
-    # Add your deployment commands here (scp, ssh, docker push, etc.)
+    - |
+      echo "Deploying to development environment..."
+      echo "Game artifacts ready at: ${CI_PROJECT_DIR}/target/"
+      echo "Version: ${CI_COMMIT_SHA}"
+      echo "Branch: ${CI_COMMIT_REF_NAME}"
+      # Add your deployment commands here (scp, ssh, docker push, etc.)
   only:
-    - develop
+    - master
   when: manual  # Require manual approval before deploying
   tags:
     - docker
@@ -123,7 +120,7 @@ deploy:dev:
 release:build:
   stage: package
   script:
-    - echo "🎮 Building release version..."
+    - echo "Building release version..."
     - mvn clean package -DskipTests
     - VERSION=${CI_COMMIT_TAG#v}
     - echo "Release v$VERSION built successfully"
