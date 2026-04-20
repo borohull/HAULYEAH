@@ -2,6 +2,7 @@ package model.service;
 
 import model.Bridge;
 import model.City;
+import model.Facility;
 import model.Game;
 import model.Position;
 import model.Road;
@@ -33,6 +34,13 @@ public class ConstructionService {
         // Cannot build roads inside cities
         for (City city : game.getCities()) {
             if (city.containsPosition(p.getX(), p.getY())) {
+                return false;
+            }
+        }
+
+        // Cannot build roads inside facilities
+        for (Facility facility : game.getFacilities()) {
+            if (facility.containsPosition(p.getX(), p.getY())) {
                 return false;
             }
         }
@@ -124,6 +132,29 @@ public class ConstructionService {
             t.setType(TileType.BRIDGE);
             t.setEntityId(bridge.getId());
             t.setEntityName(bridge.getName());
+        }
+        return true;
+    }
+
+    /**
+     * Removes a bridge at the specified position.
+     */
+    public boolean removeBridge(Game game, Position p) {
+        Bridge found = null;
+        for (Bridge b : game.getBridges()) {
+            if (b.containsPosition(p.getX(), p.getY())) {
+                found = b;
+                break;
+            }
+        }
+        if (found == null) return false;
+
+        game.getBridges().remove(found);
+        for (Position pos : found.getTiles()) {
+            Tile t = game.getTile(pos);
+            t.setType(TileType.WATER);
+            t.setEntityId(null);
+            t.setEntityName(null);
         }
         return true;
     }

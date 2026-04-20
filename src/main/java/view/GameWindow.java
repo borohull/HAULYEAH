@@ -289,6 +289,7 @@ public class GameWindow {
             // Draw tile highlight in build mode and select mode
             boolean showOverlay = bottomToolbar.isRoadSelected()
                     || bottomToolbar.isStopSelected()
+                    || bottomToolbar.isBridgeSelected()
                     || bottomToolbar.isRemoveSelected()
                     || bottomToolbar.isSelectSelected()
                     || bottomToolbar.isTrafficLightSelected();
@@ -310,13 +311,15 @@ public class GameWindow {
                 } else if (bottomToolbar.isRemoveSelected()) {
                     Position p = new Position(tx, ty);
                     valid = game.getRoadAt(p) != null || game.getStopAt(p) != null
-                            || game.getTrafficLightAt(p) != null;
+                            || game.getTrafficLightAt(p) != null || game.getBridgeAt(p) != null;
                 } else if (bottomToolbar.isTrafficLightSelected()) {
                     valid = new model.service.ConstructionService().isJunction(game, new Position(tx, ty));
                 } else if (bottomToolbar.isStopSelected()) {
                     valid = game.getTile(tx, ty).getType() == model.enums.TileType.EMPTY
                             && new model.service.ConstructionService()
                                 .isAdjacentToRoadCityOrFacility(game, new Position(tx, ty));
+                } else if (bottomToolbar.isBridgeSelected()) {
+                    valid = game.getTile(tx, ty).getType() == model.enums.TileType.WATER;
                 } else {
                     model.enums.TileType type = game.getTile(tx, ty).getType();
                     valid = type == model.enums.TileType.EMPTY || type == model.enums.TileType.FOREST;
@@ -347,6 +350,7 @@ public class GameWindow {
             // immediately so the color change is always visible on screen.
             boolean isConstructing = bottomToolbar.isRoadSelected()
                     || bottomToolbar.isStopSelected()
+                    || bottomToolbar.isBridgeSelected()
                     || bottomToolbar.isTrafficLightSelected();
             if (!isConstructing) {
                 model.TrafficLight tl = game.getTrafficLightAt(p);
@@ -373,6 +377,11 @@ public class GameWindow {
             }
             if (bottomToolbar.isStopSelected()) {
                 gameController.setBuildMode(GameController.BuildMode.STOP);
+                gameController.onTileClicked(p);
+                return;
+            }
+            if (bottomToolbar.isBridgeSelected()) {
+                gameController.setBuildMode(GameController.BuildMode.BRIDGE);
                 gameController.onTileClicked(p);
                 return;
             }

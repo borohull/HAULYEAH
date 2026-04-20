@@ -40,6 +40,8 @@ public class MapPanel extends Canvas {
     private static final Color COL_CITY_RIGHT = Color.rgb(60, 110, 190);
     private static final Color COL_CITY_ROOF  = Color.rgb(110, 165, 240);
 
+    private static final Color COL_CITY_EMPTY_TOP = Color.rgb(150, 150, 150);
+
     private static final Color COL_FAC_TOP    = Color.rgb(200, 145, 55);
     private static final Color COL_FAC_LEFT   = Color.rgb(140, 95, 30);
     private static final Color COL_FAC_RIGHT  = Color.rgb(170, 115, 40);
@@ -267,7 +269,7 @@ public class MapPanel extends Canvas {
         return switch (tile.getType()) {
             case WATER -> null;
             case FOREST -> grassImage;
-            case FACILITY -> grassImage;
+            case FACILITY -> null;
             case CITY, CITY_EMPTY, ROAD, CITY_ROAD -> null;
             case STOP, CITY_STOP -> stopImage != null ? stopImage : plantationImage;
             case BRIDGE -> waterImage;
@@ -336,8 +338,9 @@ public class MapPanel extends Canvas {
         return switch (type) {
             case ROAD, CITY_ROAD -> COL_ROAD_TOP;
             case STOP, CITY_STOP -> COL_STOP_TOP;
-            case CITY, CITY_EMPTY -> COL_CITY_TOP;
-            case FACILITY -> COL_EMPTY_TOP;
+            case CITY -> COL_CITY_TOP;
+            case CITY_EMPTY -> COL_CITY_EMPTY_TOP;
+            case FACILITY -> COL_FAC_TOP;
             case WATER -> COL_WATER_TOP;
             case FOREST -> COL_FOREST_TOP;
             case BRIDGE -> COL_BRIDGE_TOP;
@@ -373,11 +376,10 @@ public class MapPanel extends Canvas {
         Image img = getFacilityImage(facility);
         if (img == null) return;
 
-        int tx = facility.getOrigin().getX();
-        int ty = facility.getOrigin().getY();
+        Position center = facility.getCenter();
 
-        double cx = isoScreenX(tx, ty, ox);
-        double cy = isoScreenY(tx, ty, oy);
+        double cx = isoScreenX(center.getX(), center.getY(), ox);
+        double cy = isoScreenY(center.getX(), center.getY(), oy);
 
         double drawW = TILE_W * 1.65;
         double drawH = drawW * 0.74;
@@ -664,3 +666,4 @@ public class MapPanel extends Canvas {
         gc.strokePolygon(xs, ys, 4);
     }
 }
+

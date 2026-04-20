@@ -42,4 +42,9 @@ public abstract class MapEntity {
     public Position getCenter() {
         return new Position(origin.getX() + width / 2, origin.getY() + height / 2);
     }
+
+    public boolean containsPosition(int x, int y) {
+        return x >= origin.getX() && x < origin.getX() + width &&
+                y >= origin.getY() && y < origin.getY() + height;
+    }
 }

@@ -54,6 +54,7 @@ public class BuildToolbar extends VBox {
     // ── State ─────────────────────────────────────────────────────────────────
     private boolean roadSelected;
     private boolean stopSelected;
+    private boolean bridgeSelected;
     private boolean removeSelected;
     private boolean routeSelected;
     private boolean selectSelected;
@@ -71,6 +72,7 @@ public class BuildToolbar extends VBox {
     // ── Build submenu buttons ─────────────────────────────────────────────────
     private final Button btnRoad;
     private final Button btnStop;
+    private final Button btnBridge;
     private final Button btnRoute;
     private final Button btnTrafficLight;
     private final HBox   buildSubmenu;
@@ -110,34 +112,60 @@ public class BuildToolbar extends VBox {
         // Build submenu (Road + Stop + Route + Traffic Light)
         btnRoad         = new Button("Road");
         btnStop         = new Button("Stop");
+        btnBridge       = new Button("Bridge");
         btnRoute        = new Button("+ Route");
         btnTrafficLight = new Button("Traffic Light");
         btnRoad.setStyle(SUB_BTN_NORMAL);
         btnStop.setStyle(SUB_BTN_NORMAL);
+        btnBridge.setStyle(SUB_BTN_NORMAL);
         btnRoute.setStyle(SUB_BTN_NORMAL);
         btnTrafficLight.setStyle(SUB_BTN_NORMAL);
 
         btnRoad.setOnAction(e -> {
-            roadSelected   = true;
-            stopSelected   = false;
-            routeSelected  = false;
-            removeSelected = false;
-            selectSelected = false;
+            roadSelected         = true;
+            stopSelected         = false;
+            bridgeSelected       = false;
+            routeSelected        = false;
+            trafficLightSelected = false;
+            removeSelected       = false;
+            selectSelected       = false;
             btnRoad.setStyle(SUB_BTN_ACTIVE);
             btnStop.setStyle(SUB_BTN_NORMAL);
+            btnBridge.setStyle(SUB_BTN_NORMAL);
             btnRoute.setStyle(SUB_BTN_NORMAL);
+            btnTrafficLight.setStyle(SUB_BTN_NORMAL);
             btnRemove.setStyle(BTN_NORMAL);
             btnSelect.setStyle(BTN_NORMAL);
         });
         btnStop.setOnAction(e -> {
-            stopSelected   = true;
-            roadSelected   = false;
-            routeSelected  = false;
-            removeSelected = false;
-            selectSelected = false;
+            stopSelected         = true;
+            roadSelected         = false;
+            bridgeSelected       = false;
+            routeSelected        = false;
+            trafficLightSelected = false;
+            removeSelected       = false;
+            selectSelected       = false;
             btnStop.setStyle(SUB_BTN_ACTIVE);
             btnRoad.setStyle(SUB_BTN_NORMAL);
+            btnBridge.setStyle(SUB_BTN_NORMAL);
             btnRoute.setStyle(SUB_BTN_NORMAL);
+            btnTrafficLight.setStyle(SUB_BTN_NORMAL);
+            btnRemove.setStyle(BTN_NORMAL);
+            btnSelect.setStyle(BTN_NORMAL);
+        });
+        btnBridge.setOnAction(e -> {
+            bridgeSelected       = true;
+            roadSelected         = false;
+            stopSelected         = false;
+            routeSelected        = false;
+            trafficLightSelected = false;
+            removeSelected       = false;
+            selectSelected       = false;
+            btnBridge.setStyle(SUB_BTN_ACTIVE);
+            btnRoad.setStyle(SUB_BTN_NORMAL);
+            btnStop.setStyle(SUB_BTN_NORMAL);
+            btnRoute.setStyle(SUB_BTN_NORMAL);
+            btnTrafficLight.setStyle(SUB_BTN_NORMAL);
             btnRemove.setStyle(BTN_NORMAL);
             btnSelect.setStyle(BTN_NORMAL);
         });
@@ -145,12 +173,14 @@ public class BuildToolbar extends VBox {
             routeSelected        = true;
             roadSelected         = false;
             stopSelected         = false;
+            bridgeSelected       = false;
+            trafficLightSelected = false;
             removeSelected       = false;
             selectSelected       = false;
-            trafficLightSelected = false;
             btnRoute.setStyle(SUB_BTN_ACTIVE);
             btnRoad.setStyle(SUB_BTN_NORMAL);
             btnStop.setStyle(SUB_BTN_NORMAL);
+            btnBridge.setStyle(SUB_BTN_NORMAL);
             btnTrafficLight.setStyle(SUB_BTN_NORMAL);
             btnRemove.setStyle(BTN_NORMAL);
             btnSelect.setStyle(BTN_NORMAL);
@@ -160,12 +190,14 @@ public class BuildToolbar extends VBox {
             trafficLightSelected = true;
             roadSelected         = false;
             stopSelected         = false;
+            bridgeSelected       = false;
             routeSelected        = false;
             removeSelected       = false;
             selectSelected       = false;
             btnTrafficLight.setStyle(SUB_BTN_ACTIVE);
             btnRoad.setStyle(SUB_BTN_NORMAL);
             btnStop.setStyle(SUB_BTN_NORMAL);
+            btnBridge.setStyle(SUB_BTN_NORMAL);
             btnRoute.setStyle(SUB_BTN_NORMAL);
             btnRemove.setStyle(BTN_NORMAL);
             btnSelect.setStyle(BTN_NORMAL);
@@ -175,7 +207,7 @@ public class BuildToolbar extends VBox {
         lblBuild.setStyle("-fx-text-fill:#666666; -fx-font-size:13px; -fx-font-weight:bold; -fx-padding:0 8 0 0;");
 
 
-        buildSubmenu = new HBox(10, lblBuild, btnRoad, btnStop, btnRoute, btnTrafficLight);
+        buildSubmenu = new HBox(10, lblBuild, btnRoad, btnStop, btnBridge, btnRoute, btnTrafficLight);
         buildSubmenu.setPadding(new Insets(8, 12, 8, 12));
         buildSubmenu.setAlignment(Pos.CENTER_LEFT);
         buildSubmenu.setStyle(PANEL_BOX);
@@ -200,7 +232,9 @@ public class BuildToolbar extends VBox {
             removeSelected = true;
             roadSelected   = false;
             stopSelected   = false;
+            bridgeSelected = false;
             routeSelected  = false;
+            trafficLightSelected = false;
             selectSelected = false;
             buildSubmenu.setVisible(false);
             buildSubmenu.setManaged(false);
@@ -208,7 +242,9 @@ public class BuildToolbar extends VBox {
             btnRemove.setStyle(BTN_HIGHLIGHT);
             btnRoad.setStyle(SUB_BTN_NORMAL);
             btnStop.setStyle(SUB_BTN_NORMAL);
+            btnBridge.setStyle(SUB_BTN_NORMAL);
             btnRoute.setStyle(SUB_BTN_NORMAL);
+            btnTrafficLight.setStyle(SUB_BTN_NORMAL);
             btnSelect.setStyle(BTN_NORMAL);
         });
 
@@ -216,7 +252,9 @@ public class BuildToolbar extends VBox {
             selectSelected = true;
             roadSelected   = false;
             stopSelected   = false;
+            bridgeSelected = false;
             routeSelected  = false;
+            trafficLightSelected = false;
             removeSelected = false;
             buildSubmenu.setVisible(false);
             buildSubmenu.setManaged(false);
@@ -224,7 +262,9 @@ public class BuildToolbar extends VBox {
             btnSelect.setStyle(BTN_HIGHLIGHT);
             btnRoad.setStyle(SUB_BTN_NORMAL);
             btnStop.setStyle(SUB_BTN_NORMAL);
+            btnBridge.setStyle(SUB_BTN_NORMAL);
             btnRoute.setStyle(SUB_BTN_NORMAL);
+            btnTrafficLight.setStyle(SUB_BTN_NORMAL);
             btnRemove.setStyle(BTN_NORMAL);
         });
 
@@ -259,6 +299,7 @@ public class BuildToolbar extends VBox {
 
     public boolean isRoadSelected()         { return roadSelected; }
     public boolean isStopSelected()         { return stopSelected; }
+    public boolean isBridgeSelected()       { return bridgeSelected; }
     public boolean isRemoveSelected()       { return removeSelected; }
     public boolean isRouteSelected()        { return routeSelected; }
     public boolean isSelectSelected()       { return selectSelected; }
@@ -267,12 +308,14 @@ public class BuildToolbar extends VBox {
     public void clearSelection() {
         roadSelected         = false;
         stopSelected         = false;
+        bridgeSelected       = false;
         removeSelected       = false;
         routeSelected        = false;
         selectSelected       = false;
         trafficLightSelected = false;
         btnRoad.setStyle(SUB_BTN_NORMAL);
         btnStop.setStyle(SUB_BTN_NORMAL);
+        btnBridge.setStyle(SUB_BTN_NORMAL);
         btnRoute.setStyle(SUB_BTN_NORMAL);
         btnTrafficLight.setStyle(SUB_BTN_NORMAL);
         btnRemove.setStyle(BTN_NORMAL);
@@ -331,6 +374,7 @@ public class BuildToolbar extends VBox {
         selectSelected = true;
         roadSelected   = false;
         stopSelected   = false;
+        bridgeSelected = false;
         routeSelected  = false;
         removeSelected = false;
         trafficLightSelected = false;
@@ -341,6 +385,7 @@ public class BuildToolbar extends VBox {
         btnSelect.setStyle(BTN_HIGHLIGHT);
         btnRoad.setStyle(SUB_BTN_NORMAL);
         btnStop.setStyle(SUB_BTN_NORMAL);
+        btnBridge.setStyle(SUB_BTN_NORMAL);
         btnRoute.setStyle(SUB_BTN_NORMAL);
         btnTrafficLight.setStyle(SUB_BTN_NORMAL);
 

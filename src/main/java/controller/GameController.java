@@ -8,6 +8,7 @@ import model.Stop;
 import model.Tile;
 import model.TrafficLight;
 import model.Vehicle;
+import model.Bridge;
 import model.enums.TileType;
 import model.enums.VehicleType;
 import model.service.ConstructionService;
@@ -107,6 +108,7 @@ public class GameController {
         switch (buildMode) {
             case ROAD          -> onBuildRoad(p);
             case STOP          -> onBuildStop(p);
+            case BRIDGE        -> onBuildBridge(p);
             case TRAFFIC_LIGHT -> onBuildTrafficLight(p);
             case DEMOLISH      -> onDemolish(p);
             case SELECT        -> onSelect(p);
@@ -151,10 +153,26 @@ public class GameController {
         }
     }
 
+    public void onBuildBridge(Position p) {
+        Tile tile = state.getMap().getTile(p);
+        if (tile == null || tile.getType() != TileType.WATER) {
+            System.out.println("[GameController] Bridge can only be built on water tiles: " + p);
+            return;
+        }
+        int numBridges = state.getMap().getBridges().size();
+        Bridge bridge = new Bridge("bridge-" + (numBridges + 1), "Bridge " + (numBridges + 1),
+                p.getX(), p.getY(), 1, Bridge.Orientation.HORIZONTAL);
+        if (constructionService.buildBridge(state.getMap(), bridge)) {
+            markUnsaved();
+            notifyView();
+        }
+    }
+
     public void onDemolish(Position p) {
         if (constructionService.removeTrafficLight(state.getMap(), p)
                 || constructionService.removeRoad(state.getMap(), p)
-                || constructionService.removeStop(state.getMap(), p)) {
+                || constructionService.removeStop(state.getMap(), p)
+                || constructionService.removeBridge(state.getMap(), p)) {
             markUnsaved();
             notifyView();
         }
