@@ -131,7 +131,8 @@ public class ConstructionService {
             Tile t = game.getTile(p);
             t.setType(TileType.BRIDGE);
             t.setEntityId(bridge.getId());
-            t.setEntityName(bridge.getName());
+            // Don't set entity name for bridges — they should be displayed like roads without labels
+            t.setEntityName(null);
         }
         return true;
     }

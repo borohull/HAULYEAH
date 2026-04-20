@@ -1,0 +1,123 @@
+# GitLab CI/CD Pipeline for Haul Yea! Game
+# This pipeline automatically tests and builds your Java game on every push
+
+# Define the Docker image to use for running jobs
+image: maven:3.9-eclipse-temurin-21
+
+# Define stages — jobs run in order
+stages:
+  - build
+  - test
+  - package
+  - deploy-dev
+
+# Cache Maven dependencies to speed up builds
+cache:
+  paths:
+    - .m2/repository/
+
+variables:
+  # Use local Maven repository to cache dependencies
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  # Project name for artifacts
+  PROJECT_NAME: "HaulYea"
+
+# ────────────────────────────────────────────────────────────────
+# BUILD JOB: Compile the Java code
+# ────────────────────────────────────────────────────────────────
+build:compile:
+  stage: build
+  script:
+    - echo "Building Haul Yea! Game..."
+    - mvn clean compile
+  artifacts:
+    paths:
+      - target/classes/
+    expire_in: 1 day
+  only:
+    - merge_requests
+    - master
+
+# ────────────────────────────────────────────────────────────────
+# TEST JOB: Run unit tests
+# ────────────────────────────────────────────────────────────────
+test:unit:
+  stage: test
+  script:
+    - echo "Running unit tests..."
+    - mvn test
+  artifacts:
+    paths:
+      - target/surefire-reports/
+    reports:
+      junit: target/surefire-reports/TEST-*.xml
+    expire_in: 30 days
+  only:
+    - merge_requests
+    - master
+  allow_failure: false  # Fail the pipeline if tests don't pass
+
+# ────────────────────────────────────────────────────────────────
+# CODE QUALITY JOB: Check code style and issues
+# ────────────────────────────────────────────────────────────────
+test:quality:
+  stage: test
+  script:
+    - echo "Running code quality checks..."
+    - mvn checkstyle:check 2>/dev/null || echo "Checkstyle warnings found (non-blocking)"
+  allow_failure: true  # Don't block merge if quality issues exist
+  only:
+    - merge_requests
+    - master
+
+# ────────────────────────────────────────────────────────────────
+# PACKAGE JOB: Create executable JAR/modules
+# ────────────────────────────────────────────────────────────────
+package:jar:
+  stage: package
+  script:
+    - echo "Packaging game into JAR..."
+    - mvn package -DskipTests
+    - ls -lh target/*.jar || echo "No JAR generated"
+  artifacts:
+    paths:
+      - target/*.jar
+      - target/classes/
+    expire_in: 90 days
+  only:
+    - master
+    - tags
+
+# ────────────────────────────────────────────────────────────────
+# DEPLOY JOB: Deploy to development server (example)
+# ────────────────────────────────────────────────────────────────
+deploy:dev:
+  stage: deploy-dev
+  script:
+    - |
+      echo "Deploying to development environment..."
+      echo "Game artifacts ready at: ${CI_PROJECT_DIR}/target/"
+      echo "Version: ${CI_COMMIT_SHA}"
+      echo "Branch: ${CI_COMMIT_REF_NAME}"
+      # Add your deployment commands here (scp, ssh, docker push, etc.)
+  only:
+    - master
+  when: manual  # Require manual approval before deploying
+
+# ────────────────────────────────────────────────────────────────
+# RELEASE JOB: Create release when tag is pushed
+# ────────────────────────────────────────────────────────────────
+release:build:
+  stage: package
+  script:
+    - echo "Building release version..."
+    - mvn clean package -DskipTests
+    - VERSION=${CI_COMMIT_TAG#v}
+    - echo "Release v$VERSION built successfully"
+  artifacts:
+    paths:
+      - target/*.jar
+    expire_in: 365 days
+  only:
+    - tags  # Only run when a tag is pushed (e.g., git tag v1.0.0)
+

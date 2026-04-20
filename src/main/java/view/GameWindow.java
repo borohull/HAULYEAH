@@ -205,8 +205,9 @@ public class GameWindow {
             }
         });
 
-        bottomToolbar.getRemoveButton().setOnAction(e ->
-                gameController.setBuildMode(GameController.BuildMode.DEMOLISH));
+        // Remove button — let BuildToolbar handle the UI state, GameWindow just needs to
+        // ensure map clicks trigger the demolish action (handled in wireMapEvents)
+        // (no override needed — BuildToolbar's handler is already wired)
 
         bottomToolbar.getSaveButton().setOnAction(e -> simController.saveGame(0));
 
