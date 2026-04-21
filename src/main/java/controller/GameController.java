@@ -233,13 +233,31 @@ public class GameController {
             return;
         }
 
-        // Prevent duplicate consecutive tiles
-        if (!currentRoutePath.isEmpty()
-                && currentRoutePath.get(currentRoutePath.size() - 1).equals(p)) {
-            return;
-        }
+        // Auto-fill tiles to ensure continuous one-by-one drawing
+        if (!currentRoutePath.isEmpty()) {
+            Position lastP = currentRoutePath.get(currentRoutePath.size() - 1);
+            if (lastP.equals(p)) return;
 
-        currentRoutePath.add(p);
+            // Simple line-fill to prevent skipping tiles
+            int dx = Integer.signum(p.getX() - lastP.getX());
+            int dy = Integer.signum(p.getY() - lastP.getY());
+
+            Position curr = lastP;
+            while (!curr.equals(p)) {
+                // Move first on X, then Y
+                if (curr.getX() != p.getX()) {
+                    curr = new Position(curr.getX() + dx, curr.getY());
+                } else if (curr.getY() != p.getY()) {
+                    curr = new Position(curr.getX(), curr.getY() + dy);
+                }
+
+                if (!currentRoutePath.contains(curr)) {
+                    currentRoutePath.add(curr);
+                }
+            }
+        } else {
+            currentRoutePath.add(p);
+        }
 
         // Auto-detect stops along the path
         Stop stop = state.getMap().getStopAt(p);

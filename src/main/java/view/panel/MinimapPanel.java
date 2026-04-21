@@ -114,8 +114,7 @@ public class MinimapPanel extends Canvas {
         double mOY = MAIN_OY * scale + 1;
 
         GraphicsContext gc = getGraphicsContext2D();
-        gc.setFill(Color.rgb(20, 20, 20));
-        gc.fillRect(0, 0, mmW + 2, mmH + 2);
+        gc.clearRect(0, 0, mmW + 2, mmH + 2);
 
         // Isometric diamond tiles — same painter's order as MapPanel (y outer, x inner)
         for (int y = 0; y < rows; y++) {
@@ -134,9 +133,9 @@ public class MinimapPanel extends Canvas {
 
         drawViewportRect(gc, rows);
 
-        gc.setStroke(Color.rgb(255, 255, 255, 0.35));
-        gc.setLineWidth(1.0);
-        gc.strokeRect(0.5, 0.5, mmW + 1, mmH + 1);
+        // gc.setStroke(Color.ORANGE);
+        // gc.setLineWidth(1.0);
+        // gc.strokeRect(0.5, 0.5, mmW + 1, mmH + 1);
     }
 
     private void drawViewportRect(GraphicsContext gc, int rows) {

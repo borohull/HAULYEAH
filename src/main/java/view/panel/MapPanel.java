@@ -75,13 +75,13 @@ public class MapPanel extends Canvas {
     private final Image stopImage        = loadTileImage("/images/stop.png");
     private final Image roadHorImage     = loadTileImage("/images/roadHor.png");
     private final Image roadVertImage    = loadTileImage("/images/roadVert.png");
-    // ── Vehicle sprites — one per VehicleType ────────────────────────────────
-    private final Image cityBusImage     = loadTileImage("/images/vehicles/city_bus.png");
-    private final Image expressBusImage  = loadTileImage("/images/vehicles/express_bus.png");
-    private final Image logTruckImage    = loadTileImage("/images/vehicles/log_truck.png");
-    private final Image flatbedImage     = loadTileImage("/images/vehicles/flatbed_truck.png");
-    private final Image foodTruckImage   = loadTileImage("/images/vehicles/food_truck.png");
-    private final Image goodsTruckImage  = loadTileImage("/images/vehicles/goods_truck.png");
+    // ── Vehicle sprites — one per VehicleType (supports animation arrays) ────
+    private final Image[] cityBusImages     = loadVehicleAnim("/images/vehicles/city_bus");
+    private final Image[] expressBusImages  = loadVehicleAnim("/images/vehicles/express_bus");
+    private final Image[] logTruckImages    = loadVehicleAnim("/images/vehicles/log_truck");
+    private final Image[] flatbedImages     = loadVehicleAnim("/images/vehicles/flatbed_truck");
+    private final Image[] foodTruckImages   = loadVehicleAnim("/images/vehicles/food_truck");
+    private final Image[] goodsTruckImages  = loadVehicleAnim("/images/vehicles/goods_truck");
 
     private final Image[] facilityImages = {
             loadTileImage("/images/facility1.png"),
@@ -117,21 +117,52 @@ public class MapPanel extends Canvas {
     private Game currentGame;
     private int storedOriginX;
     private int storedOriginY;
+    
+    private final java.util.Random rng = new java.util.Random();
+    
+    private java.util.List<model.Position> activeRoutePath = null;
+    private int hoverX = -1, hoverY = -1;
+    private boolean hoverValid, hoverGrey;
 
-    private final Random rng = new Random();
     private final javafx.scene.canvas.Canvas overlayCanvas = new javafx.scene.canvas.Canvas();
 
     public javafx.scene.canvas.Canvas getOverlayCanvas() {
         return overlayCanvas;
     }
 
+    private boolean staticNeedsRedraw = true;
+
+    public void forceStaticRedraw() {
+        this.staticNeedsRedraw = true;
+    }
+
     private Image loadTileImage(String path) {
         try {
-            return new Image(getClass().getResourceAsStream(path));
+            java.io.InputStream is = getClass().getResourceAsStream(path);
+            if (is == null) return null;
+            return new Image(is);
         } catch (Exception e) {
             System.out.println("Could not load image: " + path);
             return null;
         }
+    }
+
+    private Image[] loadVehicleAnim(String pathBase) {
+        java.util.List<Image> frames = new java.util.ArrayList<>();
+        int i = 1;
+        while (true) {
+            Image img = loadTileImage(pathBase + "_" + i + ".png");
+            if (img == null) break;
+            frames.add(img);
+            i++;
+        }
+        if (frames.isEmpty()) {
+            Image fallback = loadTileImage(pathBase + ".png");
+            if (fallback != null) {
+                frames.add(fallback);
+            }
+        }
+        return frames.toArray(new Image[0]);
     }
 
     public MapPanel() {
@@ -156,8 +187,9 @@ public class MapPanel extends Canvas {
         this.storedOriginX = originX;
         this.storedOriginY = originY;
 
-        GraphicsContext gc = getGraphicsContext2D();
-        gc.clearRect(0, 0, canvasW, canvasH);
+        if (staticNeedsRedraw) {
+            GraphicsContext gc = getGraphicsContext2D();
+            gc.clearRect(0, 0, canvasW, canvasH);
 
         for (int y = 0; y < rows; y++) {
             for (int x = 0; x < cols; x++) {
@@ -186,13 +218,38 @@ public class MapPanel extends Canvas {
             Position c = stop.getPosition();
             drawLabel(gc, c.getX(), c.getY(), stop.getName(), originX, originY);
         }
+        
+        staticNeedsRedraw = false;
+        } // end of staticNeedsRedraw
+
+        drawDynamic(game);
+    }
+    
+    public void drawDynamic(Game game) {
+        if (currentGame == null || game == null) return;
+        
+        GraphicsContext dgc = overlayCanvas.getGraphicsContext2D();
+        dgc.clearRect(0, 0, overlayCanvas.getWidth(), overlayCanvas.getHeight());
+
+        int originX = storedOriginX;
+        int originY = storedOriginY;
+
+        // Draw Route first so vehicles and hover are above it
+        if (activeRoutePath != null && !activeRoutePath.isEmpty()) {
+            drawRoutePathDirectly(dgc, activeRoutePath);
+        }
+
+        // Hover
+        if (hoverX != -1 && hoverY != -1) {
+            drawHoverTile(dgc, hoverX, hoverY, hoverValid, hoverGrey);
+        }
 
         for (TrafficLight tl : game.getTrafficLights().values()) {
-            drawTrafficLight(gc, tl, originX, originY);
+            drawTrafficLight(dgc, tl, originX, originY);
         }
 
         for (Vehicle vehicle : game.getVehicles()) {
-            drawVehicle(gc, vehicle, originX, originY);
+            drawVehicle(dgc, vehicle, originX, originY);
         }
     }
 
@@ -253,20 +310,38 @@ public class MapPanel extends Canvas {
         double cx = isoScreenXd(vehicle.getSmoothX(), vehicle.getSmoothY(), ox);
         double cy = isoScreenYd(vehicle.getSmoothX(), vehicle.getSmoothY(), oy);
 
-        // Select the correct 2.5D sprite for this vehicle type
-        Image img = switch (vehicle.getType()) {
-            case CITY_BUS      -> cityBusImage;
-            case EXPRESS_BUS   -> expressBusImage;
-            case LOG_TRUCK     -> logTruckImage;
-            case FLATBED_TRUCK -> flatbedImage;
-            case FOOD_TRUCK    -> foodTruckImage;
-            case GOODS_TRUCK   -> goodsTruckImage;
+        // Select the correct 2.5D sprite array for this vehicle type
+        Image[] imgs = switch (vehicle.getType()) {
+            case CITY_BUS      -> cityBusImages;
+            case EXPRESS_BUS   -> expressBusImages;
+            case LOG_TRUCK     -> logTruckImages;
+            case FLATBED_TRUCK -> flatbedImages;
+            case FOOD_TRUCK    -> foodTruckImages;
+            case GOODS_TRUCK   -> goodsTruckImages;
         };
 
-        double imgW = TILE_W * 0.95;
-        double imgH = imgW * 0.70;
+        // Determine traveled distance to drive animations (frames + bounce)
+        double dist = vehicle.getSmoothX() + vehicle.getSmoothY();
+
+        Image img = null;
+        if (imgs != null && imgs.length > 0) {
+            // Cycle frames if there are multiple. 
+            int frameIdx = (int) (dist * 4.0) % imgs.length; 
+            if (frameIdx < 0) frameIdx += imgs.length;
+            img = imgs[frameIdx];
+        }
+
+        // The 2.5D vehicle sprite PNGs are perfectly square (1024x1024).
+        // Maintain a 1:1 aspect ratio to avoid squishing the image vertically, which makes its movement look distorted.
+        double imgW = TILE_W * 1.30;
+        double imgH = imgW; // exactly 1:1 proportion
         double imgX = cx - imgW / 2.0;
-        double imgY = cy + TILE_H * 0.02 - imgH / 2.0;
+        
+        // Procedural suspension bounce: only bobs up/down when moving!
+        double bounce = Math.abs(Math.sin(dist * Math.PI * 1.5)) * (TILE_H * 0.08);
+
+        // Shift up vertically so the bottom wheels of the 1:1 shape sit correctly on the road center (cy)
+        double imgY = cy - imgH / 2.0 - TILE_H * 0.15 - bounce;
 
         // Determine exact travel direction from the grid path
         Direction travelDir = Direction.EAST; // Default fallback for newly bought vehicles
@@ -299,9 +374,7 @@ public class MapPanel extends Canvas {
         boolean flipX = (travelDir == Direction.WEST || travelDir == Direction.SOUTH);
 
 
-        // Shadow sits directly on the road center
-        gc.setFill(Color.rgb(0, 0, 0, 0.22));
-        gc.fillOval(cx - imgW * 0.28, cy + TILE_H * 0.18, imgW * 0.56, TILE_H * 0.18);
+        // No procedural shadow needed — the city_bus.png sprite already has a built-in embedded shadow!
 
         if (img != null) {
             if (flipX) {
@@ -677,10 +750,11 @@ public class MapPanel extends Canvas {
     }
 
     public void drawRoutePathOverlay(java.util.List<model.Position> path) {
-        GraphicsContext gc = overlayCanvas.getGraphicsContext2D();
-        gc.clearRect(0, 0, overlayCanvas.getWidth(), overlayCanvas.getHeight());
-        if (path == null || path.isEmpty()) return;
+        this.activeRoutePath = path;
+        drawDynamic(currentGame);
+    }
 
+    private void drawRoutePathDirectly(GraphicsContext gc, java.util.List<model.Position> path) {
         for (int i = 0; i < path.size(); i++) {
             model.Position p = path.get(i);
             double[] xs = diamondXs(p.getX(), p.getY(), storedOriginX);
@@ -713,8 +787,10 @@ public class MapPanel extends Canvas {
     }
 
     public void clearHoverOverlay() {
-        overlayCanvas.getGraphicsContext2D()
-                .clearRect(0, 0, overlayCanvas.getWidth(), overlayCanvas.getHeight());
+        this.hoverX = -1;
+        this.hoverY = -1;
+        this.activeRoutePath = null;
+        drawDynamic(currentGame);
     }
 
     public void drawHoverOverlay(int tx, int ty, boolean valid) {
@@ -722,14 +798,15 @@ public class MapPanel extends Canvas {
     }
 
     public void drawHoverOverlay(int tx, int ty, boolean valid, boolean grey) {
-        GraphicsContext gc = overlayCanvas.getGraphicsContext2D();
-        gc.clearRect(0, 0, overlayCanvas.getWidth(), overlayCanvas.getHeight());
-        drawHoverTile(gc, tx, ty, valid, grey);
+        this.hoverX = tx;
+        this.hoverY = ty;
+        this.hoverValid = valid;
+        this.hoverGrey = grey;
+        drawDynamic(currentGame);
     }
 
     public void drawHoverOnTopOfRoute(int tx, int ty, boolean valid) {
-        GraphicsContext gc = overlayCanvas.getGraphicsContext2D();
-        drawHoverTile(gc, tx, ty, valid, false);
+        drawHoverOverlay(tx, ty, valid, false);
     }
 
     private void drawHoverTile(GraphicsContext gc, int tx, int ty, boolean valid, boolean grey) {
