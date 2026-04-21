@@ -506,6 +506,9 @@ public class MapPanel extends Canvas {
             double cx = isoScreenX(center.getX(), center.getY(), ox);
             double cy = isoScreenY(center.getX(), center.getY(), oy) - WALL_H - 72;
             String text = "Needs: " + demand.displayName();
+            double tw = text.length() * 6.0;
+            gc.setFill(Color.rgb(0, 0, 0, 0.55));
+            gc.fillRoundRect(cx - tw / 2 - 4, cy - 11, tw + 8, 16, 5, 5);
             gc.setFill(Color.WHITE);
             gc.fillText(text, cx, cy);
         }
@@ -517,6 +520,9 @@ public class MapPanel extends Canvas {
             double cx = isoScreenX(center.getX(), center.getY(), ox);
             double cy = isoScreenY(center.getX(), center.getY(), oy) - WALL_H - 38;
             String text = "Produces: " + production.displayName();
+            double tw = text.length() * 6.0;
+            gc.setFill(Color.rgb(0, 0, 0, 0.55));
+            gc.fillRoundRect(cx - tw / 2 - 4, cy - 11, tw + 8, 16, 5, 5);
             gc.setFill(Color.WHITE);
             gc.fillText(text, cx, cy);
         }
