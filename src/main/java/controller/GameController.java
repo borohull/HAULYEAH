@@ -10,6 +10,7 @@ import model.TrafficLight;
 import model.Vehicle;
 import model.Bridge;
 import model.enums.TileType;
+import model.enums.TransactionType;
 import model.enums.VehicleType;
 import model.service.ConstructionService;
 import model.service.VehicleService;
@@ -36,6 +37,8 @@ public class GameController {
         DEMOLISH,
         ROUTE_DRAW
     }
+
+    private static final double ROAD_COST = 500.0;
 
     private final GameState state;
     private BuildMode buildMode = BuildMode.SELECT;
@@ -95,7 +98,14 @@ public class GameController {
             return null;
         }
 
+        if (!state.getPlayer().getLedger().canAfford(type.getPurchasePrice())) {
+            System.out.println("[GameController] Cannot afford " + type + " ($" + type.getPurchasePrice() + ")");
+            return null;
+        }
         Vehicle v = vehicleService.spawnAtPosition(state.getMap(), type, spawnPos);
+        if (v != null) {
+            state.getPlayer().getLedger().spend(type.getPurchasePrice(), TransactionType.PURCHASE, "Buy " + type.name());
+        }
         markUnsaved();
         notifyView();
         return v;
@@ -130,7 +140,9 @@ public class GameController {
     // ── Construction ──────────────────────────────────────────────────────────
 
     public void onBuildRoad(Position p) {
+        if (!state.getPlayer().getLedger().canAfford(ROAD_COST)) return;
         if (constructionService.buildRoad(state.getMap(), p, Road.RoadType.HORIZONTAL)) {
+            state.getPlayer().getLedger().spend(ROAD_COST, TransactionType.BUILD, "Road");
             markUnsaved();
             notifyView();
         }

@@ -44,6 +44,14 @@ public class SimulationEngine {
 
         deliveryService.tickDemand(state.getMap(), dt);
 
+        // Maintenance: drain maintenanceCost per game-minute per vehicle (aggregated, not logged individually)
+        double maintenancePerSecond = 1.0 / 60.0;
+        for (Vehicle vehicle : state.getMap().getVehicles()) {
+            String routeName = (vehicle.getRoute() != null) ? vehicle.getRoute().getName() : "Unassigned";
+            String key = vehicle.getType().getCategory() + " (" + vehicle.getType().name().replace("_", " ") + ") | Route: " + routeName;
+            state.getPlayer().getLedger().recordMaintenance(key, vehicle.getMaintenanceCost() * maintenancePerSecond * dt);
+        }
+
         for (Vehicle vehicle : state.getMap().getVehicles()) {
             if (vehicle.getRoute() != null
                     && vehicle.getRoute().hasTilePath()

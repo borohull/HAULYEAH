@@ -17,6 +17,7 @@ import model.Position;
 import model.Route;
 import model.Tile;
 import view.panel.BuildToolbar;
+import view.panel.FinancePanel;
 import view.panel.GaragePanel;
 import view.panel.HudPanel;
 import view.panel.MapPanel;
@@ -142,6 +143,7 @@ public class GameWindow {
         bottomToolbar = new BuildToolbar();
         topHud.setPaused(true);
         topHud.setActiveSpeedButton("");
+        topHud.updateMoney((int) gameController.getState().getPlayer().getLedger().getCurrentCapital());
 
         wireHud();
         // ── Wire toolbar → GameController / SimulationController ─────────────
@@ -154,6 +156,7 @@ public class GameWindow {
         gameController.setOnStateChanged(() -> {
             mapPanel.drawGame(game);
             minimap.drawMinimap(game);
+            topHud.updateMoney((int) gameController.getState().getPlayer().getLedger().getCurrentCapital());
         });
 
         // Open config panel when player clicks a traffic light in SELECT mode
@@ -163,7 +166,19 @@ public class GameWindow {
         // Tell SimulationController to redraw map on every simulation tick (vehicles move).
         // Minimap only reflects static tiles — scroll listeners inside MinimapPanel
         // already refresh the viewport rectangle, so no per-tick redraw needed.
-        simController.setOnStateChanged(() -> mapPanel.drawGame(game));
+        simController.setOnStateChanged(() -> {
+            mapPanel.drawGame(game);
+            topHud.updateMoney((int) gameController.getState().getPlayer().getLedger().getCurrentCapital());
+        });
+
+        simController.setOnBankrupt(() -> javafx.application.Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Bankrupt!");
+            alert.setHeaderText("You went bankrupt!");
+            alert.setContentText("Your capital fell below $0. Game over.");
+            alert.showAndWait();
+            new controller.MainMenuController(stage).showMainMenu();
+        }));
 
         // ── Assemble layout ──────────────────────────────────────────────────
         StackPane centerStack = new StackPane(scroll, minimap);
@@ -217,7 +232,7 @@ public class GameWindow {
         bottomToolbar.getGarageButton().setOnAction(e ->
                 new GaragePanel(gameController, game).show(stage));
         bottomToolbar.getFinanceButton().setOnAction(e ->
-                gameController.onOpenFinanceDetails());
+                FinancePanel.show(stage, gameController.getState().getPlayer().getLedger()));
 
         // Route — enter tile-by-tile route drawing mode
         bottomToolbar.getRouteButton().setOnAction(e -> {
