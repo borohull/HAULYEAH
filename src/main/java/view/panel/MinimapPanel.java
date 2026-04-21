@@ -134,9 +134,9 @@ public class MinimapPanel extends Canvas {
 
         drawViewportRect(gc, rows);
 
-        gc.setStroke(Color.rgb(255, 255, 255, 0.35));
-        gc.setLineWidth(1.0);
-        gc.strokeRect(0.5, 0.5, mmW + 1, mmH + 1);
+        // gc.setStroke(Color.ORANGE);
+        // gc.setLineWidth(1.0);
+        // gc.strokeRect(0.5, 0.5, mmW + 1, mmH + 1);
     }
 
     private void drawViewportRect(GraphicsContext gc, int rows) {

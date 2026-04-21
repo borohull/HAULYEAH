@@ -17,6 +17,7 @@ public class Route {
     private final String         name;
     private final List<Stop>     stops;
     private final List<Position> tilePath;   // exact tile sequence player drew
+    private boolean              reversed;   // if true, vehicles traverse tilePath in reverse
 
     /** Full constructor — used when player draws the route on the map. */
     public Route(String id, String name, List<Stop> stops, List<Position> tilePath) {
@@ -24,6 +25,7 @@ public class Route {
         this.name     = name;
         this.stops    = new ArrayList<>(stops);
         this.tilePath = new ArrayList<>(tilePath);
+        this.reversed = false;
     }
 
     public String         getId()       { return id; }
@@ -32,4 +34,7 @@ public class Route {
     public List<Position> getTilePath() { return List.copyOf(tilePath); }
     public boolean        hasStops()    { return !stops.isEmpty(); }
     public boolean        hasTilePath() { return !tilePath.isEmpty(); }
+
+    public boolean isReversed()              { return reversed; }
+    public void    setReversed(boolean rev)  { this.reversed = rev; }
 }

@@ -154,6 +154,7 @@ public class GameWindow {
 
         // Tell GameController to call mapPanel.drawGame() on any state change
         gameController.setOnStateChanged(() -> {
+            mapPanel.forceStaticRedraw();
             mapPanel.drawGame(game);
             minimap.drawMinimap(game);
             topHud.updateMoney((int) gameController.getState().getPlayer().getLedger().getCurrentCapital());
@@ -161,13 +162,16 @@ public class GameWindow {
 
         // Open config panel when player clicks a traffic light in SELECT mode
         gameController.setOnTrafficLightSelected(tl ->
-                TrafficLightPanel.show(stage, tl, () -> mapPanel.drawGame(game)));
+                TrafficLightPanel.show(stage, tl, () -> {
+                    mapPanel.forceStaticRedraw();
+                    mapPanel.drawGame(game);
+                }));
 
-        // Tell SimulationController to redraw map on every simulation tick (vehicles move).
+        // Tell SimulationController to redraw ONLY the dynamic layer on every simulation tick (vehicles move).
         // Minimap only reflects static tiles — scroll listeners inside MinimapPanel
         // already refresh the viewport rectangle, so no per-tick redraw needed.
         simController.setOnStateChanged(() -> {
-            mapPanel.drawGame(game);
+            mapPanel.drawDynamic(game);
             topHud.updateMoney((int) gameController.getState().getPlayer().getLedger().getCurrentCapital());
         });
 

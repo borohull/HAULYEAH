@@ -262,12 +262,10 @@ public class GaragePanel {
     }
 
     private VBox buildItemsView(Stage dialog, List<Route> drawnRoutes) {
-        Label sectionTitle = new Label("Your Vehicles");
+        Label sectionTitle = new Label("Vehicles & Routes");
         sectionTitle.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #4b3a2d;");
 
-        Label hint = new Label("Select an owned vehicle and assign it to a route.");
-        hint.setStyle("-fx-font-size: 13px; -fx-text-fill: #7b6553;");
-
+        // ── Vehicle assignment card ────────────────────────────────────────────
         Label ownedVehicleLabel = new Label("Owned vehicle");
         ownedVehicleLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #4b3a2d;");
 
@@ -278,7 +276,6 @@ public class GaragePanel {
         List<Vehicle> ownedVehicles = game.getVehicles();
         if (ownedVehicles.isEmpty()) {
             ownedVehicleBox.getItems().add("No vehicles owned");
-            ownedVehicleBox.getSelectionModel().selectFirst();
         } else {
             for (Vehicle vehicle : ownedVehicles) {
                 String routeName = vehicle.getRoute() != null ? vehicle.getRoute().getName() : "Unassigned";
@@ -296,7 +293,6 @@ public class GaragePanel {
 
         if (drawnRoutes.isEmpty()) {
             routeBox.getItems().add("Draw a route first");
-            routeBox.getSelectionModel().selectFirst();
         } else {
             for (Route route : drawnRoutes) {
                 routeBox.getItems().add(route.getName());
@@ -308,17 +304,18 @@ public class GaragePanel {
         assignButton.setStyle(PRIMARY_BUTTON_STYLE);
         assignButton.setOnAction(e -> {
             int vehicleIdx = ownedVehicleBox.getSelectionModel().getSelectedIndex();
-            int routeIdx = routeBox.getSelectionModel().getSelectedIndex();
+            int routeIdx   = routeBox.getSelectionModel().getSelectedIndex();
 
             if (ownedVehicles.isEmpty() || drawnRoutes.isEmpty()) return;
             if (vehicleIdx < 0 || vehicleIdx >= ownedVehicles.size()) return;
             if (routeIdx < 0 || routeIdx >= drawnRoutes.size()) return;
 
             Vehicle selectedVehicle = ownedVehicles.get(vehicleIdx);
-            Route selectedRoute = drawnRoutes.get(routeIdx);
+            Route   selectedRoute   = drawnRoutes.get(routeIdx);
             gameController.onAssignVehicle(selectedVehicle, selectedRoute);
 
-            System.out.println("[Garage] Assigned vehicle to route: " + selectedRoute.getName());
+            System.out.println("[Garage] Assigned " + selectedVehicle.getId()
+                    + " to route: " + selectedRoute.getName());
             dialog.close();
         });
 
@@ -327,7 +324,6 @@ public class GaragePanel {
 
         return new VBox(14,
                 sectionTitle,
-                hint,
                 assignCard,
                 assignButton
         );
