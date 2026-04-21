@@ -189,6 +189,13 @@ public class Game {
         return null;
     }
 
+    public Bridge getBridgeAt(Position p) {
+        for (Bridge b : bridges) {
+            if (b.containsPosition(p.getX(), p.getY())) return b;
+        }
+        return null;
+    }
+
     // Returns the N/S/E/W neighbours of p that are also ROAD tiles.
     public List<Position> getAdjacentRoads(Position p) {
         int[][] deltas = { {0, -1}, {0, 1}, {-1, 0}, {1, 0} };

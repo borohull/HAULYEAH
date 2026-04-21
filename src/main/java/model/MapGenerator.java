@@ -2,13 +2,15 @@ package model;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Random;
-import model.service.ConstructionService;
+import java.util.Set;
 
 public class MapGenerator {
-    private static final int FAC_W = 2;
-    private static final int FAC_H = 2;
+    private static final int FAC_W = 4;
+    private static final int FAC_H = 3;
+;
     private static final int PADDING = 2;
 
     private static final String[][] FACILITY_DATA = {
@@ -22,14 +24,6 @@ public class MapGenerator {
             {"Plastic Factory", "PLASTIC", "OIL"},
             {"Textile Mill", "TEXTILE", "COTTON"},
             {"Cotton Farm", "COTTON", ""}
-    };
-
-    private static final String[] WATER_NAMES = {
-            "River Danube", "Blue Lake", "Crystal Creek", "Silent Pond"
-    };
-
-    private static final String[] FOREST_NAMES = {
-            "Dark Wood", "Pine Forest", "Birch Grove", "Oak Thicket"
     };
 
     private final Random rng;
@@ -126,15 +120,14 @@ public class MapGenerator {
     public Game generate(int width, int height, int numCities, int numFacilities) {
         Game game = new Game(width, height);
 
-        // Fixed positions for cities
         int[][] cityPositions = {
-                {10, 10}, // Debrecen
-                {50, 10}, // Budapest
-                {20, 50}, // Szeged
-                {50, 46}, // Pecs
-                {30, 70}, // Miskolc
-                {70, 60}, // Gyor
-                {28, 0}   // Sopron
+                {10, 10},
+                {50, 10},
+                {20, 50},
+                {50, 46},
+                {30, 70},
+                {70, 60},
+                {28, 0}
         };
 
         for (int i = 0; i < Math.min(numCities, cityPositions.length); i++) {
@@ -142,7 +135,6 @@ public class MapGenerator {
             int[] pos = cityPositions[i];
             City city = createCityFromTemplate("city_" + i, template, pos[0], pos[1]);
 
-            // Place buildings on 30% of empty tiles
             List<Position> empties = new ArrayList<>(city.getEmptyTiles());
             int numBuildings = (int) Math.ceil(empties.size() * 0.3);
             Collections.shuffle(empties, new Random(rng.nextLong()));
@@ -155,30 +147,30 @@ public class MapGenerator {
             game.addCity(city);
         }
 
-        // Collect city rectangles to avoid placing forests inside cities
         List<int[]> cityRects = new ArrayList<>();
         for (City city : game.getCities()) {
             cityRects.add(new int[]{city.getOrigin().getX(), city.getOrigin().getY(), city.getWidth(), city.getHeight()});
         }
 
-        // Fixed positions for facilities
         int[][] facilityPositions = {
-                {5, 40},
-                {15, 20},
-                {25, 60},
-                {33, 15},  // Paper Mill moved to occupy (33,15)(34,15)(33,16)(34,16)
-                {45, 55},
-                {55, 25},
-                {65, 45},
-                {75, 35},
-                {10, 65},
-                {40, 75},  // Cotton Farm
-                {0, 10},
-                {5, 5},
-                {70, 5},
-                {20, 10},
-                {50, 50}
+                {6, 42},
+                {14, 22},
+                {22, 62},
+                {31, 16},
+                {47, 58},
+                {58, 24},
+                {62, 42},
+                {66, 30},
+                {10, 66},
+                {50, 72},
+                {4, 14},
+                {8, 8},
+                {62, 8},
+                {20, 12},
+                {56, 52}
         };
+
+
 
         for (int i = 0; i < Math.min(numFacilities, facilityPositions.length) && i < FACILITY_DATA.length; i++) {
             String[] data = FACILITY_DATA[i % FACILITY_DATA.length];
@@ -186,12 +178,14 @@ public class MapGenerator {
             List<String> consumes = new ArrayList<>();
             if (!data[1].isEmpty()) produces.add(data[1]);
             if (!data[2].isEmpty()) consumes.add(data[2]);
+
             int[] pos = facilityPositions[i];
             int facW = FAC_W;
             int facH = FAC_H;
             if (data[0].equals("Cotton Farm")) {
-                facW = 3;  // Make Cotton Farm 3x2 to occupy additional tiles (42,75) and (42,76)
+                facW = 3;
             }
+
             Facility fac = new Facility(
                     "facility_" + i,
                     data[0],
@@ -205,106 +199,83 @@ public class MapGenerator {
             game.addFacility(fac);
         }
 
-        // Special 3x3 facility
         Facility specialFac = new Facility(
                 "facility_special",
                 "Large Factory",
-                0,
-                0,
+                4,
+                4,
                 3,
                 3,
                 List.of("STEEL"),
                 List.of("IRON")
         );
+
         game.addFacility(specialFac);
 
-        // Fixed water bodies
-        WaterBody water1 = new WaterBody("water_0", "Balaton Lake", 0, 30, 80, 5);
-        game.addWaterBody(water1);
+        generateFixedWater(game);
 
-        WaterBody water2 = new WaterBody("water_1", "Blue Lake", 35, 0, 6, 80);
-        game.addWaterBody(water2);
-
-        // Fixed forests
-        if (!overlaps(15, 35, 4, 3, cityRects)) {
-            Forest forest1 = new Forest("forest_0", "Dark Wood", 15, 35, 4, 3);
-            game.addForest(forest1);
+        if (!overlaps(15, 35, 4, 3, cityRects) && !overlapsWater(game, 15, 35, 4, 3)) {
+            game.addForest(new Forest("forest_0", "Dark Wood", 15, 35, 4, 3));
         }
 
-        if (!overlaps(55, 15, 3, 4, cityRects)) {
-            Forest forest2 = new Forest("forest_1", "Pine Forest", 55, 15, 3, 4);
-            game.addForest(forest2);
+        if (!overlaps(55, 15, 3, 4, cityRects) && !overlapsWater(game, 55, 15, 3, 4)) {
+            game.addForest(new Forest("forest_1", "Pine Forest", 55, 15, 3, 4));
         }
 
-        if (!overlaps(45, 5, 2, 2, cityRects)) {
-            Forest forest3 = new Forest("forest_2", "Oak Grove", 45, 5, 2, 2);
-            game.addForest(forest3);
+        if (!overlaps(45, 5, 2, 2, cityRects) && !overlapsWater(game, 45, 5, 2, 2)) {
+            game.addForest(new Forest("forest_2", "Oak Grove", 45, 5, 2, 2));
         }
 
-        if (!overlaps(5, 60, 3, 2, cityRects)) {
-            Forest forest4 = new Forest("forest_3", "Birch Woods", 5, 60, 3, 2);
-            game.addForest(forest4);
+        if (!overlaps(5, 60, 3, 2, cityRects) && !overlapsWater(game, 5, 60, 3, 2)) {
+            game.addForest(new Forest("forest_3", "Birch Woods", 5, 60, 3, 2));
         }
 
-        if (!overlaps(65, 70, 2, 3, cityRects)) {
-            Forest forest5 = new Forest("forest_4", "Maple Forest", 65, 70, 2, 3);
-            game.addForest(forest5);
+        if (!overlaps(65, 70, 2, 3, cityRects) && !overlapsWater(game, 65, 70, 2, 3)) {
+            game.addForest(new Forest("forest_4", "Maple Forest", 65, 70, 2, 3));
         }
 
-        // Additional forests near lakes
-        if (!overlaps(0, 35, 3, 2, cityRects)) {
-            Forest forest6 = new Forest("forest_5", "Willow Grove", 0, 35, 3, 2);
-            game.addForest(forest6);
+        if (!overlaps(0, 35, 3, 2, cityRects) && !overlapsWater(game, 0, 35, 3, 2)) {
+            game.addForest(new Forest("forest_5", "Willow Grove", 0, 35, 3, 2));
         }
 
-        if (!overlaps(10, 35, 4, 3, cityRects)) {
-            Forest forest7 = new Forest("forest_6", "Cedar Woods", 10, 35, 4, 3);
-            game.addForest(forest7);
+        if (!overlaps(10, 35, 4, 3, cityRects) && !overlapsWater(game, 10, 35, 4, 3)) {
+            game.addForest(new Forest("forest_6", "Cedar Woods", 10, 35, 4, 3));
         }
 
-        if (!overlaps(20, 35, 3, 2, cityRects)) {
-            Forest forest8 = new Forest("forest_7", "Elm Forest", 20, 35, 3, 2);
-            game.addForest(forest8);
+        if (!overlaps(20, 35, 3, 2, cityRects) && !overlapsWater(game, 20, 35, 3, 2)) {
+            game.addForest(new Forest("forest_7", "Elm Forest", 20, 35, 3, 2));
         }
 
-        if (!overlaps(70, 35, 2, 3, cityRects)) {
-            Forest forest9 = new Forest("forest_8", "Spruce Thicket", 70, 35, 2, 3);
-            game.addForest(forest9);
+        if (!overlaps(70, 35, 2, 3, cityRects) && !overlapsWater(game, 70, 35, 2, 3)) {
+            game.addForest(new Forest("forest_8", "Spruce Thicket", 70, 35, 2, 3));
         }
 
-        if (!overlaps(75, 35, 3, 2, cityRects)) {
-            Forest forest10 = new Forest("forest_9", "Ash Woods", 75, 35, 3, 2);
-            game.addForest(forest10);
+        if (!overlaps(75, 35, 3, 2, cityRects) && !overlapsWater(game, 75, 35, 3, 2)) {
+            game.addForest(new Forest("forest_9", "Ash Woods", 75, 35, 3, 2));
         }
 
-        if (!overlaps(41, 0, 2, 4, cityRects)) {
-            Forest forest11 = new Forest("forest_10", "Lake Pines", 41, 0, 2, 4);
-            game.addForest(forest11);
+        if (!overlaps(41, 0, 2, 4, cityRects) && !overlapsWater(game, 41, 0, 2, 4)) {
+            game.addForest(new Forest("forest_10", "Lake Pines", 41, 0, 2, 4));
         }
 
-        if (!overlaps(41, 10, 3, 3, cityRects)) {
-            Forest forest12 = new Forest("forest_11", "River Oaks", 41, 10, 3, 3);
-            game.addForest(forest12);
+        if (!overlaps(41, 10, 3, 3, cityRects) && !overlapsWater(game, 41, 10, 3, 3)) {
+            game.addForest(new Forest("forest_11", "River Oaks", 41, 10, 3, 3));
         }
 
-        if (!overlaps(41, 20, 2, 2, cityRects)) {
-            Forest forest13 = new Forest("forest_12", "Water Birches", 41, 20, 2, 2);
-            game.addForest(forest13);
+        if (!overlaps(41, 20, 2, 2, cityRects) && !overlapsWater(game, 41, 20, 2, 2)) {
+            game.addForest(new Forest("forest_12", "Water Birches", 41, 20, 2, 2));
         }
 
-        if (!overlaps(41, 40, 3, 2, cityRects)) {
-            Forest forest14 = new Forest("forest_13", "Shore Maples", 41, 40, 3, 2);
-            game.addForest(forest14);
+        if (!overlaps(41, 40, 3, 2, cityRects) && !overlapsWater(game, 41, 40, 3, 2)) {
+            game.addForest(new Forest("forest_13", "Shore Maples", 41, 40, 3, 2));
         }
 
-        if (!overlaps(41, 70, 2, 3, cityRects)) {
-            Forest forest15 = new Forest("forest_14", "Bay Cedars", 41, 70, 2, 3);
-            game.addForest(forest15);
+        if (!overlaps(41, 70, 2, 3, cityRects) && !overlapsWater(game, 41, 70, 2, 3)) {
+            game.addForest(new Forest("forest_14", "Bay Cedars", 41, 70, 2, 3));
         }
 
-        if (!overlaps(30, 0, 2, 4, cityRects)) {
-            Forest forest16 = new Forest("forest_15", "Coastal Pines", 30, 0, 2, 4);
-            game.addForest(forest16);
+        if (!overlaps(30, 0, 2, 4, cityRects) && !overlapsWater(game, 30, 0, 2, 4)) {
+            game.addForest(new Forest("forest_15", "Coastal Pines", 30, 0, 2, 4));
         }
 
         return game;
@@ -321,88 +292,73 @@ public class MapGenerator {
             }
         }
 
-        // Add roads for specific cities
         String cityName = template.getName();
         if (cityName.equals("Miskolc")) {
-            // Horizontal road (30,72)-(34,72)
             for (int x = 30; x <= 34; x++) {
                 Position p = new Position(x, 72);
                 city.addRoadTile(x, 72, City.CityRoadType.HORIZONTAL);
                 city.getEmptyTiles().remove(p);
             }
-            // Vertical road (32,70)-(32,74)
             for (int y = 70; y <= 74; y++) {
                 Position p = new Position(32, y);
                 city.addRoadTile(32, y, City.CityRoadType.VERTICAL);
                 city.getEmptyTiles().remove(p);
             }
-            // Crossroad at intersection (32,72)
             Position p = new Position(32, 72);
             city.addRoadTile(32, 72, City.CityRoadType.CROSSROAD);
             city.getEmptyTiles().remove(p);
         } else if (cityName.equals("Szeged")) {
-            // Horizontal road (20,52)-(24,52)
             for (int x = 20; x <= 24; x++) {
                 Position p = new Position(x, 52);
                 city.addRoadTile(x, 52, City.CityRoadType.HORIZONTAL);
                 city.getEmptyTiles().remove(p);
             }
-            // Vertical road (22,50)-(22,54)
             for (int y = 50; y <= 54; y++) {
                 Position p = new Position(22, y);
                 city.addRoadTile(22, y, City.CityRoadType.VERTICAL);
                 city.getEmptyTiles().remove(p);
             }
-            // Crossroad at intersection (22,52)
             Position p = new Position(22, 52);
             city.addRoadTile(22, 52, City.CityRoadType.CROSSROAD);
             city.getEmptyTiles().remove(p);
         } else if (cityName.equals("Debrecen")) {
-            // Vertical road (12,10)-(12,14)
             for (int y = 10; y <= 14; y++) {
                 Position p = new Position(12, y);
                 city.addRoadTile(12, y, City.CityRoadType.VERTICAL);
                 city.getEmptyTiles().remove(p);
             }
         } else if (cityName.equals("Gyor")) {
-            // Vertical road (74,60)-(74,67)
             for (int y = 60; y <= 67; y++) {
                 Position p = new Position(74, y);
                 city.addRoadTile(74, y, City.CityRoadType.VERTICAL);
                 city.getEmptyTiles().remove(p);
             }
         } else if (cityName.equals("Budapest")) {
-            // Vertical road (60,10)-(60,21)
             for (int y = 10; y <= 21; y++) {
                 Position p = new Position(60, y);
                 city.addRoadTile(60, y, City.CityRoadType.VERTICAL);
                 city.getEmptyTiles().remove(p);
             }
-            // Vertical road (54,10)-(54,21)
             for (int y = 10; y <= 21; y++) {
                 Position p = new Position(54, y);
                 city.addRoadTile(54, y, City.CityRoadType.VERTICAL);
                 city.getEmptyTiles().remove(p);
             }
         } else if (cityName.equals("Pecs")) {
-            // Horizontal road (50,48)-(54,48)
             for (int x = 50; x <= 54; x++) {
                 Position p = new Position(x, 48);
                 city.addRoadTile(x, 48, City.CityRoadType.HORIZONTAL);
                 city.getEmptyTiles().remove(p);
             }
-            // Vertical road (52,46)-(52,50)
             for (int y = 46; y <= 50; y++) {
                 Position p = new Position(52, y);
                 city.addRoadTile(52, y, City.CityRoadType.VERTICAL);
                 city.getEmptyTiles().remove(p);
             }
-            // Crossroad at intersection (52,48)
             Position p = new Position(52, 48);
             city.addRoadTile(52, 48, City.CityRoadType.CROSSROAD);
             city.getEmptyTiles().remove(p);
         } else if (cityName.equals("Sopron")) {
-            // Horizontal road (28,2)-(34,2)
             for (int x = 28; x <= 34; x++) {
                 Position p = new Position(x, 2);
                 city.addRoadTile(x, 2, City.CityRoadType.HORIZONTAL);
@@ -421,7 +377,6 @@ public class MapGenerator {
 
         return city;
     }
-
 
     private int[] findFreePosition(int mapW, int mapH, int entityW, int entityH, List<int[]> occupied) {
         if (mapW - entityW - 2 <= 0 || mapH - entityH - 2 <= 0) {
@@ -452,5 +407,101 @@ public class MapGenerator {
             }
         }
         return false;
+    }
+
+    private boolean overlapsWater(Game game, int x, int y, int w, int h) {
+        for (int dx = 0; dx < w; dx++) {
+            for (int dy = 0; dy < h; dy++) {
+                Tile tile = game.getTile(x + dx, y + dy);
+                if (tile != null && tile.getType() == model.enums.TileType.WATER) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private void generateFixedWater(Game game) {
+        Set<Position> riverTiles = new LinkedHashSet<>();
+
+        // Prettier fixed river, fully connected, top to bottom
+        addRiverStroke(riverTiles, 39, 0, 4, 12, 0, 0);
+        addRiverStroke(riverTiles, 39, 12, 4, 10, 3, -1);
+        addRiverStroke(riverTiles, 36, 22, 5, 12, 0, 0);
+        addRiverStroke(riverTiles, 36, 34, 4, 12, 4, 1);
+        addRiverStroke(riverTiles, 39, 46, 5, 12, 0, 0);
+        addRiverStroke(riverTiles, 39, 58, 4, 10, 3, 1);
+        addRiverStroke(riverTiles, 42, 68, 5, 12, 0, 0);
+
+        WaterBody mainRiver = createWaterBodyFromTiles("water_0", "Silver River", riverTiles);
+        if (mainRiver != null) {
+            game.addWaterBody(mainRiver);
+        }
+
+        Set<Position> lake1Tiles = new LinkedHashSet<>();
+        addLakeEllipse(lake1Tiles, 9, 53, 4, 3);
+
+        WaterBody lake1 = createWaterBodyFromTiles("water_2", "Blue Lake", lake1Tiles);
+        if (lake1 != null) {
+            game.addWaterBody(lake1);
+        }
+
+        Set<Position> lake2Tiles = new LinkedHashSet<>();
+        addLakeEllipse(lake2Tiles, 63, 69, 4, 3);
+
+        WaterBody lake2 = createWaterBodyFromTiles("water_3", "Crystal Lake", lake2Tiles);
+        if (lake2 != null) {
+            game.addWaterBody(lake2);
+        }
+    }
+
+    private void addRiverStroke(Set<Position> tiles, int startX, int startY, int width, int length, int shiftEvery, int shiftDirection) {
+        int x = startX;
+        for (int row = 0; row < length; row++) {
+            for (int dx = 0; dx < width; dx++) {
+                tiles.add(new Position(x + dx, startY + row));
+            }
+            if (shiftEvery > 0 && (row + 1) % shiftEvery == 0) {
+                x += shiftDirection;
+            }
+        }
+    }
+
+    private void addLakeEllipse(Set<Position> tiles, int centerX, int centerY, int radiusX, int radiusY) {
+        for (int dx = -radiusX; dx <= radiusX; dx++) {
+            for (int dy = -radiusY; dy <= radiusY; dy++) {
+                double nx = dx / (double) radiusX;
+                double ny = dy / (double) radiusY;
+                if ((nx * nx) + (ny * ny) <= 1.0) {
+                    tiles.add(new Position(centerX + dx, centerY + dy));
+                }
+            }
+        }
+    }
+
+    private WaterBody createWaterBodyFromTiles(String id, String name, Set<Position> tiles) {
+        if (tiles.isEmpty()) return null;
+
+        int minX = Integer.MAX_VALUE;
+        int minY = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        int maxY = Integer.MIN_VALUE;
+
+        for (Position p : tiles) {
+            minX = Math.min(minX, p.getX());
+            minY = Math.min(minY, p.getY());
+            maxX = Math.max(maxX, p.getX());
+            maxY = Math.max(maxY, p.getY());
+        }
+
+        return new WaterBody(
+                id,
+                name,
+                minX,
+                minY,
+                (maxX - minX) + 1,
+                (maxY - minY) + 1,
+                new ArrayList<>(tiles)
+        );
     }
 }
