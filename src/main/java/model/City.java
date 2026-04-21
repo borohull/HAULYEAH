@@ -1,5 +1,6 @@
 package model;
 
+import model.enums.CargoType;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -12,6 +13,9 @@ public class City extends MapEntity {
         CROSSROAD
     }
 
+
+    private List<CargoType> demandSequence = new ArrayList<>();
+    private int demandIndex = 0;
 
     private final List<Position> buildingTiles;
     private final List<Position> emptyTiles;
@@ -97,5 +101,20 @@ public class City extends MapEntity {
     public boolean containsPosition(int x, int y) {
         return x >= origin.getX() && x < origin.getX() + width &&
                 y >= origin.getY() && y < origin.getY() + height;
+    }
+
+    public void setDemandSequence(List<CargoType> seq) { this.demandSequence = new ArrayList<>(seq); }
+    public List<CargoType> getDemandSequence()          { return demandSequence; }
+    public int  getDemandIndex()                        { return demandIndex; }
+    public void setDemandIndex(int i)                   { this.demandIndex = Math.floorMod(i, Math.max(1, demandSequence.size())); }
+
+    public CargoType getCurrentDemand() {
+        return demandSequence.isEmpty() ? null : demandSequence.get(demandIndex);
+    }
+
+    public void advanceDemand() {
+        if (!demandSequence.isEmpty()) {
+            demandIndex = (demandIndex + 1) % demandSequence.size();
+        }
     }
 }

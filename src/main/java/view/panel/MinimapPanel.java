@@ -114,7 +114,8 @@ public class MinimapPanel extends Canvas {
         double mOY = MAIN_OY * scale + 1;
 
         GraphicsContext gc = getGraphicsContext2D();
-        gc.clearRect(0, 0, mmW + 2, mmH + 2);
+        gc.setFill(Color.web("#87CEEB"));
+        gc.fillRect(0, 0, mmW + 2, mmH + 2);
 
         // Isometric diamond tiles — same painter's order as MapPanel (y outer, x inner)
         for (int y = 0; y < rows; y++) {

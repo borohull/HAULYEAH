@@ -226,7 +226,7 @@ public class GaragePanel {
             categoryLabel.setText("Category: " + selected.getCategory());
             speedLabel.setText("Speed: " + selected.getSpeed());
             capacityLabel.setText("Capacity: " + selected.getCapacity());
-            priceLabel.setText("Price: " + selected.getMaintenanceCost());
+            priceLabel.setText("Price: $" + selected.getPurchasePrice());
         };
         updateStats.run();
         vehicleTypeBox.setOnAction(e -> updateStats.run());

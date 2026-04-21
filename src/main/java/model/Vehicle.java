@@ -1,5 +1,6 @@
 package model;
 
+import model.enums.CargoType;
 import model.enums.Direction;
 import model.enums.VehicleType;
 import java.util.List;
@@ -21,6 +22,10 @@ public class Vehicle {
 
     /** Direction the vehicle is currently traveling (set by SimulationEngine each tick). */
     private Direction travelDirection = Direction.EAST;
+
+    /** Cargo currently carried by this vehicle. */
+    private CargoType cargoType   = null;
+    private int       cargoAmount = 0;
 
     /** Continuous tile-coordinate position for smooth rendering (set by SimulationEngine). */
     private double smoothX;
@@ -106,5 +111,23 @@ public class Vehicle {
                 routePathIndex--;
             }
         }
+    }
+
+    // ── Cargo ─────────────────────────────────────────────────────────────────
+    public CargoType getCargoType()   { return cargoType; }
+    public int       getCargoAmount() { return cargoAmount; }
+    public boolean   isCarrying()     { return cargoType != null && cargoAmount > 0; }
+
+    public void loadCargo(CargoType type, int amount) {
+        this.cargoType   = type;
+        this.cargoAmount = Math.min(amount, getCapacity());
+    }
+
+    /** Unloads all cargo and returns the amount that was carried. */
+    public int unloadCargo() {
+        int delivered = cargoAmount;
+        cargoType   = null;
+        cargoAmount = 0;
+        return delivered;
     }
 }

@@ -58,6 +58,7 @@ public class SimulationController {
 
     // Registered by the View (HudPanel) to refresh speed/pause display
     private Runnable onStateChanged;
+    private Runnable onBankrupt;
 
     public SimulationController(GameState state) {
         this.state = state;
@@ -75,20 +76,21 @@ public class SimulationController {
                 lastTime = now;
 
                 if (speed != Speed.PAUSED) {
-                    // Simulated logic time depends on speed multiplier
                     double dt = elapsedSeconds * speed.multiplier;
                     engine.tick(SimulationController.this.state, dt);
-                    
-                    // Request a redraw from the View (so vehicles/animations update)
                     notifyView();
+
+                    if (state.getPlayer().getLedger().getCurrentCapital() < 0) {
+                        pause();
+                        if (onBankrupt != null) onBankrupt.run();
+                    }
                 }
             }
         };
     }
 
-    public void setOnStateChanged(Runnable callback) {
-        this.onStateChanged = callback;
-    }
+    public void setOnStateChanged(Runnable callback) { this.onStateChanged = callback; }
+    public void setOnBankrupt(Runnable callback)      { this.onBankrupt = callback; }
 
     // -----------------------------------------------------------------------
     // Simulation control
