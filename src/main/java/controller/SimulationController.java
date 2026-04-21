@@ -209,6 +209,11 @@ public class SimulationController {
     public boolean isRunning() { return running; }
     public Speed   getSpeed()  { return speed; }
 
+    /** Clears saved tile-progress for a vehicle so it restarts cleanly. */
+    public void resetVehicle(String vehicleId) {
+        engine.resetVehicle(vehicleId);
+    }
+
     // -----------------------------------------------------------------------
     // Internal
     // -----------------------------------------------------------------------

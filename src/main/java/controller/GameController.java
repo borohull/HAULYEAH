@@ -191,12 +191,6 @@ public class GameController {
             return;
         }
 
-        model.Stop stop = state.getMap().getStopAt(p);
-        if (stop != null) {
-            stop.cycleOrientation();
-            markUnsaved();
-            notifyView();
-        }
     }
 
     // ── Route drawing ─────────────────────────────────────────────────────────
@@ -223,12 +217,7 @@ public class GameController {
         if (tile == null) return;
 
         TileType type = tile.getType();
-        boolean walkable = type == TileType.ROAD
-                || type == TileType.STOP
-                || type == TileType.CITY_ROAD
-                || type == TileType.CITY_STOP
-                || type == TileType.BRIDGE;
-        if (!walkable) {
+        if (!isWalkable(type)) {
             System.out.println("[GameController] Route draw: tile not walkable " + p);
             return;
         }
@@ -238,23 +227,35 @@ public class GameController {
             Position lastP = currentRoutePath.get(currentRoutePath.size() - 1);
             if (lastP.equals(p)) return;
 
-            // Simple line-fill to prevent skipping tiles
+            // Build the straight-line fill (X-first, then Y) and validate every tile
             int dx = Integer.signum(p.getX() - lastP.getX());
             int dy = Integer.signum(p.getY() - lastP.getY());
 
+            List<Position> fillSegment = new ArrayList<>();
             Position curr = lastP;
+            boolean allWalkable = true;
             while (!curr.equals(p)) {
-                // Move first on X, then Y
                 if (curr.getX() != p.getX()) {
                     curr = new Position(curr.getX() + dx, curr.getY());
                 } else if (curr.getY() != p.getY()) {
                     curr = new Position(curr.getX(), curr.getY() + dy);
                 }
+                Tile fillTile = state.getMap().getTile(curr.getX(), curr.getY());
+                if (fillTile == null || !isWalkable(fillTile.getType())) {
+                    allWalkable = false;
+                    System.out.println("[GameController] Route auto-fill blocked: non-walkable tile at " + curr
+                            + " — click tiles one by one along the road.");
+                    break;
+                }
+                fillSegment.add(curr);
+            }
 
-                if (!currentRoutePath.contains(curr)) {
-                    currentRoutePath.add(curr);
+            if (allWalkable) {
+                for (Position fp : fillSegment) {
+                    if (!currentRoutePath.contains(fp)) currentRoutePath.add(fp);
                 }
             }
+            // If path is blocked, only the destination tile is skipped — user must trace manually.
         } else {
             currentRoutePath.add(p);
         }
@@ -344,9 +345,13 @@ public class GameController {
     public Vehicle spawnAndAssign(VehicleType type, Route route) {
         Position spawnPos = null;
 
-        // Prefer the first tile of the drawn route so vehicle starts exactly on path
+        // Prefer the first stop on the route so vehicle starts at a stop facing the right direction
         if (route != null && route.hasTilePath()) {
-            spawnPos = route.getTilePath().get(0);
+            if (route.hasStops()) {
+                spawnPos = route.getStops().get(0).getPosition();
+            } else {
+                spawnPos = route.getTilePath().get(0);
+            }
         } else {
             // Fallback: first stop on the map
             List<Stop> stops = state.getMap().getStops();
@@ -367,8 +372,10 @@ public class GameController {
 
     public void onAssignVehicle(Vehicle vehicle, Route route) {
         vehicleService.assignRoute(state.getMap(), vehicle, route);
+        if (simController != null) simController.resetVehicle(vehicle.getId());
         notifyView();
     }
+
 
     // ── Misc ──────────────────────────────────────────────────────────────────
 
@@ -383,9 +390,17 @@ public class GameController {
         if (simController != null) simController.markUnsavedChanges();
     }
 
+    private static boolean isWalkable(TileType t) {
+        return t == TileType.ROAD || t == TileType.STOP
+            || t == TileType.CITY_ROAD || t == TileType.CITY_STOP
+            || t == TileType.BRIDGE;
+    }
+
     private void notifyView() {
         if (onStateChanged != null) onStateChanged.run();
     }
+
+    public void notifyViewFromOutside() { notifyView(); }
 
     public GameState getState() { return state; }
 }

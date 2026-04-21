@@ -335,54 +335,22 @@ public class MapPanel extends Canvas {
         // Maintain a 1:1 aspect ratio to avoid squishing the image vertically, which makes its movement look distorted.
         double imgW = TILE_W * 1.30;
         double imgH = imgW; // exactly 1:1 proportion
-        double imgX = cx - imgW / 2.0;
-        
-        // Procedural suspension bounce: only bobs up/down when moving!
-        double bounce = Math.abs(Math.sin(dist * Math.PI * 1.5)) * (TILE_H * 0.08);
 
-        // Shift up vertically so the bottom wheels of the 1:1 shape sit correctly on the road center (cy)
-        double imgY = cy - imgH / 2.0 - TILE_H * 0.15 - bounce;
-
-        // Determine exact travel direction from the grid path
-        Direction travelDir = Direction.EAST; // Default fallback for newly bought vehicles
-        if (vehicle.getRoute() != null && vehicle.getRoute().hasTilePath()) {
-            java.util.List<Position> path = vehicle.getRoute().getTilePath();
-            int curIdx  = vehicle.getRoutePathIndex();
-            int nextIdx = (curIdx + 1) % path.size();
-            Position curPos  = path.get(curIdx);
-            Position nextPos = path.get(nextIdx);
-
-            int dx = nextPos.getX() - curPos.getX();
-            int dy = nextPos.getY() - curPos.getY();
-
-            if      (dx > 0) travelDir = Direction.EAST;  // moving +X (down-right)
-            else if (dx < 0) travelDir = Direction.WEST;  // moving -X (up-left)
-            else if (dy > 0) travelDir = Direction.SOUTH; // moving +Y (down-left)
-            else if (dy < 0) travelDir = Direction.NORTH; // moving -Y (up-right)
-
-            // Override with Stop orientation if currently at/leaving a stop
-            if (currentGame != null) {
-                model.Stop currentStop = currentGame.getStopAt(curPos);
-                if (currentStop != null) {
-                    travelDir = currentStop.getOrientation();
-                }
-            }
-        }
-
-        // In 2.5D isometric: WEST and SOUTH directions travel "left" across the screen.
-        // If the sprite natively faces EAST/NORTH (right), we must flip it horizontally.
+        // Direction is maintained by SimulationEngine each tick and stored on the vehicle.
+        // These are 2.5D perspective sprites — only horizontal flip is valid.
+        // Flip when the vehicle moves left on screen (WEST/SOUTH both decrease isoX).
+        Direction travelDir = vehicle.getTravelDirection();
         boolean flipX = (travelDir == Direction.WEST || travelDir == Direction.SOUTH);
 
-
-        // No procedural shadow needed — the city_bus.png sprite already has a built-in embedded shadow!
+        double pivotX = cx;
+        double pivotY = cy - TILE_H * 0.15;
 
         if (img != null) {
-            if (flipX) {
-                // Draw mirrored: start from right edge, use negative width
-                gc.drawImage(img, imgX + imgW, imgY, -imgW, imgH);
-            } else {
-                gc.drawImage(img, imgX, imgY, imgW, imgH);
-            }
+            gc.save();
+            gc.translate(pivotX, pivotY);
+            gc.scale(flipX ? -1 : 1, 1);
+            gc.drawImage(img, -imgW / 2.0, -imgH / 2.0, imgW, imgH);
+            gc.restore();
         } else {
             // Fallback: coloured dot if image failed to load
             boolean isPassenger = vehicle.getType().isPassenger();
@@ -482,38 +450,11 @@ public class MapPanel extends Canvas {
             case FOREST   -> drawForestTree(gc, tx, ty, ox, oy);
             case BRIDGE   -> drawBox(gc, tx, ty, ox, oy, COL_BRIDGE_LEFT, COL_BRIDGE_RIGHT, COL_BRIDGE_ROOF);
             case ROAD, CITY_ROAD -> { }
-            case STOP, CITY_STOP -> drawStopArrow(gc, tx, ty, ox, oy);
+            case STOP, CITY_STOP -> { }
             default -> { }
         }
     }
 
-    private void drawStopArrow(GraphicsContext gc, int tx, int ty, int ox, int oy) {
-        if (currentGame == null) return;
-        model.Stop stop = currentGame.getStopAt(new model.Position(tx, ty));
-        if (stop == null) return;
-
-        double cx = isoScreenX(tx, ty, ox);
-        double cy = isoScreenY(tx, ty, oy);
-        
-        // Draw a small white triangle indicating the departure direction
-        gc.setFill(Color.rgb(255, 255, 255, 0.7));
-        double size = 12.0;
-
-        switch (stop.getOrientation()) {
-            case EAST -> gc.fillPolygon(
-                    new double[]{cx, cx + size, cx},
-                    new double[]{cy - size/2, cy, cy + size/2}, 3);
-            case SOUTH -> gc.fillPolygon(
-                    new double[]{cx - size/2, cx, cx + size/2},
-                    new double[]{cy, cy + size, cy}, 3);
-            case WEST -> gc.fillPolygon(
-                    new double[]{cx, cx - size, cx},
-                    new double[]{cy - size/2, cy, cy + size/2}, 3);
-            case NORTH -> gc.fillPolygon(
-                    new double[]{cx - size/2, cx, cx + size/2},
-                    new double[]{cy, cy - size, cy}, 3);
-        }
-    }
 
     private void drawCityBuilding(GraphicsContext gc, Tile tile, int tx, int ty, int ox, int oy) {
         if (tile.getType() != TileType.CITY) return;

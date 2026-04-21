@@ -7,7 +7,6 @@ import model.TrafficLight;
 import model.Vehicle;
 import model.enums.Direction;
 import model.enums.LightState;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +42,6 @@ public class SimulationEngine {
         for (Vehicle vehicle : state.getMap().getVehicles()) {
             if (vehicle.getRoute() != null
                     && vehicle.getRoute().hasTilePath()
-                    && vehicle.getRoutePathIndex() == 0
                     && !tileProgress.containsKey(vehicle.getId())) {
                 tileProgress.put(vehicle.getId(), 0.0);
             }
@@ -74,13 +72,13 @@ public class SimulationEngine {
         double progress       = storedProgress + tilesPerSec * dt;
         final  double STOP_LINE = 0.30; // vehicle waits here (clearly inside previous tile)
 
+        boolean forward = vehicle.isMovingForward();
         int curIdx  = vehicle.getRoutePathIndex();
-        int nextIdx = (curIdx + 1) % pathSize;
+        int nextIdx = forward ? Math.min(curIdx + 1, pathSize - 1) : Math.max(curIdx - 1, 0);
 
         // Check traffic light on the NEXT tile before crossing into it.
-        // Skip the check when nextIdx wraps to 0 — the approach direction at the seam
-        // of a looping route is geometrically undefined and falsely returns RED.
-        if (nextIdx != 0) {
+        // curIdx == nextIdx means we're at an endpoint — nothing to cross.
+        if (curIdx != nextIdx) {
             TrafficLight tl = state.getMap().getTrafficLightAt(path.get(nextIdx));
             if (tl != null) {
                 Direction approachDir = approachDirection(path.get(curIdx), path.get(nextIdx));
@@ -101,9 +99,9 @@ public class SimulationEngine {
             vehicle.advanceRoutePathIndex();
             vehicle.setPosition(path.get(vehicle.getRoutePathIndex()));
             curIdx  = vehicle.getRoutePathIndex();
-            nextIdx = (curIdx + 1) % pathSize;
-            // Skip wrap-around boundary TL check (same reason as above)
-            if (nextIdx == 0) break;
+            forward = vehicle.isMovingForward();
+            nextIdx = forward ? Math.min(curIdx + 1, pathSize - 1) : Math.max(curIdx - 1, 0);
+            if (curIdx == nextIdx) break; // at an endpoint, stop advancing
             TrafficLight tl = state.getMap().getTrafficLightAt(path.get(nextIdx));
             if (tl != null) {
                 Direction approachDir = approachDirection(path.get(curIdx), path.get(nextIdx));
@@ -120,7 +118,8 @@ public class SimulationEngine {
 
         // ── Smooth sub-tile interpolation ─────────────────────────────────────
         curIdx  = vehicle.getRoutePathIndex();
-        nextIdx = (curIdx + 1) % pathSize;
+        forward = vehicle.isMovingForward();
+        nextIdx = forward ? Math.min(curIdx + 1, pathSize - 1) : Math.max(curIdx - 1, 0);
         Position from = path.get(curIdx);
         Position to   = path.get(nextIdx);
 
@@ -128,6 +127,16 @@ public class SimulationEngine {
                 lerp(from.getX(), to.getX(), progress),
                 lerp(from.getY(), to.getY(), progress)
         );
+
+        // Update travel direction from actual movement vector this tick.
+        // When from == to (endpoint), keep the previous direction unchanged.
+        int dx = to.getX() - from.getX();
+        int dy = to.getY() - from.getY();
+        if      (dx > 0) vehicle.setTravelDirection(Direction.EAST);
+        else if (dx < 0) vehicle.setTravelDirection(Direction.WEST);
+        else if (dy > 0) vehicle.setTravelDirection(Direction.SOUTH);
+        else if (dy < 0) vehicle.setTravelDirection(Direction.NORTH);
+        // dx==0 && dy==0 → at endpoint, leave previous direction intact
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

@@ -1,6 +1,8 @@
 package model;
 
+import model.enums.Direction;
 import model.enums.VehicleType;
+import java.util.List;
 
 public class Vehicle {
 
@@ -10,10 +12,15 @@ public class Vehicle {
     private Route    route;
 
     /**
-     * Index into route.getTilePath() — the tile the vehicle is currently
-     * travelling TOWARD.  Advances one step at a time and wraps around.
+     * Index into route.getTilePath() — the tile the vehicle is currently ON.
+     * Ping-pongs between 0 and size-1.
      */
-    private int routePathIndex = 0;
+    private int     routePathIndex = 0;
+    /** True = travelling toward higher indices; false = travelling backward. */
+    private boolean movingForward  = true;
+
+    /** Direction the vehicle is currently traveling (set by SimulationEngine each tick). */
+    private Direction travelDirection = Direction.EAST;
 
     /** Continuous tile-coordinate position for smooth rendering (set by SimulationEngine). */
     private double smoothX;
@@ -48,26 +55,56 @@ public class Vehicle {
 
     // ── Route assignment ──────────────────────────────────────────────────────
     public void assignRoute(Route route) {
-        this.route          = route;
-        this.routePathIndex = 0;
-        // Snap to the first tile in the path so the vehicle starts in the right place
+        this.route         = route;
+        this.movingForward = true;
         if (route != null && route.hasTilePath()) {
-            Position start = route.getTilePath().get(0);
+            List<Position> path = route.getTilePath();
+            // Start at the first stop in the path so the vehicle moves toward the second stop.
+            // Falls back to path[0] if the route has no stops.
+            int startIdx = 0;
+            if (route.hasStops()) {
+                Position firstStopPos = route.getStops().get(0).getPosition();
+                for (int i = 0; i < path.size(); i++) {
+                    if (path.get(i).equals(firstStopPos)) {
+                        startIdx = i;
+                        break;
+                    }
+                }
+            }
+            this.routePathIndex = startIdx;
+            Position start = path.get(startIdx);
             this.position = start;
             this.smoothX  = start.getX();
             this.smoothY  = start.getY();
+        } else {
+            this.routePathIndex = 0;
         }
     }
 
-    public Route getRoute() { return route; }
+    public Route      getRoute()              { return route; }
+    public boolean    isMovingForward()       { return movingForward; }
+    public Direction  getTravelDirection()    { return travelDirection; }
+    public void       setTravelDirection(Direction d) { this.travelDirection = d; }
 
     // ── Path index ────────────────────────────────────────────────────────────
     public int getRoutePathIndex() { return routePathIndex; }
 
-    /** Advance to the next tile in the route path, wrapping around at the end. */
+    /** Advance one step, flipping direction at each endpoint (ping-pong). */
     public void advanceRoutePathIndex() {
-        if (route != null && route.hasTilePath()) {
-            routePathIndex = (routePathIndex + 1) % route.getTilePath().size();
+        if (route == null || !route.hasTilePath()) return;
+        int size = route.getTilePath().size();
+        if (movingForward) {
+            if (routePathIndex >= size - 1) {
+                movingForward = false; // flip only — stay at endpoint this call
+            } else {
+                routePathIndex++;
+            }
+        } else {
+            if (routePathIndex <= 0) {
+                movingForward = true; // flip only — stay at endpoint this call
+            } else {
+                routePathIndex--;
+            }
         }
     }
 }
