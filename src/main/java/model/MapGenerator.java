@@ -1,9 +1,11 @@
 package model;
 
+import model.enums.CargoType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -13,17 +15,17 @@ public class MapGenerator {
 ;
     private static final int PADDING = 2;
 
-    private static final String[][] FACILITY_DATA = {
-            {"Iron Mine", "IRON", ""},
-            {"Lumber Mill", "WOOD", ""},
-            {"Steel Works", "STEEL", "IRON"},
-            {"Paper Mill", "PAPER", "WOOD"},
-            {"Farm", "WOOD", ""},
-            {"Coal Mine", "COAL", ""},
-            {"Oil Refinery", "OIL", ""},
-            {"Plastic Factory", "PLASTIC", "OIL"},
-            {"Textile Mill", "TEXTILE", "COTTON"},
-            {"Cotton Farm", "COTTON", ""}
+    private static final Object[][] FACILITY_DATA = {
+            {"Iron Mine",       CargoType.IRON,    null},
+            {"Lumber Mill",     CargoType.WOOD,    null},
+            {"Steel Works",     CargoType.STEEL,   CargoType.IRON},
+            {"Paper Mill",      CargoType.PAPER,   CargoType.WOOD},
+            {"Farm",            CargoType.WOOD,    null},
+            {"Coal Mine",       CargoType.COAL,    null},
+            {"Oil Refinery",    CargoType.OIL,     null},
+            {"Plastic Factory", CargoType.PLASTIC, CargoType.OIL},
+            {"Textile Mill",    CargoType.TEXTILE, CargoType.COTTON},
+            {"Cotton Farm",     CargoType.COTTON,  null}
     };
 
     private final Random rng;
@@ -173,11 +175,11 @@ public class MapGenerator {
 
 
         for (int i = 0; i < Math.min(numFacilities, facilityPositions.length) && i < FACILITY_DATA.length; i++) {
-            String[] data = FACILITY_DATA[i % FACILITY_DATA.length];
-            List<String> produces = new ArrayList<>();
-            List<String> consumes = new ArrayList<>();
-            if (!data[1].isEmpty()) produces.add(data[1]);
-            if (!data[2].isEmpty()) consumes.add(data[2]);
+            Object[] data = FACILITY_DATA[i % FACILITY_DATA.length];
+            List<CargoType> produces = new ArrayList<>();
+            List<CargoType> consumes = new ArrayList<>();
+            if (data[1] != null) produces.add((CargoType) data[1]);
+            if (data[2] != null) consumes.add((CargoType) data[2]);
 
             int[] pos = facilityPositions[i];
             int facW = FAC_W;
@@ -188,7 +190,7 @@ public class MapGenerator {
 
             Facility fac = new Facility(
                     "facility_" + i,
-                    data[0],
+                    (String) data[0],
                     pos[0],
                     pos[1],
                     facW,
@@ -206,8 +208,8 @@ public class MapGenerator {
                 4,
                 3,
                 3,
-                List.of("STEEL"),
-                List.of("IRON")
+                List.of(CargoType.STEEL),
+                List.of(CargoType.IRON)
         );
 
         game.addFacility(specialFac);
@@ -278,7 +280,25 @@ public class MapGenerator {
             game.addForest(new Forest("forest_15", "Coastal Pines", 30, 0, 2, 4));
         }
 
+        assignDemandSequences(game);
+
         return game;
+    }
+
+    private static void assignDemandSequences(Game game) {
+        Map<String, List<CargoType>> sequences = Map.of(
+            "Debrecen", List.of(CargoType.WOOD, CargoType.IRON, CargoType.PAPER, CargoType.STEEL, CargoType.COAL),
+            "Budapest", List.of(CargoType.STEEL, CargoType.OIL, CargoType.PLASTIC, CargoType.TEXTILE, CargoType.COAL),
+            "Szeged",   List.of(CargoType.PAPER, CargoType.WOOD, CargoType.COTTON, CargoType.TEXTILE, CargoType.IRON),
+            "Pecs",     List.of(CargoType.COAL, CargoType.OIL, CargoType.PLASTIC, CargoType.IRON, CargoType.WOOD),
+            "Miskolc",  List.of(CargoType.IRON, CargoType.STEEL, CargoType.COAL, CargoType.OIL, CargoType.PAPER),
+            "Gyor",     List.of(CargoType.WOOD, CargoType.COTTON, CargoType.TEXTILE, CargoType.PLASTIC, CargoType.PAPER),
+            "Sopron",   List.of(CargoType.COTTON, CargoType.TEXTILE, CargoType.PAPER, CargoType.WOOD, CargoType.STEEL)
+        );
+        for (City city : game.getCities()) {
+            List<CargoType> seq = sequences.get(city.getName());
+            if (seq != null) city.setDemandSequence(seq);
+        }
     }
 
     private City createCityFromTemplate(String id, CityTemplate template, int startX, int startY) {
