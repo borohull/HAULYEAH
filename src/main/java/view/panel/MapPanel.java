@@ -17,6 +17,7 @@ import model.Stop;
 import model.Tile;
 import model.TrafficLight;
 import model.Vehicle;
+import model.enums.CargoType;
 import model.enums.Direction;
 import model.enums.TileType;
 
@@ -184,6 +185,8 @@ public class MapPanel extends Canvas {
         for (TrafficLight tl : game.getTrafficLights().values()) {
             drawTrafficLight(gc, tl, originX, originY);
         }
+
+        drawDemandBadges(gc, game, originX, originY);
 
         for (Vehicle vehicle : game.getVehicles()) {
             drawVehicle(gc, vehicle, originX, originY);
@@ -493,6 +496,38 @@ public class MapPanel extends Canvas {
                     new double[]{treeCy + hh, treeCy + hh, treeCy - treeH}, 3);
         }
     }
+    private void drawDemandBadges(GraphicsContext gc, Game game, int ox, int oy) {
+        gc.setFont(Font.font("Monospace", 10));
+        gc.setTextAlign(TextAlignment.CENTER);
+        for (City city : game.getCities()) {
+            CargoType demand = city.getCurrentDemand();
+            if (demand == null) continue;
+            Position center = city.getCenter();
+            double cx = isoScreenX(center.getX(), center.getY(), ox);
+            double cy = isoScreenY(center.getX(), center.getY(), oy) - WALL_H - 72;
+            String text = "Needs: " + demand.displayName();
+            double tw = text.length() * 6.0;
+            gc.setFill(Color.rgb(0, 0, 0, 0.55));
+            gc.fillRoundRect(cx - tw / 2 - 4, cy - 11, tw + 8, 16, 5, 5);
+            gc.setFill(Color.WHITE);
+            gc.fillText(text, cx, cy);
+        }
+
+        for (Facility facility : game.getFacilities()) {
+            CargoType production = facility.getPrimaryProduction();
+            if (production == null) continue;
+            Position center = facility.getCenter();
+            double cx = isoScreenX(center.getX(), center.getY(), ox);
+            double cy = isoScreenY(center.getX(), center.getY(), oy) - WALL_H - 38;
+            String text = "Produces: " + production.displayName();
+            double tw = text.length() * 6.0;
+            gc.setFill(Color.rgb(0, 0, 0, 0.55));
+            gc.fillRoundRect(cx - tw / 2 - 4, cy - 11, tw + 8, 16, 5, 5);
+            gc.setFill(Color.WHITE);
+            gc.fillText(text, cx, cy);
+        }
+    }
+
     private void drawLabel(GraphicsContext gc, int tx, int ty, String text, int ox, int oy) {
         double cx = isoScreenX(tx, ty, ox);
         double cy = isoScreenY(tx, ty, oy) - WALL_H - 54;

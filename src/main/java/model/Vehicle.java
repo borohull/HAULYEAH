@@ -1,5 +1,6 @@
 package model;
 
+import model.enums.CargoType;
 import model.enums.VehicleType;
 
 public class Vehicle {
@@ -14,6 +15,10 @@ public class Vehicle {
      * travelling TOWARD.  Advances one step at a time and wraps around.
      */
     private int routePathIndex = 0;
+
+    /** Cargo currently carried by this vehicle. */
+    private CargoType cargoType   = null;
+    private int       cargoAmount = 0;
 
     /** Continuous tile-coordinate position for smooth rendering (set by SimulationEngine). */
     private double smoothX;
@@ -69,5 +74,23 @@ public class Vehicle {
         if (route != null && route.hasTilePath()) {
             routePathIndex = (routePathIndex + 1) % route.getTilePath().size();
         }
+    }
+
+    // ── Cargo ─────────────────────────────────────────────────────────────────
+    public CargoType getCargoType()   { return cargoType; }
+    public int       getCargoAmount() { return cargoAmount; }
+    public boolean   isCarrying()     { return cargoType != null && cargoAmount > 0; }
+
+    public void loadCargo(CargoType type, int amount) {
+        this.cargoType   = type;
+        this.cargoAmount = Math.min(amount, getCapacity());
+    }
+
+    /** Unloads all cargo and returns the amount that was carried. */
+    public int unloadCargo() {
+        int delivered = cargoAmount;
+        cargoType   = null;
+        cargoAmount = 0;
+        return delivered;
     }
 }

@@ -5,6 +5,7 @@ public enum TransactionType {
     BUILD,
     PURCHASE,
     MAINTENANCE,
+    DELIVERY,
     INCOME,
     OTHER
 }

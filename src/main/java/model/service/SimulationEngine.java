@@ -3,6 +3,7 @@ package model.service;
 import model.GameState;
 import model.Position;
 import model.Route;
+import model.Stop;
 import model.TrafficLight;
 import model.Vehicle;
 import model.enums.Direction;
@@ -23,7 +24,8 @@ import java.util.Map;
  */
 public class SimulationEngine {
 
-    private final VehicleService vehicleService = new VehicleService();
+    private final VehicleService  vehicleService  = new VehicleService();
+    private final DeliveryService deliveryService = new DeliveryService();
 
     // Speed values in VehicleType are 25–60 (game units).
     // Divide by SPEED_SCALE → tiles per second  (40 → 4 t/s).
@@ -38,6 +40,16 @@ public class SimulationEngine {
         // Advance all traffic light phase timers
         for (TrafficLight tl : state.getMap().getTrafficLights().values()) {
             tl.tick(dt);
+        }
+
+        deliveryService.tickDemand(state.getMap(), dt);
+
+        // Maintenance: drain maintenanceCost per game-minute per vehicle (aggregated, not logged individually)
+        double maintenancePerSecond = 1.0 / 60.0;
+        for (Vehicle vehicle : state.getMap().getVehicles()) {
+            String routeName = (vehicle.getRoute() != null) ? vehicle.getRoute().getName() : "Unassigned";
+            String key = vehicle.getType().getCategory() + " (" + vehicle.getType().name().replace("_", " ") + ") | Route: " + routeName;
+            state.getPlayer().getLedger().recordMaintenance(key, vehicle.getMaintenanceCost() * maintenancePerSecond * dt);
         }
 
         for (Vehicle vehicle : state.getMap().getVehicles()) {
@@ -100,6 +112,9 @@ public class SimulationEngine {
             progress -= 1.0;
             vehicle.advanceRoutePathIndex();
             vehicle.setPosition(path.get(vehicle.getRoutePathIndex()));
+            // Check for stop arrival
+            Stop arrivedStop = DeliveryService.findStopAt(vehicle.getPosition(), state.getMap().getStops());
+            if (arrivedStop != null) deliveryService.handleStopArrival(vehicle, arrivedStop, state);
             curIdx  = vehicle.getRoutePathIndex();
             nextIdx = (curIdx + 1) % pathSize;
             // Skip wrap-around boundary TL check (same reason as above)
