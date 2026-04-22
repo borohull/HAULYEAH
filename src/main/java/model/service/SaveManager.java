@@ -15,6 +15,17 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import model.Position;
+import model.Route;
+import model.TrafficLight;
+import model.Vehicle;
+import model.enums.Direction;
+import model.enums.VehicleType;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * SaveManager — handles persisting and loading the state of the game.
@@ -62,6 +73,58 @@ public class SaveManager {
                     .append(stop.getName())
                     .append('\n');
         }
+
+        content.append("routes=").append(game.getRoutes().size()).append('\n');
+        content.append("[routeList]\n");
+        for (Route route : game.getRoutes()) {
+            String stopIds = route.getStops().stream()
+                    .map(Stop::getId)
+                    .collect(Collectors.joining(";"));
+
+            String tilePath = route.getTilePath().stream()
+                    .map(p -> p.getX() + ":" + p.getY())
+                    .collect(Collectors.joining(";"));
+
+            content.append(route.getId()).append('|')
+                    .append(route.getName()).append('|')
+                    .append(route.isReversed()).append('|')
+                    .append(stopIds).append('|')
+                    .append(tilePath)
+                    .append('\n');
+        }
+
+        content.append("vehicles=").append(game.getVehicles().size()).append('\n');
+        content.append("[vehicleList]\n");
+        for (Vehicle vehicle : game.getVehicles()) {
+            String routeId = vehicle.getRoute() != null ? vehicle.getRoute().getId() : "";
+
+            content.append(vehicle.getId()).append('|')
+                    .append(vehicle.getType()).append('|')
+                    .append(vehicle.getPosition().getX()).append('|')
+                    .append(vehicle.getPosition().getY()).append('|')
+                    .append(routeId).append('|')
+                    .append(vehicle.getRoutePathIndex()).append('|')
+                    .append(vehicle.isMovingForward()).append('|')
+                    .append(vehicle.getTravelDirection())
+                    .append('\n');
+        }
+
+        content.append("trafficLights=").append(game.getTrafficLights().size()).append('\n');
+        content.append("[trafficLightList]\n");
+        for (TrafficLight tl : game.getTrafficLights().values()) {
+            String directionData = tl.getActiveDirections().stream()
+                    .map(d -> d.name() + ":" + tl.getGreenDuration(d))
+                    .collect(Collectors.joining(";"));
+
+            content.append(tl.getId()).append('|')
+                    .append(tl.getPosition().getX()).append('|')
+                    .append(tl.getPosition().getY()).append('|')
+                    .append(directionData).append('|')
+                    .append(tl.getCurrentPhaseIndex()).append('|')
+                    .append(tl.getPhaseTimer())
+                    .append('\n');
+        }
+
 
         content.append("[tileTypes]\n");
         for (int y = 0; y < game.getHeight(); y++) {
@@ -111,9 +174,21 @@ public class SaveManager {
             List<Stop> stops = new ArrayList<>();
             TileType[][] tileTypes = null;
 
-            int section = 0; // 0: header, 1: roadList, 2: stopList, 3: tileTypes
-            int roadCount = 0, stopCount = 0;
+            record ParsedRoute(String id, String name, boolean reversed, List<String> stopIds, List<Position> tilePath) {}
+            record ParsedVehicle(String id, VehicleType type, int x, int y, String routeId, int routePathIndex,
+                                 boolean movingForward, Direction travelDirection) {}
+            record ParsedTrafficLight(String id, int x, int y, List<Direction> directions,
+                                      Map<Direction, Double> durations, int phaseIndex, double phaseTimer) {}
+
+            List<ParsedRoute> parsedRoutes = new ArrayList<>();
+            List<ParsedVehicle> parsedVehicles = new ArrayList<>();
+            List<ParsedTrafficLight> parsedTrafficLights = new ArrayList<>();
+
+
+            int section = 0;
+            int roadCount = 0, stopCount = 0, routeCount = 0, vehicleCount = 0, trafficLightCount = 0;
             int y = 0;
+
 
             for (String line : lines) {
                 line = line.trim();
@@ -129,12 +204,24 @@ public class SaveManager {
                     roadCount = Integer.parseInt(line.substring(6));
                 } else if (line.startsWith("stops=")) {
                     stopCount = Integer.parseInt(line.substring(6));
+                } else if (line.startsWith("routes=")) {
+                    routeCount = Integer.parseInt(line.substring(7));
+                } else if (line.startsWith("vehicles=")) {
+                    vehicleCount = Integer.parseInt(line.substring(9));
+                } else if (line.startsWith("trafficLights=")) {
+                    trafficLightCount = Integer.parseInt(line.substring(14));
                 } else if (line.equals("[roadList]")) {
                     section = 1;
                 } else if (line.equals("[stopList]")) {
                     section = 2;
-                } else if (line.equals("[tileTypes]")) {
+                } else if (line.equals("[routeList]")) {
                     section = 3;
+                } else if (line.equals("[vehicleList]")) {
+                    section = 4;
+                } else if (line.equals("[trafficLightList]")) {
+                    section = 5;
+                } else if (line.equals("[tileTypes]")) {
+                    section = 6;
                     tileTypes = new TileType[height][width];
                 } else {
                     if (section == 1 && roads.size() < roadCount) {
@@ -155,7 +242,70 @@ public class SaveManager {
                             String name = parts[3];
                             stops.add(new Stop(id, sx, sy, name));
                         }
-                    } else if (section == 3 && y < height) {
+                    } else if (section == 3 && parsedRoutes.size() < routeCount) {
+                        String[] parts = line.split("\\|", -1);
+                        if (parts.length == 5) {
+                            List<String> stopIds = parts[3].isBlank()
+                                    ? new ArrayList<>()
+                                    : List.of(parts[3].split(";"));
+
+                            List<Position> tilePath = new ArrayList<>();
+                            if (!parts[4].isBlank()) {
+                                for (String token : parts[4].split(";")) {
+                                    String[] xy = token.split(":");
+                                    tilePath.add(new Position(Integer.parseInt(xy[0]), Integer.parseInt(xy[1])));
+                                }
+                            }
+
+                            parsedRoutes.add(new ParsedRoute(
+                                    parts[0],
+                                    parts[1],
+                                    Boolean.parseBoolean(parts[2]),
+                                    stopIds,
+                                    tilePath
+                            ));
+                        }
+                    } else if (section == 4 && parsedVehicles.size() < vehicleCount) {
+                        String[] parts = line.split("\\|", -1);
+                        if (parts.length == 8) {
+                            parsedVehicles.add(new ParsedVehicle(
+                                    parts[0],
+                                    VehicleType.valueOf(parts[1]),
+                                    Integer.parseInt(parts[2]),
+                                    Integer.parseInt(parts[3]),
+                                    parts[4],
+                                    Integer.parseInt(parts[5]),
+                                    Boolean.parseBoolean(parts[6]),
+                                    Direction.valueOf(parts[7])
+                            ));
+                        }
+                    } else if (section == 5 && parsedTrafficLights.size() < trafficLightCount) {
+                        String[] parts = line.split("\\|", -1);
+                        if (parts.length == 6) {
+                            List<Direction> directions = new ArrayList<>();
+                            Map<Direction, Double> durations = new HashMap<>();
+
+                            if (!parts[3].isBlank()) {
+                                for (String token : parts[3].split(";")) {
+                                    String[] kv = token.split(":");
+                                    Direction dir = Direction.valueOf(kv[0]);
+                                    double duration = Double.parseDouble(kv[1]);
+                                    directions.add(dir);
+                                    durations.put(dir, duration);
+                                }
+                            }
+
+                            parsedTrafficLights.add(new ParsedTrafficLight(
+                                    parts[0],
+                                    Integer.parseInt(parts[1]),
+                                    Integer.parseInt(parts[2]),
+                                    directions,
+                                    durations,
+                                    Integer.parseInt(parts[4]),
+                                    Double.parseDouble(parts[5])
+                            ));
+                        }
+                    } else if (section == 6 && y < height) {
                         String[] types = line.split(",");
                         for (int x = 0; x < width && x < types.length; x++) {
                             tileTypes[y][x] = TileType.valueOf(types[x]);
@@ -164,6 +314,7 @@ public class SaveManager {
                     }
                 }
             }
+
 
             if (worldName == null || width == 0 || height == 0 || tileTypes == null) {
                 System.err.println("[SaveManager] Invalid save file format");
@@ -196,9 +347,67 @@ public class SaveManager {
             }
 
             // Add stops
+// Add stops, routes, vehicles, and traffic lights
+            Map<String, Stop> stopById = new HashMap<>();
             for (Stop stop : stops) {
                 game.getStops().add(stop);
+                stopById.put(stop.getId(), stop);
             }
+
+            Map<String, Route> routeById = new HashMap<>();
+            for (ParsedRoute parsedRoute : parsedRoutes) {
+                List<Stop> routeStops = parsedRoute.stopIds().stream()
+                        .map(stopById::get)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+
+                Route route = new Route(
+                        parsedRoute.id(),
+                        parsedRoute.name(),
+                        routeStops,
+                        parsedRoute.tilePath()
+                );
+                route.setReversed(parsedRoute.reversed());
+                game.addRoute(route);
+                routeById.put(route.getId(), route);
+            }
+
+            for (ParsedVehicle parsedVehicle : parsedVehicles) {
+                Vehicle vehicle = new Vehicle(
+                        parsedVehicle.id(),
+                        parsedVehicle.type(),
+                        new Position(parsedVehicle.x(), parsedVehicle.y())
+                );
+
+                if (!parsedVehicle.routeId().isBlank()) {
+                    Route route = routeById.get(parsedVehicle.routeId());
+                    if (route != null) {
+                        vehicle.assignRoute(route);
+                        vehicle.restoreRouteState(parsedVehicle.routePathIndex(), parsedVehicle.movingForward());
+                    }
+                }
+
+                vehicle.setPosition(new Position(parsedVehicle.x(), parsedVehicle.y()));
+                vehicle.setSmoothPosition(parsedVehicle.x(), parsedVehicle.y());
+                vehicle.setTravelDirection(parsedVehicle.travelDirection());
+                game.addVehicle(vehicle);
+            }
+
+            for (ParsedTrafficLight parsedTrafficLight : parsedTrafficLights) {
+                TrafficLight tl = new TrafficLight(
+                        parsedTrafficLight.id(),
+                        new Position(parsedTrafficLight.x(), parsedTrafficLight.y()),
+                        parsedTrafficLight.directions()
+                );
+
+                for (Map.Entry<Direction, Double> entry : parsedTrafficLight.durations().entrySet()) {
+                    tl.setGreenDuration(entry.getKey(), entry.getValue());
+                }
+
+                tl.restoreState(parsedTrafficLight.phaseIndex(), parsedTrafficLight.phaseTimer());
+                game.addTrafficLight(tl);
+            }
+
 
             // Create GameState with default Player
             Player player = new Player("Player 1", 100000);

@@ -378,18 +378,15 @@ public class GameWindow {
                     || bottomToolbar.isStopSelected()
                     || bottomToolbar.isBridgeSelected()
                     || bottomToolbar.isTrafficLightSelected();
-            if (!isConstructing) {
+
+            if (!isConstructing && bottomToolbar.isSelectSelected()) {
                 model.TrafficLight tl = game.getTrafficLightAt(p);
                 if (tl != null) {
-                    tl.cycleToNextPhase();
-                    mapPanel.drawGame(game);
-                    // In SELECT mode also show the config panel
-                    if (bottomToolbar.isSelectSelected()) {
-                        gameController.fireTrafficLightSelected(tl);
-                    }
+                    gameController.fireTrafficLightSelected(tl);
                     return;
                 }
             }
+
 
             if (bottomToolbar.isRemoveSelected()) {
                 gameController.setBuildMode(GameController.BuildMode.DEMOLISH);

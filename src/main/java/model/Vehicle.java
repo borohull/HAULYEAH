@@ -39,6 +39,12 @@ public class Vehicle {
         this.smoothY  = position.getY();
     }
 
+
+    public void restoreRouteState(int routePathIndex, boolean movingForward) {
+        this.routePathIndex = Math.max(0, routePathIndex);
+        this.movingForward = movingForward;
+    }
+
     // ── Identity / stats ──────────────────────────────────────────────────────
     public String      getId()              { return id; }
     public VehicleType getType()            { return type; }

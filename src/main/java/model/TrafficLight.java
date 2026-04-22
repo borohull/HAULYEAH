@@ -82,4 +82,22 @@ public class TrafficLight {
     public Position        getPosition()         { return position; }
     public List<Direction> getActiveDirections() { return activeDirections; }
     public double          getPhaseTimer()       { return phaseTimer; }
+
+    public int getCurrentPhaseIndex() {
+        return currentPhaseIndex;
+    }
+
+    public void restoreState(int phaseIndex, double phaseTimer) {
+        if (activeDirections.isEmpty()) {
+            currentPhaseIndex = 0;
+            this.phaseTimer = DEFAULT_GREEN_SECONDS;
+            return;
+        }
+
+        currentPhaseIndex = Math.floorMod(phaseIndex, activeDirections.size());
+        Direction current = activeDirections.get(currentPhaseIndex);
+        double maxDuration = greenDurations.getOrDefault(current, DEFAULT_GREEN_SECONDS);
+        this.phaseTimer = Math.max(0.0, Math.min(phaseTimer, maxDuration));
+    }
+
 }
