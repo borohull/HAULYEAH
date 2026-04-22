@@ -4,6 +4,7 @@ import controller.GameController;
 import controller.SimulationController;
 import javafx.scene.Group;
 import javafx.scene.Scene;
+import view.PopupTheme;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ScrollPane;
@@ -176,13 +177,15 @@ public class GameWindow {
         });
 
         simController.setOnBankrupt(() -> javafx.application.Platform.runLater(() -> {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Bankrupt!");
-            alert.setHeaderText("You went bankrupt!");
-            alert.setContentText("Your capital fell below $0. Game over.");
+            Alert alert = PopupTheme.createAlert(
+                    Alert.AlertType.INFORMATION,
+                    "Bankrupt!",
+                    "You went bankrupt!",
+                    "Your capital fell below $0. Game over.");
             alert.showAndWait();
             new controller.MainMenuController(stage).showMainMenu();
         }));
+
 
         // ── Assemble layout ──────────────────────────────────────────────────
         StackPane centerStack = new StackPane(scroll, minimap);
@@ -250,13 +253,16 @@ public class GameWindow {
             bottomToolbar.hideRouteDrawBar();
             mapPanel.clearHoverOverlay();
             if (r != null) {
-                Alert info = new Alert(Alert.AlertType.INFORMATION,
+                Alert info = PopupTheme.createAlert(
+                        Alert.AlertType.INFORMATION,
+                        "Route Created",
+                        null,
                         "Route \"" + r.getName() + "\" created!\n"
-                        + r.getTilePath().size() + " tiles, "
-                        + r.getStops().size() + " stops.");
-                info.setHeaderText(null);
+                                + r.getTilePath().size() + " tiles, "
+                                + r.getStops().size() + " stops.");
                 info.showAndWait();
             }
+
         });
 
         // Cancel — discard the route being drawn
@@ -477,17 +483,16 @@ public class GameWindow {
      */
     private void handleExit() {
         if (simController.hasUnsavedChanges()) {
-            // Show warning about unsaved changes
-            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-            alert.setTitle("Unsaved Changes");
-            alert.setHeaderText("You have unsaved changes!");
-            alert.setContentText("Would you like to save before exiting?");
-
             ButtonType btnSave = new ButtonType("Save & Exit");
             ButtonType btnExit = new ButtonType("Exit Without Saving");
             ButtonType btnCancel = ButtonType.CANCEL;
 
-            alert.getButtonTypes().setAll(btnSave, btnExit, btnCancel);
+            Alert alert = PopupTheme.createAlert(
+                    Alert.AlertType.CONFIRMATION,
+                    "Unsaved Changes",
+                    "You have unsaved changes!",
+                    "Would you like to save before exiting?",
+                    btnSave, btnExit, btnCancel);
 
             java.util.Optional<ButtonType> result = alert.showAndWait();
             if (result.isPresent()) {
@@ -499,11 +504,11 @@ public class GameWindow {
                 }
             }
         } else {
-            // No unsaved changes, ask for confirmation
-            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-            alert.setTitle("Exit Game");
-            alert.setHeaderText("Are you sure you want to exit?");
-            alert.setContentText("");
+            Alert alert = PopupTheme.createAlert(
+                    Alert.AlertType.CONFIRMATION,
+                    "Exit Game",
+                    "Are you sure you want to exit?",
+                    "");
 
             java.util.Optional<ButtonType> result = alert.showAndWait();
             if (result.isPresent() && result.get() == ButtonType.OK) {
@@ -511,4 +516,5 @@ public class GameWindow {
             }
         }
     }
+
 }
