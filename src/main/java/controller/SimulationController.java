@@ -3,7 +3,7 @@ package controller;
 import model.GameState;
 import model.service.SimulationEngine;
 import javafx.animation.AnimationTimer;
-
+import view.PopupTheme;
 /**
  * SimulationController
  *
@@ -174,13 +174,13 @@ public class SimulationController {
         new model.service.SaveManager().save(state, slot);
         clearUnsavedChanges();
         // Show success dialogue
-        javafx.application.Platform.runLater(() -> {
-            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
-            alert.setTitle("Save Game");
-            alert.setHeaderText(null);
-            alert.setContentText("Game saved successfully!");
-            alert.showAndWait();
-        });
+        javafx.scene.control.Alert alert = PopupTheme.createAlert(
+                javafx.scene.control.Alert.AlertType.INFORMATION,
+                "Save Game",
+                null,
+                "Game saved successfully!");
+        alert.showAndWait();
+
     }
 
     /**
