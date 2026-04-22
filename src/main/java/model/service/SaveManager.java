@@ -171,9 +171,15 @@ public class SaveManager {
             }
 
             // Create Game
-            Game game = new Game(width, height);
+            model.MapGenerator generator = new model.MapGenerator();
+            Game game = generator.generate(width, height, 7, 15);
             game.setWorldName(worldName);
 
+            game.getRoads().clear();
+            game.getStops().clear();
+            game.getVehicles().clear();
+            game.getRoutes().clear();
+            game.getTrafficLights().clear();
             // Set tile types
             for (int yy = 0; yy < height; yy++) {
                 for (int xx = 0; xx < width; xx++) {
