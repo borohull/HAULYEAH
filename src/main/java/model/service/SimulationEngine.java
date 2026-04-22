@@ -82,7 +82,7 @@ public class SimulationEngine {
         double tilesPerSec  = Math.max(0.5, vehicle.getSpeed() / SPEED_SCALE);
         double storedProgress = tileProgress.getOrDefault(vid, 0.0); // progress before this tick
         double progress       = storedProgress + tilesPerSec * dt;
-        final  double STOP_LINE = 0.30; // vehicle waits here (clearly inside previous tile)
+        final  double STOP_LINE = 0.0; // vehicle waits here (clearly inside previous tile)
 
         boolean forward = vehicle.isMovingForward();
         int curIdx  = vehicle.getRoutePathIndex();

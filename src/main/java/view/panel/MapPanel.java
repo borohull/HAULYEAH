@@ -78,12 +78,17 @@ public class MapPanel extends Canvas {
     private final Image roadHorImage     = loadTileImage("/images/roadHor.png");
     private final Image roadVertImage    = loadTileImage("/images/roadVert.png");
     // ── Vehicle sprites — one per VehicleType (supports animation arrays) ────
-    private final Image[] cityBusImages     = loadVehicleAnim("/images/vehicles/city_bus");
     private final Image[] expressBusImages  = loadVehicleAnim("/images/vehicles/express_bus");
     private final Image[] logTruckImages    = loadVehicleAnim("/images/vehicles/log_truck");
     private final Image[] flatbedImages     = loadVehicleAnim("/images/vehicles/flatbed_truck");
     private final Image[] foodTruckImages   = loadVehicleAnim("/images/vehicles/food_truck");
     private final Image[] goodsTruckImages  = loadVehicleAnim("/images/vehicles/goods_truck");
+
+    private final Image cityBusEastImage = loadTileImage("/images/vehicles/city_east.png");
+    private final Image cityBusWestImage = loadTileImage("/images/vehicles/city_west.png");
+    private final Image cityBusNorthImage = loadTileImage("/images/vehicles/city_north.png");
+    private final Image cityBusSouthImage = loadTileImage("/images/vehicles/city_south.png");
+
 
     private final Image[] facilityImages = {
             loadTileImage("/images/facility1.png"),
@@ -267,87 +272,155 @@ public class MapPanel extends Canvas {
         Direction curGreen = tl.getCurrentGreenDirection();
         List<Direction> active = tl.getActiveDirections();
 
-        double phaseDuration = curGreen != null ? tl.getGreenDuration(curGreen) : 10.0;
-        boolean phaseIsGreen = tl.getPhaseTimer() > phaseDuration * 0.50;
+        gc.setFill(Color.rgb(55, 55, 55, 0.95));
+        gc.fillRoundRect(isoX - 2, isoY - 6, 4, 34, 2, 2);
+
+
+
+        gc.setFill(Color.rgb(90, 90, 90, 0.85));
+        gc.fillOval(isoX - 4, isoY + 26, 8, 4);
+
+
+
 
         for (Direction dir : active) {
-            double cx, cy;
+            double cx;
+            double cy;
+
             switch (dir) {
-                case NORTH -> { cx = isoX + TILE_W / 4.0; cy = isoY + TILE_H / 4.0; }
-                case EAST  -> { cx = isoX + TILE_W / 4.0; cy = isoY + TILE_H * 0.75; }
-                case SOUTH -> { cx = isoX - TILE_W / 4.0; cy = isoY + TILE_H * 0.75; }
-                case WEST  -> { cx = isoX - TILE_W / 4.0; cy = isoY + TILE_H / 4.0; }
-                default    -> { cx = isoX;                cy = isoY + TILE_H / 2.0; }
+                case NORTH -> {
+                    cx = isoX + TILE_W * 0.18;
+                    cy = isoY + TILE_H * 0.18 - 8;
+                }
+                case EAST -> {
+                    cx = isoX + TILE_W * 0.25;
+                    cy = isoY + TILE_H * 0.52 - 8;
+                }
+                case SOUTH -> {
+                    cx = isoX - TILE_W * 0.18;
+                    cy = isoY + TILE_H * 0.58 - 8;
+                }
+                case WEST -> {
+                    cx = isoX - TILE_W * 0.25;
+                    cy = isoY + TILE_H * 0.24 - 8;
+                }
+
+                default -> {
+                    cx = isoX;
+                    cy = isoY + TILE_H * 0.4;
+                }
             }
-            boolean isGreen = (dir == curGreen) && phaseIsGreen;
-            drawMiniLight(gc, cx, cy, isGreen);
+
+            boolean isGreen = dir == curGreen;
+            drawSignalHead(gc, cx, cy, isGreen);
         }
     }
 
-    private void drawMiniLight(GraphicsContext gc, double cx, double cy, boolean isGreen) {
-        double r = 4.0;
-        double gap = 2.0;
-        double totalW = r * 4 + gap;
-        double startX = cx - totalW / 2.0;
+    private void drawSignalHead(GraphicsContext gc, double cx, double cy, boolean isGreen) {
+        double boxW = 16;
+        double boxH = 10;
 
-        Color redColor = isGreen ? Color.rgb(60, 10, 10) : Color.rgb(255, 40, 40);
-        gc.setFill(redColor);
-        gc.fillOval(startX, cy - r, r * 2, r * 2);
+        // housing
+        gc.setFill(Color.rgb(28, 28, 28, 0.95));
+        gc.fillRoundRect(cx - boxW / 2, cy - boxH / 2, boxW, boxH, 4, 4);
 
-        Color greenColor = isGreen ? Color.rgb(30, 215, 70) : Color.rgb(10, 45, 10);
-        gc.setFill(greenColor);
-        gc.fillOval(startX + r * 2 + gap, cy - r, r * 2, r * 2);
+        gc.setStroke(Color.rgb(80, 80, 80, 0.9));
+        gc.setLineWidth(0.7);
+        gc.strokeRoundRect(cx - boxW / 2, cy - boxH / 2, boxW, boxH, 4, 4);
 
-        gc.setGlobalAlpha(0.35);
+        double r = 3.2;
+        double leftX = cx - 4.2;
+        double rightX = cx + 4.2;
+        double lampY = cy;
+
+        Color redOn = Color.rgb(255, 70, 70);
+        Color redOff = Color.rgb(70, 20, 20);
+        Color greenOn = Color.rgb(50, 230, 90);
+        Color greenOff = Color.rgb(20, 60, 25);
+
+        gc.setFill(isGreen ? redOff : redOn);
+        gc.fillOval(leftX - r, lampY - r, r * 2, r * 2);
+
+        gc.setFill(isGreen ? greenOn : greenOff);
+        gc.fillOval(rightX - r, lampY - r, r * 2, r * 2);
+
+        // subtle glow only for active lamp
+        gc.setGlobalAlpha(0.22);
         if (isGreen) {
-            gc.setFill(Color.rgb(30, 220, 70));
-            gc.fillOval(startX + r * 2 + gap - r * 0.4, cy - r * 1.4, r * 2.8, r * 2.8);
+            gc.setFill(greenOn);
+            gc.fillOval(rightX - 5.5, lampY - 5.5, 11, 11);
         } else {
-            gc.setFill(Color.rgb(255, 40, 40));
-            gc.fillOval(startX - r * 0.4, cy - r * 1.4, r * 2.8, r * 2.8);
+            gc.setFill(redOn);
+            gc.fillOval(leftX - 5.5, lampY - 5.5, 11, 11);
         }
         gc.setGlobalAlpha(1.0);
     }
 
+
     private void drawVehicle(GraphicsContext gc, Vehicle vehicle, int ox, int oy) {
-        // Use smooth (interpolated) position for fluid animation between tiles
         double cx = isoScreenXd(vehicle.getSmoothX(), vehicle.getSmoothY(), ox);
         double cy = isoScreenYd(vehicle.getSmoothX(), vehicle.getSmoothY(), oy);
 
-        // Select the correct 2.5D sprite array for this vehicle type
-        Image[] imgs = switch (vehicle.getType()) {
-            case CITY_BUS      -> cityBusImages;
-            case EXPRESS_BUS   -> expressBusImages;
-            case LOG_TRUCK     -> logTruckImages;
-            case FLATBED_TRUCK -> flatbedImages;
-            case FOOD_TRUCK    -> foodTruckImages;
-            case GOODS_TRUCK   -> goodsTruckImages;
-        };
-
-        // Determine traveled distance to drive animations (frames + bounce)
-        double dist = vehicle.getSmoothX() + vehicle.getSmoothY();
-
+        Direction travelDir = vehicle.getTravelDirection();
         Image img = null;
-        if (imgs != null && imgs.length > 0) {
-            // Cycle frames if there are multiple. 
-            int frameIdx = (int) (dist * 4.0) % imgs.length; 
-            if (frameIdx < 0) frameIdx += imgs.length;
-            img = imgs[frameIdx];
+        boolean flipX = false;
+
+        if (vehicle.getType() == VehicleType.CITY_BUS) {
+            img = switch (travelDir) {
+                case EAST -> cityBusEastImage;
+                case WEST -> cityBusWestImage;
+                case NORTH -> cityBusNorthImage;
+                case SOUTH -> cityBusSouthImage;
+            };
+        } else {
+            Image[] imgs = switch (vehicle.getType()) {
+                case EXPRESS_BUS   -> expressBusImages;
+                case LOG_TRUCK     -> logTruckImages;
+                case FLATBED_TRUCK -> flatbedImages;
+                case FOOD_TRUCK    -> foodTruckImages;
+                case GOODS_TRUCK   -> goodsTruckImages;
+                case CITY_BUS      -> null;
+            };
+
+
+            double dist = vehicle.getSmoothX() + vehicle.getSmoothY();
+
+            if (imgs != null && imgs.length > 0) {
+                int frameIdx = (int) (dist * 4.0) % imgs.length;
+                if (frameIdx < 0) frameIdx += imgs.length;
+                img = imgs[frameIdx];
+            }
+
+            flipX = (travelDir == Direction.WEST || travelDir == Direction.SOUTH);
         }
 
-        // The 2.5D vehicle sprite PNGs are perfectly square (1024x1024).
-        // Maintain a 1:1 aspect ratio to avoid squishing the image vertically, which makes its movement look distorted.
         double imgW = TILE_W * 1.30;
-        double imgH = imgW; // exactly 1:1 proportion
-
-        // Direction is maintained by SimulationEngine each tick and stored on the vehicle.
-        // These are 2.5D perspective sprites — only horizontal flip is valid.
-        // Flip when the vehicle moves left on screen (WEST/SOUTH both decrease isoX).
-        Direction travelDir = vehicle.getTravelDirection();
-        boolean flipX = (travelDir == Direction.WEST || travelDir == Direction.SOUTH);
+        double imgH = img != null && img.getWidth() > 0
+                ? imgW * (img.getHeight() / img.getWidth())
+                : imgW;
 
         double pivotX = cx;
         double pivotY = cy - TILE_H * 0.15;
+
+        switch (travelDir) {
+            case EAST -> {
+                pivotX -= 8;
+                pivotY += 2;
+            }
+            case WEST -> {
+                pivotX += 8;
+                pivotY -= 2;
+            }
+            case NORTH -> {
+                pivotX += 6;
+                pivotY += 4;
+            }
+            case SOUTH -> {
+                pivotX -= 6;
+                pivotY -= 4;
+            }
+        }
+
 
         if (img != null) {
             gc.save();
@@ -356,12 +429,12 @@ public class MapPanel extends Canvas {
             gc.drawImage(img, -imgW / 2.0, -imgH / 2.0, imgW, imgH);
             gc.restore();
         } else {
-            // Fallback: coloured dot if image failed to load
             boolean isPassenger = vehicle.getType().isPassenger();
             gc.setFill(isPassenger ? Color.rgb(30, 120, 220) : Color.rgb(220, 100, 30));
             gc.fillOval(cx - 8, cy, 16, 10);
         }
     }
+
 
     private Image getGroundImage(Tile tile) {
         return switch (tile.getType()) {

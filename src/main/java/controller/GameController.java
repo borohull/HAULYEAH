@@ -193,17 +193,12 @@ public class GameController {
     public void onSelect(Position p) {
         TrafficLight tl = state.getMap().getTrafficLightAt(p);
         if (tl != null) {
-            // Manually cycle to next phase so the light color changes immediately on click
-            tl.cycleToNextPhase();
-            notifyView();
-            // Then open the config panel so the player can adjust green durations
             if (onTrafficLightSelected != null) {
                 onTrafficLightSelected.accept(tl);
             }
-            return;
         }
-
     }
+
 
     // ── Route drawing ─────────────────────────────────────────────────────────
 
