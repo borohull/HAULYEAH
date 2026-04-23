@@ -44,6 +44,15 @@ public class FinanceLedger {
         transactions.add(new Transaction(amount, type, note));
     }
 
+    public void restore(double capital, List<Transaction> restoredTransactions, Map<String, Double> restoredMaintenanceTotals) {
+        this.currentCapital = capital;
+        this.transactions.clear();
+        this.transactions.addAll(restoredTransactions);
+        this.maintenanceTotals.clear();
+        this.maintenanceTotals.putAll(restoredMaintenanceTotals);
+    }
+
+
     /** Deducts maintenance silently — aggregated by key, not stored as individual transactions. */
     public void recordMaintenance(String vehicleKey, double amount) {
         currentCapital -= amount;
