@@ -94,7 +94,7 @@ class ConstructionServiceTest {
         Position pos = new Position(50, 50);
         game.getTile(pos).setType(TileType.WATER);
 
-        Bridge bridge = new Bridge("bridge-1", "Test Bridge", 50, 50, 1, Bridge.Orientation.HORIZONTAL);
+        Bridge bridge = new Bridge("bridge-1", "Test Bridge", 50, 50, 1, Bridge.Orientation.HORIZONTAL, Bridge.BridgeType.WOODEN);
         boolean result = service.buildBridge(game, bridge);
 
         assertTrue(result, "Should successfully build bridge on water");
@@ -108,7 +108,7 @@ class ConstructionServiceTest {
         Position pos = new Position(50, 50);
         game.getTile(pos).setType(TileType.EMPTY);  // Not water
 
-        Bridge bridge = new Bridge("bridge-1", "Test Bridge", 50, 50, 1, Bridge.Orientation.HORIZONTAL);
+        Bridge bridge = new Bridge("bridge-1", "Test Bridge", 50, 50, 1, Bridge.Orientation.HORIZONTAL, Bridge.BridgeType.WOODEN);
         boolean result = service.buildBridge(game, bridge);
 
         assertFalse(result, "Should not build bridge on non-water tile");
@@ -121,7 +121,7 @@ class ConstructionServiceTest {
         Position pos = new Position(50, 50);
         game.getTile(pos).setType(TileType.WATER);
 
-        Bridge bridge = new Bridge("bridge-1", "Test Bridge", 50, 50, 1, Bridge.Orientation.HORIZONTAL);
+        Bridge bridge = new Bridge("bridge-1", "Test Bridge", 50, 50, 1, Bridge.Orientation.HORIZONTAL, Bridge.BridgeType.WOODEN);
         service.buildBridge(game, bridge);
         assertEquals(1, game.getBridges().size());
 

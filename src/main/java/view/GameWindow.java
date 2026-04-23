@@ -275,6 +275,7 @@ public class GameWindow {
             bottomToolbar.hideRouteDrawBar();
             mapPanel.clearHoverOverlay();
         });
+
     }
 
 
@@ -411,6 +412,7 @@ public class GameWindow {
             }
             if (bottomToolbar.isBridgeSelected()) {
                 gameController.setBuildMode(GameController.BuildMode.BRIDGE);
+                gameController.setSelectedBridgeType(bottomToolbar.getSelectedBridgeType());
                 gameController.onTileClicked(p);
                 return;
             }
