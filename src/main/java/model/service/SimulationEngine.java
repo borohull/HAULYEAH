@@ -55,7 +55,23 @@ public class SimulationEngine {
             if (vehicle.getRoute() != null
                     && vehicle.getRoute().hasTilePath()
                     && !tileProgress.containsKey(vehicle.getId())) {
-                tileProgress.put(vehicle.getId(), 0.0);
+                // Restore saved progress, or stagger if another vehicle is already
+                // on this route (prevents two vehicles being permanently in sync).
+                double savedProgress = vehicle.getRouteProgress();
+                if (savedProgress == 0.0) {
+                    boolean routeAlreadyRunning = tileProgress.keySet().stream()
+                            .anyMatch(id -> state.getMap().getVehicles().stream()
+                                    .anyMatch(v -> v.getId().equals(id)
+                                            && v.getRoute() != null
+                                            && v.getRoute().getId().equals(vehicle.getRoute().getId())));
+                    if (routeAlreadyRunning) {
+                        int pathSize = vehicle.getRoute().getTilePath().size();
+                        savedProgress = (pathSize / 2.0) % pathSize;
+                        int staggerIdx = (vehicle.getRoutePathIndex() + pathSize / 2) % pathSize;
+                        vehicle.restoreRouteState(staggerIdx, vehicle.isMovingForward());
+                    }
+                }
+                tileProgress.put(vehicle.getId(), savedProgress);
             }
             tickVehicle(vehicle, dt, state);
         }
@@ -86,7 +102,9 @@ public class SimulationEngine {
 
         boolean forward = vehicle.isMovingForward();
         int curIdx  = vehicle.getRoutePathIndex();
-        int nextIdx = forward ? Math.min(curIdx + 1, pathSize - 1) : Math.max(curIdx - 1, 0);
+        int nextIdx = route.isCircular()
+                ? (curIdx + 1) % pathSize
+                : (forward ? Math.min(curIdx + 1, pathSize - 1) : Math.max(curIdx - 1, 0));
 
         // Check traffic light on the NEXT tile before crossing into it.
         // curIdx == nextIdx means we're at an endpoint — nothing to cross.
@@ -115,8 +133,20 @@ public class SimulationEngine {
             if (arrivedStop != null) deliveryService.handleStopArrival(vehicle, arrivedStop, state);
             curIdx  = vehicle.getRoutePathIndex();
             forward = vehicle.isMovingForward();
-            nextIdx = forward ? Math.min(curIdx + 1, pathSize - 1) : Math.max(curIdx - 1, 0);
-            if (curIdx == nextIdx) break; // at an endpoint, stop advancing
+            nextIdx = route.isCircular()
+                    ? (curIdx + 1) % pathSize
+                    : (forward ? Math.min(curIdx + 1, pathSize - 1) : Math.max(curIdx - 1, 0));
+            if (!route.isCircular() && curIdx == nextIdx) {
+                // Arrived at endpoint — flip direction and continue consuming remaining
+                // progress in the new direction so the vehicle never freezes.
+                vehicle.advanceRoutePathIndex();
+                curIdx  = vehicle.getRoutePathIndex();
+                forward = vehicle.isMovingForward();
+                nextIdx = forward ? Math.min(curIdx + 1, pathSize - 1)
+                                  : Math.max(curIdx - 1, 0);
+                if (curIdx == nextIdx) break; // safety: path too short to move
+                continue;
+            }
             TrafficLight tl = state.getMap().getTrafficLightAt(path.get(nextIdx));
             if (tl != null) {
                 Direction approachDir = approachDirection(path.get(curIdx), path.get(nextIdx));
@@ -130,11 +160,14 @@ public class SimulationEngine {
         }
 
         tileProgress.put(vid, progress);
+        vehicle.setRouteProgress(progress); // keep Vehicle in sync for save/load
 
         // ── Smooth sub-tile interpolation ─────────────────────────────────────
         curIdx  = vehicle.getRoutePathIndex();
         forward = vehicle.isMovingForward();
-        nextIdx = forward ? Math.min(curIdx + 1, pathSize - 1) : Math.max(curIdx - 1, 0);
+        nextIdx = route.isCircular()
+                ? (curIdx + 1) % pathSize
+                : (forward ? Math.min(curIdx + 1, pathSize - 1) : Math.max(curIdx - 1, 0));
         Position from = path.get(curIdx);
         Position to   = path.get(nextIdx);
 
