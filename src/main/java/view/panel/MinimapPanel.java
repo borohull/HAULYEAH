@@ -6,8 +6,12 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.Group;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.TextAlignment;
+import model.City;
 import model.Game;
 import model.Tile;
+import model.enums.CargoType;
 import model.enums.TileType;
 
 /**
@@ -114,8 +118,7 @@ public class MinimapPanel extends Canvas {
         double mOY = MAIN_OY * scale + 1;
 
         GraphicsContext gc = getGraphicsContext2D();
-        gc.setFill(Color.web("#87CEEB"));
-        gc.fillRect(0, 0, mmW + 2, mmH + 2);
+        gc.clearRect(0, 0, mmW + 2, mmH + 2);
 
         // Isometric diamond tiles — same painter's order as MapPanel (y outer, x inner)
         for (int y = 0; y < rows; y++) {
@@ -132,11 +135,55 @@ public class MinimapPanel extends Canvas {
             }
         }
 
+        drawCityDemandMarkers(gc, mTW, mTH, mOX, mOY);
+
         drawViewportRect(gc, rows);
 
         // gc.setStroke(Color.ORANGE);
         // gc.setLineWidth(1.0);
         // gc.strokeRect(0.5, 0.5, mmW + 1, mmH + 1);
+    }
+
+    private void drawCityDemandMarkers(GraphicsContext gc, double mTW, double mTH, double mOX, double mOY) {
+        gc.setTextAlign(TextAlignment.CENTER);
+
+        for (City city : currentGame.getCities()) {
+            CargoType demand = city.getCurrentDemand();
+            if (demand == null) continue;
+
+            int tx = city.getCenter().getX();
+            int ty = city.getCenter().getY();
+            double cx = mOX + (tx - ty) * (mTW / 2.0);
+            double cy = mOY + (tx + ty) * (mTH / 2.0) + mTH * 0.55;
+
+            double radius = Math.max(4.0, Math.min(8.0, mTW * 0.33));
+
+            gc.setFill(demandColor(demand));
+            gc.fillOval(cx - radius, cy - radius, radius * 2, radius * 2);
+            gc.setStroke(Color.rgb(0, 0, 0, 0.85));
+            gc.setLineWidth(1.0);
+            gc.strokeOval(cx - radius, cy - radius, radius * 2, radius * 2);
+
+            String abbr = demand.abbreviation();
+            gc.setFill(Color.WHITE);
+            gc.setFont(Font.font("Monospace", Math.max(7.0, radius + 1.0)));
+            gc.fillText(abbr, cx, cy + radius * 0.35);
+        }
+    }
+
+    private static Color demandColor(CargoType type) {
+        return switch (type) {
+            case PASSENGERS -> Color.rgb(0, 130, 255);
+            case WOOD -> Color.rgb(46, 139, 87);
+            case IRON -> Color.rgb(120, 120, 120);
+            case STEEL -> Color.rgb(90, 115, 140);
+            case PAPER -> Color.rgb(205, 180, 120);
+            case COAL -> Color.rgb(55, 55, 55);
+            case OIL -> Color.rgb(35, 35, 35);
+            case PLASTIC -> Color.rgb(170, 85, 215);
+            case TEXTILE -> Color.rgb(225, 120, 60);
+            case COTTON -> Color.rgb(235, 235, 235);
+        };
     }
 
     private void drawViewportRect(GraphicsContext gc, int rows) {
