@@ -3,6 +3,7 @@ package controller;
 import model.GameState;
 import model.service.SimulationEngine;
 import javafx.animation.AnimationTimer;
+import javafx.stage.Window;
 import view.PopupTheme;
 /**
  * SimulationController
@@ -59,6 +60,7 @@ public class SimulationController {
     // Registered by the View (HudPanel) to refresh speed/pause display
     private Runnable onStateChanged;
     private Runnable onBankrupt;
+    private Window dialogOwner;
 
     public SimulationController(GameState state) {
         this.state = state;
@@ -91,6 +93,7 @@ public class SimulationController {
 
     public void setOnStateChanged(Runnable callback) { this.onStateChanged = callback; }
     public void setOnBankrupt(Runnable callback)      { this.onBankrupt = callback; }
+    public void setDialogOwner(Window owner)          { this.dialogOwner = owner; }
 
     // -----------------------------------------------------------------------
     // Simulation control
@@ -175,11 +178,12 @@ public class SimulationController {
         clearUnsavedChanges();
         // Show success dialogue
         javafx.scene.control.Alert alert = PopupTheme.createAlert(
+                dialogOwner,
                 javafx.scene.control.Alert.AlertType.INFORMATION,
                 "Save Game",
                 null,
                 "Game saved successfully!");
-        alert.showAndWait();
+        PopupTheme.showAndWait(alert, dialogOwner);
 
     }
 
