@@ -5,13 +5,8 @@ public enum CargoType {
     PASSENGERS,
     WOOD,
     IRON,
-    STEEL,
-    PAPER,
     COAL,
-    OIL,
-    PLASTIC,
-    TEXTILE,
-    COTTON;
+    OIL;
 
     public String displayName() {
         String n = name();
@@ -23,13 +18,8 @@ public enum CargoType {
             case PASSENGERS -> "Pax";
             case WOOD       -> "W";
             case IRON       -> "Fe";
-            case STEEL      -> "St";
-            case PAPER      -> "Pa";
             case COAL       -> "Co";
             case OIL        -> "Oil";
-            case PLASTIC    -> "Pl";
-            case TEXTILE    -> "Tx";
-            case COTTON     -> "Ct";
         };
     }
 }

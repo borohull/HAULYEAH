@@ -16,16 +16,16 @@ public class MapGenerator {
     private static final int PADDING = 2;
 
     private static final Object[][] FACILITY_DATA = {
-            {"Iron Mine",       CargoType.IRON,    null},
-            {"Lumber Mill",     CargoType.WOOD,    null},
-            {"Steel Works",     CargoType.STEEL,   CargoType.IRON},
-            {"Paper Mill",      CargoType.PAPER,   CargoType.WOOD},
-            {"Farm",            CargoType.WOOD,    null},
-            {"Coal Mine",       CargoType.COAL,    null},
-            {"Oil Refinery",    CargoType.OIL,     null},
-            {"Plastic Factory", CargoType.PLASTIC, CargoType.OIL},
-            {"Textile Mill",    CargoType.TEXTILE, CargoType.COTTON},
-            {"Cotton Farm",     CargoType.COTTON,  null}
+            {"Iron Mine",     CargoType.IRON, null},
+            {"Wood Factory",  CargoType.WOOD, null},
+            {"Coal Factory",  CargoType.COAL, null},
+            {"Oil Rig",       CargoType.OIL,  null},
+            {"Wood Factory",  CargoType.WOOD, null},
+            {"Coal Factory",  CargoType.COAL, null},
+            {"Oil Rig",       CargoType.OIL,  null},
+            {"Iron Mine",     CargoType.IRON, null},
+            {"Wood Factory",  CargoType.WOOD, null},
+            {"Oil Rig",       CargoType.OIL,  null}
     };
 
     private final Random rng;
@@ -203,13 +203,13 @@ public class MapGenerator {
 
         Facility specialFac = new Facility(
                 "facility_special",
-                "Large Factory",
+                "Iron Mine",
                 4,
                 4,
                 3,
                 3,
-                List.of(CargoType.STEEL),
-                List.of(CargoType.IRON)
+                List.of(CargoType.IRON),
+                List.of()
         );
 
         game.addFacility(specialFac);
@@ -287,13 +287,13 @@ public class MapGenerator {
 
     private static void assignDemandSequences(Game game) {
         Map<String, List<CargoType>> sequences = Map.of(
-            "Debrecen", List.of(CargoType.WOOD, CargoType.IRON, CargoType.PAPER, CargoType.STEEL, CargoType.COAL),
-            "Budapest", List.of(CargoType.STEEL, CargoType.OIL, CargoType.PLASTIC, CargoType.TEXTILE, CargoType.COAL),
-            "Szeged",   List.of(CargoType.PAPER, CargoType.WOOD, CargoType.COTTON, CargoType.TEXTILE, CargoType.IRON),
-            "Pecs",     List.of(CargoType.COAL, CargoType.OIL, CargoType.PLASTIC, CargoType.IRON, CargoType.WOOD),
-            "Miskolc",  List.of(CargoType.IRON, CargoType.STEEL, CargoType.COAL, CargoType.OIL, CargoType.PAPER),
-            "Gyor",     List.of(CargoType.WOOD, CargoType.COTTON, CargoType.TEXTILE, CargoType.PLASTIC, CargoType.PAPER),
-            "Sopron",   List.of(CargoType.COTTON, CargoType.TEXTILE, CargoType.PAPER, CargoType.WOOD, CargoType.STEEL)
+            "Debrecen", List.of(CargoType.WOOD, CargoType.IRON, CargoType.COAL),
+            "Budapest", List.of(CargoType.OIL, CargoType.IRON, CargoType.COAL, CargoType.WOOD),
+            "Szeged",   List.of(CargoType.WOOD, CargoType.COAL, CargoType.OIL),
+            "Pecs",     List.of(CargoType.COAL, CargoType.OIL, CargoType.IRON),
+            "Miskolc",  List.of(CargoType.IRON, CargoType.COAL, CargoType.WOOD, CargoType.OIL),
+            "Gyor",     List.of(CargoType.WOOD, CargoType.OIL, CargoType.IRON),
+            "Sopron",   List.of(CargoType.COAL, CargoType.WOOD, CargoType.OIL)
         );
         for (City city : game.getCities()) {
             List<CargoType> seq = sequences.get(city.getName());

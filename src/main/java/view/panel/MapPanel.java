@@ -394,21 +394,21 @@ public class MapPanel extends Canvas {
                 case NORTH -> expressBusNorthImage;
                 case SOUTH -> expressBusSouthImage;
             };
-        } else if (vehicle.getType() == VehicleType.FLATBED_TRUCK) {
+        } else if (vehicle.getType() == VehicleType.ORE_TRUCK || vehicle.getType() == VehicleType.IRON_HAULER) {
             img = switch (travelDir) {
                 case EAST -> flatbedEastImage;
                 case WEST -> flatbedWestImage;
                 case NORTH -> flatbedNorthImage;
                 case SOUTH -> flatbedSouthImage;
             };
-        } else if (vehicle.getType() == VehicleType.LOG_TRUCK) {
+        } else if (vehicle.getType() == VehicleType.LOG_TRUCK || vehicle.getType() == VehicleType.TIMBER_LORRY) {
             img = switch (travelDir) {
                 case EAST -> logEastImage;
                 case WEST -> logWestImage;
                 case NORTH -> logNorthImage;
                 case SOUTH -> logSouthImage;
             };
-        } else if (vehicle.getType() == VehicleType.GOODS_TRUCK) {
+        } else if (vehicle.getType() == VehicleType.COAL_CART || vehicle.getType() == VehicleType.COAL_TRUCK) {
             img = switch (travelDir) {
                 case EAST -> goodsEastImage;
                 case WEST -> goodsWestImage;
@@ -417,8 +417,8 @@ public class MapPanel extends Canvas {
             };
         } else {
             Image[] imgs = switch (vehicle.getType()) {
-                case FOOD_TRUCK    -> foodTruckImages;
-                default            -> null;
+                case OIL_TANKER, FUEL_TRUCK -> foodTruckImages;
+                default                     -> null;
             };
 
 

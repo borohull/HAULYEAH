@@ -176,13 +176,8 @@ public class MinimapPanel extends Canvas {
             case PASSENGERS -> Color.rgb(0, 130, 255);
             case WOOD -> Color.rgb(46, 139, 87);
             case IRON -> Color.rgb(120, 120, 120);
-            case STEEL -> Color.rgb(90, 115, 140);
-            case PAPER -> Color.rgb(205, 180, 120);
             case COAL -> Color.rgb(55, 55, 55);
             case OIL -> Color.rgb(35, 35, 35);
-            case PLASTIC -> Color.rgb(170, 85, 215);
-            case TEXTILE -> Color.rgb(225, 120, 60);
-            case COTTON -> Color.rgb(235, 235, 235);
         };
     }
 

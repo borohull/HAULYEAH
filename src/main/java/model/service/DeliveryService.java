@@ -41,6 +41,20 @@ public class DeliveryService {
         Game game = state.getMap();
         Position pos = stop.getPosition();
 
+        // UNLOAD: passengers are always accepted by any city
+        if (vehicle.isCarrying() && vehicle.getCargoType() == CargoType.PASSENGERS) {
+            City city = findAdjacentCity(pos, game, stop.isInsideCity());
+            if (city != null) {
+                int delivered = vehicle.unloadCargo();
+                state.getPlayer().getLedger().earn(
+                    delivered * INCOME_PER_UNIT,
+                    TransactionType.DELIVERY,
+                    "Transported passengers to " + city.getName()
+                );
+                return;
+            }
+        }
+
         // UNLOAD: vehicle is carrying cargo that an adjacent city demands
         if (vehicle.isCarrying()) {
             City city = findAdjacentCity(pos, game, stop.isInsideCity());
@@ -62,11 +76,23 @@ public class DeliveryService {
             }
         }
 
-        // LOAD: vehicle is empty, adjacent facility has production
+        // LOAD: buses pick up passengers from any adjacent city
+        if (!vehicle.isCarrying() && vehicle.getType().isPassenger()) {
+            City city = findAdjacentCity(pos, game, stop.isInsideCity());
+            if (city != null) {
+                vehicle.loadCargo(CargoType.PASSENGERS, vehicle.getCapacity());
+            }
+            return;
+        }
+
+        // LOAD: vehicle is empty, adjacent facility produces cargo this vehicle can carry
         if (!vehicle.isCarrying()) {
             Facility facility = findAdjacentFacility(pos, game);
             if (facility != null && facility.getPrimaryProduction() != null) {
-                vehicle.loadCargo(facility.getPrimaryProduction(), vehicle.getCapacity());
+                CargoType prod = facility.getPrimaryProduction();
+                if (vehicle.getType().getAllowedCargo() == prod) {
+                    vehicle.loadCargo(prod, vehicle.getCapacity());
+                }
             }
         }
     }
