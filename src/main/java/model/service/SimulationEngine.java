@@ -55,7 +55,23 @@ public class SimulationEngine {
             if (vehicle.getRoute() != null
                     && vehicle.getRoute().hasTilePath()
                     && !tileProgress.containsKey(vehicle.getId())) {
-                tileProgress.put(vehicle.getId(), 0.0);
+                // Restore saved progress, or stagger if another vehicle is already
+                // on this route (prevents two vehicles being permanently in sync).
+                double savedProgress = vehicle.getRouteProgress();
+                if (savedProgress == 0.0) {
+                    boolean routeAlreadyRunning = tileProgress.keySet().stream()
+                            .anyMatch(id -> state.getMap().getVehicles().stream()
+                                    .anyMatch(v -> v.getId().equals(id)
+                                            && v.getRoute() != null
+                                            && v.getRoute().getId().equals(vehicle.getRoute().getId())));
+                    if (routeAlreadyRunning) {
+                        int pathSize = vehicle.getRoute().getTilePath().size();
+                        savedProgress = (pathSize / 2.0) % pathSize;
+                        int staggerIdx = (vehicle.getRoutePathIndex() + pathSize / 2) % pathSize;
+                        vehicle.restoreRouteState(staggerIdx, vehicle.isMovingForward());
+                    }
+                }
+                tileProgress.put(vehicle.getId(), savedProgress);
             }
             tickVehicle(vehicle, dt, state);
         }
@@ -121,15 +137,15 @@ public class SimulationEngine {
                     ? (curIdx + 1) % pathSize
                     : (forward ? Math.min(curIdx + 1, pathSize - 1) : Math.max(curIdx - 1, 0));
             if (!route.isCircular() && curIdx == nextIdx) {
-                // Arrived at endpoint — flip direction immediately so smooth interpolation
-                // has a real next tile and the vehicle doesn't freeze waiting for progress >= 1.0.
+                // Arrived at endpoint — flip direction and continue consuming remaining
+                // progress in the new direction so the vehicle never freezes.
                 vehicle.advanceRoutePathIndex();
                 curIdx  = vehicle.getRoutePathIndex();
                 forward = vehicle.isMovingForward();
                 nextIdx = forward ? Math.min(curIdx + 1, pathSize - 1)
                                   : Math.max(curIdx - 1, 0);
-                progress = 0.0;
-                break;
+                if (curIdx == nextIdx) break; // safety: path too short to move
+                continue;
             }
             TrafficLight tl = state.getMap().getTrafficLightAt(path.get(nextIdx));
             if (tl != null) {
@@ -144,6 +160,7 @@ public class SimulationEngine {
         }
 
         tileProgress.put(vid, progress);
+        vehicle.setRouteProgress(progress); // keep Vehicle in sync for save/load
 
         // ── Smooth sub-tile interpolation ─────────────────────────────────────
         curIdx  = vehicle.getRoutePathIndex();

@@ -19,6 +19,8 @@ public class Vehicle {
     private int     routePathIndex = 0;
     /** True = travelling toward higher indices; false = travelling backward. */
     private boolean movingForward  = true;
+    /** Sub-tile progress (0.0–<1.0) persisted for save/load. */
+    private double  routeProgress  = 0.0;
 
     /** Direction the vehicle is currently traveling (set by SimulationEngine each tick). */
     private Direction travelDirection = Direction.EAST;
@@ -96,6 +98,8 @@ public class Vehicle {
     public boolean    isMovingForward()       { return movingForward; }
     public Direction  getTravelDirection()    { return travelDirection; }
     public void       setTravelDirection(Direction d) { this.travelDirection = d; }
+    public double     getRouteProgress()      { return routeProgress; }
+    public void       setRouteProgress(double p) { this.routeProgress = p; }
 
     // ── Path index ────────────────────────────────────────────────────────────
     public int getRoutePathIndex() { return routePathIndex; }

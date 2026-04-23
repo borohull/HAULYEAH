@@ -105,7 +105,8 @@ public class SaveManager {
                     .append(routeId).append('|')
                     .append(vehicle.getRoutePathIndex()).append('|')
                     .append(vehicle.isMovingForward()).append('|')
-                    .append(vehicle.getTravelDirection())
+                    .append(vehicle.getTravelDirection()).append('|')
+                    .append(vehicle.getRouteProgress())
                     .append('\n');
         }
 
@@ -176,7 +177,7 @@ public class SaveManager {
 
             record ParsedRoute(String id, String name, boolean reversed, List<String> stopIds, List<Position> tilePath) {}
             record ParsedVehicle(String id, VehicleType type, int x, int y, String routeId, int routePathIndex,
-                                 boolean movingForward, Direction travelDirection) {}
+                                 boolean movingForward, Direction travelDirection, double routeProgress) {}
             record ParsedTrafficLight(String id, int x, int y, List<Direction> directions,
                                       Map<Direction, Double> durations, int phaseIndex, double phaseTimer) {}
 
@@ -267,7 +268,8 @@ public class SaveManager {
                         }
                     } else if (section == 4 && parsedVehicles.size() < vehicleCount) {
                         String[] parts = line.split("\\|", -1);
-                        if (parts.length == 8) {
+                        if (parts.length >= 8) {
+                            double routeProgress = parts.length >= 9 ? Double.parseDouble(parts[8]) : 0.0;
                             parsedVehicles.add(new ParsedVehicle(
                                     parts[0],
                                     VehicleType.valueOf(parts[1]),
@@ -276,7 +278,8 @@ public class SaveManager {
                                     parts[4],
                                     Integer.parseInt(parts[5]),
                                     Boolean.parseBoolean(parts[6]),
-                                    Direction.valueOf(parts[7])
+                                    Direction.valueOf(parts[7]),
+                                    routeProgress
                             ));
                         }
                     } else if (section == 5 && parsedTrafficLights.size() < trafficLightCount) {
@@ -390,6 +393,7 @@ public class SaveManager {
                 vehicle.setPosition(new Position(parsedVehicle.x(), parsedVehicle.y()));
                 vehicle.setSmoothPosition(parsedVehicle.x(), parsedVehicle.y());
                 vehicle.setTravelDirection(parsedVehicle.travelDirection());
+                vehicle.setRouteProgress(parsedVehicle.routeProgress());
                 game.addVehicle(vehicle);
             }
 
