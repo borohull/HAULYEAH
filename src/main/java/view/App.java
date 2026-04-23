@@ -13,8 +13,14 @@ import controller.MainMenuController;
 public class App extends Application {
     @Override
     public void start(Stage stage) {
+        BackgroundMusic.playLoop("/audio/bgm.mp3", 0.35);
         MainMenuController controller = new MainMenuController(stage);
         controller.showMainMenu();
+    }
+
+    @Override
+    public void stop() {
+        BackgroundMusic.stop();
     }
 
     public static void main(String[] args) {

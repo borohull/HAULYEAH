@@ -6,6 +6,7 @@ import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
+import model.Bridge;
 import model.City;
 import model.Facility;
 import model.Game;
@@ -233,6 +234,7 @@ public class MapPanel extends Canvas {
         gc.setTextAlign(TextAlignment.CENTER);
 
         for (MapEntity entity : game.getAllEntities()) {
+            if (entity instanceof Bridge) continue;
             Position c = entity.getCenter();
             drawLabel(gc, c.getX(), c.getY(), entity.getName(), originX, originY);
         }
@@ -564,10 +566,34 @@ public class MapPanel extends Canvas {
             case FACILITY -> { } // Facilities are drawn separately in drawGame
             case WATER    -> drawWaterSurface(gc, tx, ty, ox, oy);
             case FOREST   -> drawForestTree(gc, tx, ty, ox, oy);
-            case BRIDGE   -> drawBox(gc, tx, ty, ox, oy, COL_BRIDGE_LEFT, COL_BRIDGE_RIGHT, COL_BRIDGE_ROOF);
+            case BRIDGE   -> drawBridge(gc, tx, ty, ox, oy);
             case ROAD, CITY_ROAD -> { }
             case STOP, CITY_STOP -> { }
             default -> { }
+        }
+    }
+
+    private void drawBridge(GraphicsContext gc, int tx, int ty, int ox, int oy) {
+        Bridge bridge = currentGame != null ? currentGame.getBridgeAt(new Position(tx, ty)) : null;
+        if (bridge == null || bridge.getBridgeType() == null) {
+            drawBox(gc, tx, ty, ox, oy, COL_BRIDGE_LEFT, COL_BRIDGE_RIGHT, COL_BRIDGE_ROOF);
+            return;
+        }
+
+        switch (bridge.getBridgeType()) {
+            case WOODEN -> drawBox(gc, tx, ty, ox, oy,
+                    Color.rgb(120, 105, 75),
+                    Color.rgb(150, 130, 95),
+                    Color.rgb(210, 195, 155));
+            case STEEL -> drawBox(gc, tx, ty, ox, oy,
+                    Color.rgb(88, 98, 110),
+                    Color.rgb(118, 130, 145),
+                    Color.rgb(160, 176, 194));
+            case SUSPENSION -> drawBox(gc, tx, ty, ox, oy,
+                    Color.rgb(108, 86, 62),
+                    Color.rgb(138, 112, 82),
+                    Color.rgb(186, 150, 110));
+            default -> drawBox(gc, tx, ty, ox, oy, COL_BRIDGE_LEFT, COL_BRIDGE_RIGHT, COL_BRIDGE_ROOF);
         }
     }
 

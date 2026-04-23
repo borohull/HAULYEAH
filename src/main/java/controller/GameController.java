@@ -40,9 +40,14 @@ public class GameController {
     }
 
     private static final double ROAD_COST = 500.0;
+    private static final double WOODEN_BRIDGE_COST = 1000.0;
+    private static final double STONE_BRIDGE_COST = 2000.0;
+    private static final double STEEL_BRIDGE_COST = 3000.0;
+    private static final String DEFAULT_BRIDGE_TYPE = "Wooden Bridge";
 
     private final GameState state;
     private BuildMode buildMode = BuildMode.SELECT;
+    private String selectedBridgeType = DEFAULT_BRIDGE_TYPE;
 
     private final ConstructionService constructionService = new ConstructionService();
     private final VehicleService      vehicleService      = new VehicleService();
@@ -119,7 +124,7 @@ public class GameController {
         switch (buildMode) {
             case ROAD          -> onBuildRoad(p);
             case STOP          -> onBuildStop(p);
-            case BRIDGE        -> onBuildBridge(p);
+            case BRIDGE        -> onBuildBridge(p, selectedBridgeType);
             case TRAFFIC_LIGHT -> onBuildTrafficLight(p);
             case DEMOLISH      -> onDemolish(p);
             case SELECT        -> onSelect(p);
@@ -137,6 +142,18 @@ public class GameController {
     }
 
     public BuildMode getBuildMode() { return buildMode; }
+
+    public void setSelectedBridgeType(String bridgeType) {
+        if (bridgeType == null || bridgeType.isBlank()) {
+            selectedBridgeType = DEFAULT_BRIDGE_TYPE;
+            return;
+        }
+        selectedBridgeType = bridgeType;
+    }
+
+    public String getSelectedBridgeType() {
+        return selectedBridgeType;
+    }
 
     // ── Construction ──────────────────────────────────────────────────────────
 
@@ -167,15 +184,46 @@ public class GameController {
     }
 
     public void onBuildBridge(Position p) {
+        onBuildBridge(p, selectedBridgeType);
+    }
+
+    public void onBuildBridge(Position p, String bridgeType) {
         Tile tile = state.getMap().getTile(p);
         if (tile == null || tile.getType() != TileType.WATER) {
             System.out.println("[GameController] Bridge can only be built on water tiles: " + p);
             return;
         }
+
+        double cost;
+        Bridge.BridgeType modelBridgeType;
+        switch (bridgeType) {
+            case "Wooden Bridge":
+                cost = WOODEN_BRIDGE_COST;
+                modelBridgeType = Bridge.BridgeType.WOODEN;
+                break;
+            case "Stone Bridge":
+                cost = STONE_BRIDGE_COST;
+                modelBridgeType = Bridge.BridgeType.SUSPENSION;
+                break;
+            case "Steel Bridge":
+                cost = STEEL_BRIDGE_COST;
+                modelBridgeType = Bridge.BridgeType.STEEL;
+                break;
+            default:
+                System.out.println("[GameController] Unknown bridge type: " + bridgeType);
+                return;
+        }
+
+        if (!state.getPlayer().getLedger().canAfford(cost)) {
+            System.out.println("[GameController] Cannot afford " + bridgeType + " ($" + cost + ")");
+            return;
+        }
+
         int numBridges = state.getMap().getBridges().size();
-        Bridge bridge = new Bridge("bridge-" + (numBridges + 1), "Bridge " + (numBridges + 1),
-                p.getX(), p.getY(), 1, Bridge.Orientation.HORIZONTAL);
+        Bridge bridge = new Bridge("bridge-" + (numBridges + 1), bridgeType + " " + (numBridges + 1),
+                p.getX(), p.getY(), 1, Bridge.Orientation.HORIZONTAL, modelBridgeType);
         if (constructionService.buildBridge(state.getMap(), bridge)) {
+            state.getPlayer().getLedger().spend(cost, TransactionType.BUILD, bridgeType);
             markUnsaved();
             notifyView();
         }

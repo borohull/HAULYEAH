@@ -78,6 +78,13 @@ public class BuildToolbar extends VBox {
     private final HBox   buildSubmenu;
     private boolean trafficLightSelected;
 
+    // ── Bridge type buttons ─────────────────────────────────────────────────
+    private final Button btnWoodenBridge;
+    private final Button btnStoneBridge;
+    private final Button btnSteelBridge;
+    private HBox bridgeSubmenu;
+    private String selectedBridgeType = "Wooden Bridge";
+
     // ── Route-draw toolbar (shown while player is drawing a route) ────────────
     private final Button btnDoneRoute;
     private final Button btnCancelRoute;
@@ -129,6 +136,8 @@ public class BuildToolbar extends VBox {
             trafficLightSelected = false;
             removeSelected       = false;
             selectSelected       = false;
+            bridgeSubmenu.setVisible(false);
+            bridgeSubmenu.setManaged(false);
             btnRoad.setStyle(SUB_BTN_ACTIVE);
             btnStop.setStyle(SUB_BTN_NORMAL);
             btnBridge.setStyle(SUB_BTN_NORMAL);
@@ -145,25 +154,11 @@ public class BuildToolbar extends VBox {
             trafficLightSelected = false;
             removeSelected       = false;
             selectSelected       = false;
+            bridgeSubmenu.setVisible(false);
+            bridgeSubmenu.setManaged(false);
             btnStop.setStyle(SUB_BTN_ACTIVE);
             btnRoad.setStyle(SUB_BTN_NORMAL);
             btnBridge.setStyle(SUB_BTN_NORMAL);
-            btnRoute.setStyle(SUB_BTN_NORMAL);
-            btnTrafficLight.setStyle(SUB_BTN_NORMAL);
-            btnRemove.setStyle(BTN_NORMAL);
-            btnSelect.setStyle(BTN_NORMAL);
-        });
-        btnBridge.setOnAction(e -> {
-            bridgeSelected       = true;
-            roadSelected         = false;
-            stopSelected         = false;
-            routeSelected        = false;
-            trafficLightSelected = false;
-            removeSelected       = false;
-            selectSelected       = false;
-            btnBridge.setStyle(SUB_BTN_ACTIVE);
-            btnRoad.setStyle(SUB_BTN_NORMAL);
-            btnStop.setStyle(SUB_BTN_NORMAL);
             btnRoute.setStyle(SUB_BTN_NORMAL);
             btnTrafficLight.setStyle(SUB_BTN_NORMAL);
             btnRemove.setStyle(BTN_NORMAL);
@@ -177,6 +172,8 @@ public class BuildToolbar extends VBox {
             trafficLightSelected = false;
             removeSelected       = false;
             selectSelected       = false;
+            bridgeSubmenu.setVisible(false);
+            bridgeSubmenu.setManaged(false);
             btnRoute.setStyle(SUB_BTN_ACTIVE);
             btnRoad.setStyle(SUB_BTN_NORMAL);
             btnStop.setStyle(SUB_BTN_NORMAL);
@@ -194,6 +191,8 @@ public class BuildToolbar extends VBox {
             routeSelected        = false;
             removeSelected       = false;
             selectSelected       = false;
+            bridgeSubmenu.setVisible(false);
+            bridgeSubmenu.setManaged(false);
             btnTrafficLight.setStyle(SUB_BTN_ACTIVE);
             btnRoad.setStyle(SUB_BTN_NORMAL);
             btnStop.setStyle(SUB_BTN_NORMAL);
@@ -215,6 +214,66 @@ public class BuildToolbar extends VBox {
         buildSubmenu.setVisible(false);
         buildSubmenu.setManaged(false);
 
+        // Bridge submenu (Wooden + Stone + Steel)
+        btnWoodenBridge = new Button("Wooden Bridge");
+        btnStoneBridge = new Button("Stone Bridge");
+        btnSteelBridge = new Button("Steel Bridge");
+        btnWoodenBridge.setStyle(SUB_BTN_NORMAL);
+        btnStoneBridge.setStyle(SUB_BTN_NORMAL);
+        btnSteelBridge.setStyle(SUB_BTN_NORMAL);
+
+        btnWoodenBridge.setOnAction(e -> {
+            bridgeSelected = true;
+            selectedBridgeType = "Wooden Bridge";
+            btnWoodenBridge.setStyle(SUB_BTN_ACTIVE);
+            btnStoneBridge.setStyle(SUB_BTN_NORMAL);
+            btnSteelBridge.setStyle(SUB_BTN_NORMAL);
+            btnBridge.setStyle(SUB_BTN_NORMAL);
+        });
+        btnStoneBridge.setOnAction(e -> {
+            bridgeSelected = true;
+            selectedBridgeType = "Stone Bridge";
+            btnWoodenBridge.setStyle(SUB_BTN_NORMAL);
+            btnStoneBridge.setStyle(SUB_BTN_ACTIVE);
+            btnSteelBridge.setStyle(SUB_BTN_NORMAL);
+            btnBridge.setStyle(SUB_BTN_NORMAL);
+        });
+        btnSteelBridge.setOnAction(e -> {
+            bridgeSelected = true;
+            selectedBridgeType = "Steel Bridge";
+            btnWoodenBridge.setStyle(SUB_BTN_NORMAL);
+            btnStoneBridge.setStyle(SUB_BTN_NORMAL);
+            btnSteelBridge.setStyle(SUB_BTN_ACTIVE);
+            btnBridge.setStyle(SUB_BTN_NORMAL);
+        });
+
+        bridgeSubmenu = new HBox(10, btnWoodenBridge, btnStoneBridge, btnSteelBridge);
+        bridgeSubmenu.setPadding(new Insets(8, 12, 8, 12));
+        bridgeSubmenu.setAlignment(Pos.CENTER_LEFT);
+        bridgeSubmenu.setStyle(PANEL_BOX);
+        bridgeSubmenu.setVisible(false);
+        bridgeSubmenu.setManaged(false);
+
+        btnBridge.setOnAction(e -> {
+            boolean show = !bridgeSubmenu.isVisible();
+            bridgeSelected       = show;
+            roadSelected         = false;
+            stopSelected         = false;
+            routeSelected        = false;
+            trafficLightSelected = false;
+            removeSelected       = false;
+            selectSelected       = false;
+            bridgeSubmenu.setVisible(show);
+            bridgeSubmenu.setManaged(show);
+            btnBridge.setStyle(show ? SUB_BTN_ACTIVE : SUB_BTN_NORMAL);
+            btnRoad.setStyle(SUB_BTN_NORMAL);
+            btnStop.setStyle(SUB_BTN_NORMAL);
+            btnRoute.setStyle(SUB_BTN_NORMAL);
+            btnTrafficLight.setStyle(SUB_BTN_NORMAL);
+            btnRemove.setStyle(BTN_NORMAL);
+            btnSelect.setStyle(BTN_NORMAL);
+        });
+
         // Toggle logic
         btnBuild.setOnAction(e -> {
             boolean show = !buildSubmenu.isVisible();
@@ -225,7 +284,11 @@ public class BuildToolbar extends VBox {
             btnBuild.setStyle(show ? BTN_HIGHLIGHT : BTN_NORMAL);
             btnRemove.setStyle(BTN_NORMAL);
             btnSelect.setStyle(BTN_NORMAL);
-            if (!show) clearSelection();
+            if (!show) {
+                bridgeSubmenu.setVisible(false);
+                bridgeSubmenu.setManaged(false);
+                clearSelection();
+            }
         });
 
         btnRemove.setOnAction(e -> {
@@ -238,6 +301,8 @@ public class BuildToolbar extends VBox {
             selectSelected = false;
             buildSubmenu.setVisible(false);
             buildSubmenu.setManaged(false);
+            bridgeSubmenu.setVisible(false);
+            bridgeSubmenu.setManaged(false);
             btnBuild.setStyle(BTN_NORMAL);
             btnRemove.setStyle(BTN_HIGHLIGHT);
             btnRoad.setStyle(SUB_BTN_NORMAL);
@@ -258,6 +323,8 @@ public class BuildToolbar extends VBox {
             removeSelected = false;
             buildSubmenu.setVisible(false);
             buildSubmenu.setManaged(false);
+            bridgeSubmenu.setVisible(false);
+            bridgeSubmenu.setManaged(false);
             btnBuild.setStyle(BTN_NORMAL);
             btnSelect.setStyle(BTN_HIGHLIGHT);
             btnRoad.setStyle(SUB_BTN_NORMAL);
@@ -291,8 +358,8 @@ public class BuildToolbar extends VBox {
         routeDrawBar.setVisible(false);
         routeDrawBar.setManaged(false);
 
-        // Submenu on top, route-draw bar next, toolbar on bottom
-        getChildren().addAll(buildSubmenu, routeDrawBar, toolbar);
+        // Bridge type submenu appears above the build submenu row.
+        getChildren().addAll(bridgeSubmenu, buildSubmenu, routeDrawBar, toolbar);
     }
 
     // ── State getters ─────────────────────────────────────────────────────────
@@ -304,6 +371,7 @@ public class BuildToolbar extends VBox {
     public boolean isRouteSelected()        { return routeSelected; }
     public boolean isSelectSelected()       { return selectSelected; }
     public boolean isTrafficLightSelected() { return trafficLightSelected; }
+    public String getSelectedBridgeType()   { return selectedBridgeType; }
 
     public void clearSelection() {
         roadSelected         = false;
@@ -321,6 +389,8 @@ public class BuildToolbar extends VBox {
         btnRemove.setStyle(BTN_NORMAL);
         btnSelect.setStyle(BTN_NORMAL);
         btnBuild.setStyle(BTN_NORMAL);
+        bridgeSubmenu.setVisible(false);
+        bridgeSubmenu.setManaged(false);
 
     }
 
@@ -343,6 +413,8 @@ public class BuildToolbar extends VBox {
     public void showRouteDrawBar() {
         buildSubmenu.setVisible(false);
         buildSubmenu.setManaged(false);
+        bridgeSubmenu.setVisible(false);
+        bridgeSubmenu.setManaged(false);
         btnBuild.setStyle(BTN_NORMAL);
         routeDrawBar.setVisible(true);
         routeDrawBar.setManaged(true);
