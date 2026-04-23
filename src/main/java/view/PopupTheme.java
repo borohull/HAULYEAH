@@ -7,6 +7,11 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.Window;
+
+import java.util.Optional;
 
 public final class PopupTheme {
 
@@ -82,7 +87,20 @@ public final class PopupTheme {
     private PopupTheme() {}
 
     public static Alert createAlert(Alert.AlertType type, String title, String header, String content, ButtonType... buttons) {
+        return createAlert(null, type, title, header, content, buttons);
+    }
+
+    public static Alert createAlert(Window owner,
+                                    Alert.AlertType type,
+                                    String title,
+                                    String header,
+                                    String content,
+                                    ButtonType... buttons) {
         Alert alert = new Alert(type);
+        if (owner != null) {
+            alert.initOwner(owner);
+            alert.initModality(Modality.WINDOW_MODAL);
+        }
         alert.setTitle(title);
         alert.setHeaderText(header);
         alert.setContentText(content);
@@ -91,6 +109,19 @@ public final class PopupTheme {
         }
         styleAlert(alert);
         return alert;
+    }
+
+    public static Optional<ButtonType> showAndWait(Alert alert, Window owner) {
+        boolean wasMaximized = owner instanceof Stage stage && stage.isMaximized();
+        Optional<ButtonType> result = alert.showAndWait();
+        if (owner instanceof Stage stage && stage.isShowing()) {
+            stage.toFront();
+            stage.requestFocus();
+            if (wasMaximized && !stage.isMaximized()) {
+                stage.setMaximized(true);
+            }
+        }
+        return result;
     }
 
     public static void styleAlert(Alert alert) {

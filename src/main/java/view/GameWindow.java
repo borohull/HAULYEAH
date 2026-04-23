@@ -100,6 +100,7 @@ public class GameWindow {
 
         // Set the simulation controller in game controller for tracking changes
         gameController.setSimulationController(simController);
+        simController.setDialogOwner(stage);
 
         // ── Map ──────────────────────────────────────────────────────────────
         mapPanel = new MapPanel();
@@ -178,11 +179,12 @@ public class GameWindow {
 
         simController.setOnBankrupt(() -> javafx.application.Platform.runLater(() -> {
             Alert alert = PopupTheme.createAlert(
+                    stage,
                     Alert.AlertType.INFORMATION,
                     "Bankrupt!",
                     "You went bankrupt!",
                     "Your capital fell below $0. Game over.");
-            alert.showAndWait();
+            PopupTheme.showAndWait(alert, stage);
             new controller.MainMenuController(stage).showMainMenu();
         }));
 
@@ -254,13 +256,14 @@ public class GameWindow {
             mapPanel.clearHoverOverlay();
             if (r != null) {
                 Alert info = PopupTheme.createAlert(
+                        stage,
                         Alert.AlertType.INFORMATION,
                         "Route Created",
                         null,
                         "Route \"" + r.getName() + "\" created!\n"
                                 + r.getTilePath().size() + " tiles, "
                                 + r.getStops().size() + " stops.");
-                info.showAndWait();
+                PopupTheme.showAndWait(info, stage);
             }
 
         });
@@ -485,13 +488,14 @@ public class GameWindow {
             ButtonType btnCancel = ButtonType.CANCEL;
 
             Alert alert = PopupTheme.createAlert(
+                    stage,
                     Alert.AlertType.CONFIRMATION,
                     "Unsaved Changes",
                     "You have unsaved changes!",
                     "Would you like to save before exiting?",
                     btnSave, btnExit, btnCancel);
 
-            java.util.Optional<ButtonType> result = alert.showAndWait();
+            java.util.Optional<ButtonType> result = PopupTheme.showAndWait(alert, stage);
             if (result.isPresent()) {
                 if (result.get() == btnSave) {
                     simController.saveGame(0);
@@ -502,12 +506,13 @@ public class GameWindow {
             }
         } else {
             Alert alert = PopupTheme.createAlert(
+                    stage,
                     Alert.AlertType.CONFIRMATION,
                     "Exit Game",
                     "Are you sure you want to exit?",
                     "");
 
-            java.util.Optional<ButtonType> result = alert.showAndWait();
+            java.util.Optional<ButtonType> result = PopupTheme.showAndWait(alert, stage);
             if (result.isPresent() && result.get() == ButtonType.OK) {
                 stage.close();
             }
