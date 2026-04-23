@@ -6,13 +6,11 @@ import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
-import model.Bridge;
 import model.City;
 import model.Facility;
 import model.Game;
 import model.MapEntity;
 import model.Position;
-import model.Road;
 import model.Stop;
 import model.Tile;
 import model.TrafficLight;
@@ -78,16 +76,33 @@ public class MapPanel extends Canvas {
     private final Image roadHorImage     = loadTileImage("/images/roadHor.png");
     private final Image roadVertImage    = loadTileImage("/images/roadVert.png");
     // ── Vehicle sprites — one per VehicleType (supports animation arrays) ────
-    private final Image[] expressBusImages  = loadVehicleAnim("/images/vehicles/express_bus");
-    private final Image[] logTruckImages    = loadVehicleAnim("/images/vehicles/log_truck");
-    private final Image[] flatbedImages     = loadVehicleAnim("/images/vehicles/flatbed_truck");
+
     private final Image[] foodTruckImages   = loadVehicleAnim("/images/vehicles/food_truck");
-    private final Image[] goodsTruckImages  = loadVehicleAnim("/images/vehicles/goods_truck");
 
     private final Image cityBusEastImage = loadTileImage("/images/vehicles/city_east.png");
     private final Image cityBusWestImage = loadTileImage("/images/vehicles/city_west.png");
     private final Image cityBusNorthImage = loadTileImage("/images/vehicles/city_north.png");
     private final Image cityBusSouthImage = loadTileImage("/images/vehicles/city_south.png");
+
+    private final Image expressBusEastImage = loadTileImage("/images/vehicles/express_east.png");
+    private final Image expressBusWestImage = loadTileImage("/images/vehicles/express_west.png");
+    private final Image expressBusNorthImage = loadTileImage("/images/vehicles/express_north.png");
+    private final Image expressBusSouthImage = loadTileImage("/images/vehicles/express_south.png");
+
+    private final Image flatbedEastImage = loadTileImage("/images/vehicles/flatbed_east.png");
+    private final Image flatbedWestImage = loadTileImage("/images/vehicles/flatbed_west.png");
+    private final Image flatbedNorthImage = loadTileImage("/images/vehicles/flatbed_north.png");
+    private final Image flatbedSouthImage = loadTileImage("/images/vehicles/flatbed_south.png");
+
+    private final Image logEastImage = loadTileImage("/images/vehicles/log_east.png");
+    private final Image logWestImage = loadTileImage("/images/vehicles/log_west.png");
+    private final Image logNorthImage = loadTileImage("/images/vehicles/log_north.png");
+    private final Image logSouthImage = loadTileImage("/images/vehicles/log_south.png");
+
+    private final Image goodsEastImage = loadTileImage("/images/vehicles/goods_east.png");
+    private final Image goodsWestImage = loadTileImage("/images/vehicles/goods_west.png");
+    private final Image goodsNorthImage = loadTileImage("/images/vehicles/goods_north.png");
+    private final Image goodsSouthImage = loadTileImage("/images/vehicles/goods_south.png");
 
 
     private final Image[] facilityImages = {
@@ -372,14 +387,38 @@ public class MapPanel extends Canvas {
                 case NORTH -> cityBusNorthImage;
                 case SOUTH -> cityBusSouthImage;
             };
+        } else if (vehicle.getType() == VehicleType.EXPRESS_BUS) {
+            img = switch (travelDir) {
+                case EAST -> expressBusEastImage;
+                case WEST -> expressBusWestImage;
+                case NORTH -> expressBusNorthImage;
+                case SOUTH -> expressBusSouthImage;
+            };
+        } else if (vehicle.getType() == VehicleType.FLATBED_TRUCK) {
+            img = switch (travelDir) {
+                case EAST -> flatbedEastImage;
+                case WEST -> flatbedWestImage;
+                case NORTH -> flatbedNorthImage;
+                case SOUTH -> flatbedSouthImage;
+            };
+        } else if (vehicle.getType() == VehicleType.LOG_TRUCK) {
+            img = switch (travelDir) {
+                case EAST -> logEastImage;
+                case WEST -> logWestImage;
+                case NORTH -> logNorthImage;
+                case SOUTH -> logSouthImage;
+            };
+        } else if (vehicle.getType() == VehicleType.GOODS_TRUCK) {
+            img = switch (travelDir) {
+                case EAST -> goodsEastImage;
+                case WEST -> goodsWestImage;
+                case NORTH -> goodsNorthImage;
+                case SOUTH -> goodsSouthImage;
+            };
         } else {
             Image[] imgs = switch (vehicle.getType()) {
-                case EXPRESS_BUS   -> expressBusImages;
-                case LOG_TRUCK     -> logTruckImages;
-                case FLATBED_TRUCK -> flatbedImages;
                 case FOOD_TRUCK    -> foodTruckImages;
-                case GOODS_TRUCK   -> goodsTruckImages;
-                case CITY_BUS      -> null;
+                default            -> null;
             };
 
 

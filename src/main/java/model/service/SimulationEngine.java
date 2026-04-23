@@ -120,7 +120,17 @@ public class SimulationEngine {
             nextIdx = route.isCircular()
                     ? (curIdx + 1) % pathSize
                     : (forward ? Math.min(curIdx + 1, pathSize - 1) : Math.max(curIdx - 1, 0));
-            if (!route.isCircular() && curIdx == nextIdx) break; // at a ping-pong endpoint
+            if (!route.isCircular() && curIdx == nextIdx) {
+                // Arrived at endpoint — flip direction immediately so smooth interpolation
+                // has a real next tile and the vehicle doesn't freeze waiting for progress >= 1.0.
+                vehicle.advanceRoutePathIndex();
+                curIdx  = vehicle.getRoutePathIndex();
+                forward = vehicle.isMovingForward();
+                nextIdx = forward ? Math.min(curIdx + 1, pathSize - 1)
+                                  : Math.max(curIdx - 1, 0);
+                progress = 0.0;
+                break;
+            }
             TrafficLight tl = state.getMap().getTrafficLightAt(path.get(nextIdx));
             if (tl != null) {
                 Direction approachDir = approachDirection(path.get(curIdx), path.get(nextIdx));
