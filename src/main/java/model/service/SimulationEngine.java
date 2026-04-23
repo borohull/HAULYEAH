@@ -86,7 +86,9 @@ public class SimulationEngine {
 
         boolean forward = vehicle.isMovingForward();
         int curIdx  = vehicle.getRoutePathIndex();
-        int nextIdx = forward ? Math.min(curIdx + 1, pathSize - 1) : Math.max(curIdx - 1, 0);
+        int nextIdx = route.isCircular()
+                ? (curIdx + 1) % pathSize
+                : (forward ? Math.min(curIdx + 1, pathSize - 1) : Math.max(curIdx - 1, 0));
 
         // Check traffic light on the NEXT tile before crossing into it.
         // curIdx == nextIdx means we're at an endpoint — nothing to cross.
@@ -115,8 +117,10 @@ public class SimulationEngine {
             if (arrivedStop != null) deliveryService.handleStopArrival(vehicle, arrivedStop, state);
             curIdx  = vehicle.getRoutePathIndex();
             forward = vehicle.isMovingForward();
-            nextIdx = forward ? Math.min(curIdx + 1, pathSize - 1) : Math.max(curIdx - 1, 0);
-            if (curIdx == nextIdx) break; // at an endpoint, stop advancing
+            nextIdx = route.isCircular()
+                    ? (curIdx + 1) % pathSize
+                    : (forward ? Math.min(curIdx + 1, pathSize - 1) : Math.max(curIdx - 1, 0));
+            if (!route.isCircular() && curIdx == nextIdx) break; // at a ping-pong endpoint
             TrafficLight tl = state.getMap().getTrafficLightAt(path.get(nextIdx));
             if (tl != null) {
                 Direction approachDir = approachDirection(path.get(curIdx), path.get(nextIdx));
@@ -134,7 +138,9 @@ public class SimulationEngine {
         // ── Smooth sub-tile interpolation ─────────────────────────────────────
         curIdx  = vehicle.getRoutePathIndex();
         forward = vehicle.isMovingForward();
-        nextIdx = forward ? Math.min(curIdx + 1, pathSize - 1) : Math.max(curIdx - 1, 0);
+        nextIdx = route.isCircular()
+                ? (curIdx + 1) % pathSize
+                : (forward ? Math.min(curIdx + 1, pathSize - 1) : Math.max(curIdx - 1, 0));
         Position from = path.get(curIdx);
         Position to   = path.get(nextIdx);
 

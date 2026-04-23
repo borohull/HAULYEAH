@@ -13,6 +13,7 @@ import model.enums.TileType;
 import model.enums.TransactionType;
 import model.enums.VehicleType;
 import model.service.ConstructionService;
+import model.service.RoadPathfinder;
 import model.service.VehicleService;
 
 import java.util.ArrayList;
@@ -331,8 +332,39 @@ public class GameController {
         String id   = "route-" + (++routeCounter);
         String name = (customName != null && !customName.isBlank())
                 ? customName : "Route " + routeCounter;
-        // No tilePath — vehicle will not move until a proper drawn route is used
-        Route route = new Route(id, name, new ArrayList<>(stops), new ArrayList<>());
+
+        // Build circular tile path: stop[0]→stop[1]→...→stop[n-1]→back to stop[0]
+        List<Position> tilePath = new ArrayList<>();
+        boolean allConnected = true;
+
+        // Forward segments between consecutive stops
+        for (int i = 0; i < stops.size() - 1; i++) {
+            List<Position> seg = RoadPathfinder.findPath(
+                    state.getMap(), stops.get(i).getPosition(), stops.get(i + 1).getPosition());
+            if (seg == null) { allConnected = false; break; }
+            if (tilePath.isEmpty()) tilePath.addAll(seg);
+            else tilePath.addAll(seg.subList(1, seg.size()));
+        }
+
+        // Closing segment: last stop back to first stop (exclude both endpoints — first is already
+        // at index 0 of tilePath, last is already at the end)
+        if (allConnected) {
+            List<Position> closing = RoadPathfinder.findPath(
+                    state.getMap(),
+                    stops.get(stops.size() - 1).getPosition(),
+                    stops.get(0).getPosition());
+            if (closing == null || closing.size() < 2) {
+                allConnected = false;
+            } else {
+                // closing[0] == last stop (already in path), closing[last] == first stop (already at index 0)
+                tilePath.addAll(closing.subList(1, closing.size() - 1));
+            }
+        }
+
+        Route route = new Route(id, name, new ArrayList<>(stops), allConnected ? tilePath : new ArrayList<>());
+        route.setCircular(allConnected);
+        if (!allConnected)
+            System.out.println("[GameController] Route '" + name + "': stops not fully connected by roads");
         state.getMap().addRoute(route);
         notifyView();
         return route;

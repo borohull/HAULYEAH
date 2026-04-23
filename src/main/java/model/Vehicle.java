@@ -100,19 +100,21 @@ public class Vehicle {
     // ── Path index ────────────────────────────────────────────────────────────
     public int getRoutePathIndex() { return routePathIndex; }
 
-    /** Advance one step, flipping direction at each endpoint (ping-pong). */
+    /** Advance one step: loops for circular routes, ping-pongs otherwise. */
     public void advanceRoutePathIndex() {
         if (route == null || !route.hasTilePath()) return;
         int size = route.getTilePath().size();
-        if (movingForward) {
+        if (route.isCircular()) {
+            routePathIndex = (routePathIndex + 1) % size;
+        } else if (movingForward) {
             if (routePathIndex >= size - 1) {
-                movingForward = false; // flip only — stay at endpoint this call
+                movingForward = false;
             } else {
                 routePathIndex++;
             }
         } else {
             if (routePathIndex <= 0) {
-                movingForward = true; // flip only — stay at endpoint this call
+                movingForward = true;
             } else {
                 routePathIndex--;
             }
