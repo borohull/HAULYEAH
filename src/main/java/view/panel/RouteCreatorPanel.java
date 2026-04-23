@@ -63,7 +63,7 @@ public class RouteCreatorPanel {
     public void show(Stage owner) {
         Stage dialog = new Stage();
         dialog.initOwner(owner);
-        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.initModality(Modality.WINDOW_MODAL);
         dialog.initStyle(StageStyle.UNDECORATED);
         dialog.setTitle("Create Route");
 
@@ -158,10 +158,13 @@ public class RouteCreatorPanel {
 
         btnCreate.setOnAction(e -> {
             if (selectedStops.size() < 2) {
-                Alert warn = new Alert(Alert.AlertType.WARNING,
+                Alert warn = PopupTheme.createAlert(
+                        dialog,
+                        Alert.AlertType.WARNING,
+                        "Invalid Route",
+                        null,
                         "A route needs at least 2 stops.");
-                warn.setHeaderText(null);
-                warn.showAndWait();
+                PopupTheme.showAndWait(warn, dialog);
                 return;
             }
             String name = nameField.getText().trim();
@@ -169,12 +172,15 @@ public class RouteCreatorPanel {
 
             Route created = gameController.onCreateRoute(selectedStops, name);
             if (created != null) {
-                Alert info = new Alert(Alert.AlertType.INFORMATION,
+                Alert info = PopupTheme.createAlert(
+                        dialog,
+                        Alert.AlertType.INFORMATION,
+                        "Route Created",
+                        null,
                         "\"" + created.getName() + "\" created with "
-                        + created.getStops().size() + " stops!\n"
-                        + "Route loops: " + routeSummary(created));
-                info.setHeaderText(null);
-                info.showAndWait();
+                                + created.getStops().size() + " stops!\n"
+                                + "Route loops: " + routeSummary(created));
+                PopupTheme.showAndWait(info, dialog);
                 if (onRouteCreated != null) onRouteCreated.run();
             }
             dialog.close();
