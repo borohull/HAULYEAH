@@ -125,6 +125,7 @@ public class GameWindow {
         // ── Minimap ──────────────────────────────────────────────────────────
         MinimapPanel minimap = new MinimapPanel(scroll, mapGroup, mapPanel);
         minimap.drawMinimap(game);
+        final long[] lastMinimapRefreshNanos = {0L};
 
         // Ctrl+scroll to zoom
         scroll.addEventFilter(javafx.scene.input.ScrollEvent.SCROLL, e -> {

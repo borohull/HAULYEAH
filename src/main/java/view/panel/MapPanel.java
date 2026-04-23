@@ -667,22 +667,29 @@ public class MapPanel extends Canvas {
         }
     }
     private void drawDemandBadges(GraphicsContext gc, Game game, int ox, int oy) {
-        gc.setFont(Font.font("Monospace", 10));
         gc.setTextAlign(TextAlignment.CENTER);
+
+        // City demand: primary signal (larger + red)
         for (City city : game.getCities()) {
             CargoType demand = city.getCurrentDemand();
             if (demand == null) continue;
             Position center = city.getCenter();
             double cx = isoScreenX(center.getX(), center.getY(), ox);
-            double cy = isoScreenY(center.getX(), center.getY(), oy) - WALL_H - 72;
-            String text = "Needs: " + demand.displayName();
-            double tw = text.length() * 6.0;
-            gc.setFill(Color.rgb(0, 0, 0, 0.55));
-            gc.fillRoundRect(cx - tw / 2 - 4, cy - 11, tw + 8, 16, 5, 5);
-            gc.setFill(Color.WHITE);
-            gc.fillText(text, cx, cy);
+            double cy = isoScreenY(center.getX(), center.getY(), oy) - WALL_H - 88;
+            String text = "DEMAND: " + demand.displayName();
+
+            gc.setFont(Font.font("System", 16));
+            double tw = text.length() * 9.2;
+            gc.setFill(Color.rgb(130, 0, 0, 0.88));
+            gc.fillRoundRect(cx - tw / 2 - 8, cy - 16, tw + 16, 24, 8, 8);
+            gc.setStroke(Color.rgb(255, 200, 200, 0.95));
+            gc.setLineWidth(1.8);
+            gc.strokeRoundRect(cx - tw / 2 - 8, cy - 16, tw + 16, 24, 8, 8);
+            gc.setFill(Color.rgb(255, 70, 70));
+            gc.fillText(text, cx, cy + 1);
         }
 
+        // Facility production: secondary signal (smaller)
         for (Facility facility : game.getFacilities()) {
             CargoType production = facility.getPrimaryProduction();
             if (production == null) continue;
@@ -690,10 +697,13 @@ public class MapPanel extends Canvas {
             double cx = isoScreenX(center.getX(), center.getY(), ox);
             double cy = isoScreenY(center.getX(), center.getY(), oy) - WALL_H - 38;
             String text = "Produces: " + production.displayName();
-            double tw = text.length() * 6.0;
-            gc.setFill(Color.rgb(0, 0, 0, 0.55));
-            gc.fillRoundRect(cx - tw / 2 - 4, cy - 11, tw + 8, 16, 5, 5);
+
+            gc.setFont(Font.font("Monospace", 12));
+            double tw = text.length() * 7.1;
+            gc.setFill(Color.rgb(0, 0, 0, 0.58));
+            gc.fillRoundRect(cx - tw / 2 - 6, cy - 13, tw + 12, 20, 6, 6);
             gc.setFill(Color.WHITE);
+            gc.setTextAlign(TextAlignment.CENTER);
             gc.fillText(text, cx, cy);
         }
     }
