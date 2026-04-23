@@ -3,10 +3,17 @@ package model.service;
 import model.Game;
 import model.GameState;
 import model.Player;
+import model.Position;
 import model.Road;
+import model.Route;
 import model.Stop;
 import model.Tile;
+import model.TrafficLight;
+import model.Vehicle;
+import model.enums.Direction;
 import model.enums.TileType;
+import model.enums.VehicleType;
+import model.MapGenerator;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,42 +21,35 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.List;
-import model.Position;
-import model.Route;
-import model.TrafficLight;
-import model.Vehicle;
-import model.enums.Direction;
-import model.enums.VehicleType;
-
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
  * SaveManager — handles persisting and loading the state of the game.
- * Extracted from the original MapDemo class.
  */
 public class SaveManager {
 
     private static final Path SAVE_DIR = Path.of(System.getProperty("user.home"), ".haulyea");
     private static final Path SAVE_FILE = SAVE_DIR.resolve("savegame.txt");
 
-    /**
-     * Saves the provided Game state to ~/.haulyea/savegame.txt.
-     * Currently ignores the slot parameter to stick to the default behavior.
-     *
-     * @param state the game state to save
-     * @param slot save slot index (reserved for future multi-save support)
-     */
     public void save(GameState state, int slot) {
-        model.Game game = state.getMap();
+        Game game = state.getMap();
+        Player player = state.getPlayer();
+
         StringBuilder content = new StringBuilder();
         content.append("# Haul Yea Save\n");
         content.append("savedAt=")
                 .append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
                 .append('\n');
+
+        // Finance data
+        content.append("playerName=").append(player.getName()).append('\n');
+        content.append("capital=").append(player.getLedger().getCurrentCapital()).append('\n');
+
+        // World data
         content.append("worldName=").append(game.getWorldName()).append('\n');
         content.append("width=").append(game.getWidth()).append('\n');
         content.append("height=").append(game.getHeight()).append('\n');
@@ -126,7 +126,6 @@ public class SaveManager {
                     .append('\n');
         }
 
-
         content.append("[tileTypes]\n");
         for (int y = 0; y < game.getHeight(); y++) {
             for (int x = 0; x < game.getWidth(); x++) {
@@ -150,11 +149,6 @@ public class SaveManager {
         }
     }
 
-    /**
-     * Loads a game from the given slot.
-     * @param slot save slot index
-     * @return the loaded GameState, or null if it failed
-     */
     public GameState load(int slot) {
         try {
             Path file = SAVE_FILE;
@@ -168,6 +162,9 @@ public class SaveManager {
                 System.err.println("[SaveManager] Save file is empty");
                 return null;
             }
+
+            String playerName = "Player 1";
+            double capital = 100000;
 
             String worldName = null;
             int width = 0, height = 0;
@@ -185,17 +182,19 @@ public class SaveManager {
             List<ParsedVehicle> parsedVehicles = new ArrayList<>();
             List<ParsedTrafficLight> parsedTrafficLights = new ArrayList<>();
 
-
             int section = 0;
             int roadCount = 0, stopCount = 0, routeCount = 0, vehicleCount = 0, trafficLightCount = 0;
             int y = 0;
-
 
             for (String line : lines) {
                 line = line.trim();
                 if (line.isEmpty() || line.startsWith("#")) continue;
 
-                if (line.startsWith("worldName=")) {
+                if (line.startsWith("playerName=")) {
+                    playerName = line.substring(11);
+                } else if (line.startsWith("capital=")) {
+                    capital = Double.parseDouble(line.substring(8));
+                } else if (line.startsWith("worldName=")) {
                     worldName = line.substring(10);
                 } else if (line.startsWith("width=")) {
                     width = Integer.parseInt(line.substring(6));
@@ -318,14 +317,12 @@ public class SaveManager {
                 }
             }
 
-
             if (worldName == null || width == 0 || height == 0 || tileTypes == null) {
                 System.err.println("[SaveManager] Invalid save file format");
                 return null;
             }
 
-            // Create Game
-            model.MapGenerator generator = new model.MapGenerator();
+            MapGenerator generator = new MapGenerator();
             Game game = generator.generate(width, height, 7, 15);
             game.setWorldName(worldName);
 
@@ -334,7 +331,7 @@ public class SaveManager {
             game.getVehicles().clear();
             game.getRoutes().clear();
             game.getTrafficLights().clear();
-            // Set tile types
+
             for (int yy = 0; yy < height; yy++) {
                 for (int xx = 0; xx < width; xx++) {
                     Tile tile = game.getTile(xx, yy);
@@ -344,13 +341,10 @@ public class SaveManager {
                 }
             }
 
-            // Add roads
             for (Road road : roads) {
                 game.getRoads().add(road);
             }
 
-            // Add stops
-// Add stops, routes, vehicles, and traffic lights
             Map<String, Stop> stopById = new HashMap<>();
             for (Stop stop : stops) {
                 game.getStops().add(stop);
@@ -412,9 +406,7 @@ public class SaveManager {
                 game.addTrafficLight(tl);
             }
 
-
-            // Create GameState with default Player
-            Player player = new Player("Player 1", 100000);
+            Player player = new Player(playerName, capital);
             GameState state = new GameState(game, player);
 
             System.out.println("[SaveManager] Game loaded: " + SAVE_FILE);
@@ -427,18 +419,10 @@ public class SaveManager {
         }
     }
 
-    /**
-     * Checks if a save file exists.
-     * @return true if save file exists, false otherwise
-     */
     public boolean saveExists() {
         return Files.exists(SAVE_FILE);
     }
 
-    /**
-     * Deletes the save file for the given slot.
-     * @param slot save slot index
-     */
     public void delete(int slot) {
         try {
             Path file = SAVE_FILE;

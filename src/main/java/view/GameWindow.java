@@ -237,6 +237,7 @@ public class GameWindow {
         bottomToolbar.getSaveButton().setOnAction(e -> simController.saveGame(0));
 
         bottomToolbar.getExitButton().setOnAction(e -> handleExit());
+        bottomToolbar.getMenuButton().setOnAction(e -> handleReturnToMenu());
 
         // Garage — opens the vehicle purchase modal
         bottomToolbar.getGarageButton().setOnAction(e ->
@@ -266,7 +267,6 @@ public class GameWindow {
                                 + r.getStops().size() + " stops.");
                 PopupTheme.showAndWait(info, stage);
             }
-
         });
 
         // Cancel — discard the route being drawn
@@ -276,6 +276,8 @@ public class GameWindow {
             mapPanel.clearHoverOverlay();
         });
     }
+
+
 
     // ── Map mouse wiring ─────────────────────────────────────────────────────
 
@@ -478,6 +480,48 @@ public class GameWindow {
         if (tile.getEntityName() != null) info += "  " + tile.getEntityName();
         return info;
     }
+
+    private void handleReturnToMenu() {
+        if (simController.hasUnsavedChanges()) {
+            ButtonType btnSave = new ButtonType("Save & Menu");
+            ButtonType btnMenu = new ButtonType("Menu Without Saving");
+            ButtonType btnCancel = ButtonType.CANCEL;
+
+            Alert alert = PopupTheme.createAlert(
+                    stage,
+                    Alert.AlertType.CONFIRMATION,
+                    "Unsaved Changes",
+                    "You have unsaved changes!",
+                    "Would you like to save before returning to the menu?",
+                    btnSave, btnMenu, btnCancel);
+
+            java.util.Optional<ButtonType> result = PopupTheme.showAndWait(alert, stage);
+            if (result.isPresent()) {
+                if (result.get() == btnSave) {
+                    simController.saveGame(0);
+                    simController.pause();
+                    new controller.MainMenuController(stage).showMainMenu();
+                } else if (result.get() == btnMenu) {
+                    simController.pause();
+                    new controller.MainMenuController(stage).showMainMenu();
+                }
+            }
+        } else {
+            Alert alert = PopupTheme.createAlert(
+                    stage,
+                    Alert.AlertType.CONFIRMATION,
+                    "Return to Menu",
+                    "Return to main menu?",
+                    "");
+
+            java.util.Optional<ButtonType> result = PopupTheme.showAndWait(alert, stage);
+            if (result.isPresent() && result.get() == ButtonType.OK) {
+                simController.pause();
+                new controller.MainMenuController(stage).showMainMenu();
+            }
+        }
+    }
+
 
     /**
      * Handles exit with warning if there are unsaved changes.
