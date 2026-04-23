@@ -377,7 +377,7 @@ public class GameController {
         if (stops.isEmpty()) return;
         Vehicle v = vehicleService.spawnVehicle(state.getMap(), type, stops.get(0));
         List<Route> routes = state.getMap().getRoutes();
-        if (!routes.isEmpty()) vehicleService.assignRoute(state.getMap(), v, routes.get(0));
+        if (!routes.isEmpty()) { v.setLooping(false); vehicleService.assignRoute(state.getMap(), v, routes.get(0)); }
         notifyView();
     }
 
@@ -409,8 +409,16 @@ public class GameController {
         return v;
     }
 
-    public void onAssignVehicle(Vehicle vehicle, Route route) {
+    public void onAssignVehicle(Vehicle vehicle, Route route, boolean looping) {
+        vehicle.setLooping(looping);
         vehicleService.assignRoute(state.getMap(), vehicle, route);
+        if (simController != null) simController.resetVehicle(vehicle.getId());
+        notifyView();
+    }
+
+    public void onDeployVehicle(Vehicle vehicle) {
+        if (vehicle.getRoute() == null) return;
+        vehicle.assignRoute(vehicle.getRoute());
         if (simController != null) simController.resetVehicle(vehicle.getId());
         notifyView();
     }

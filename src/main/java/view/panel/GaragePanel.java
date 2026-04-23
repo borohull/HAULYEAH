@@ -5,6 +5,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.layout.*;
@@ -279,7 +280,8 @@ public class GaragePanel {
         } else {
             for (Vehicle vehicle : ownedVehicles) {
                 String routeName = vehicle.getRoute() != null ? vehicle.getRoute().getName() : "Unassigned";
-                ownedVehicleBox.getItems().add(formatName(vehicle.getType()) + " - " + routeName);
+                String status    = vehicle.isActive() ? "Active" : "Parked";
+                ownedVehicleBox.getItems().add(formatName(vehicle.getType()) + " - " + routeName + " (" + status + ")");
             }
             ownedVehicleBox.getSelectionModel().selectFirst();
         }
@@ -300,6 +302,8 @@ public class GaragePanel {
             routeBox.getSelectionModel().selectFirst();
         }
 
+        CheckBox loopBox = new CheckBox("Loop route");
+
         Button assignButton = new Button("Assign Route");
         assignButton.setStyle(PRIMARY_BUTTON_STYLE);
         assignButton.setOnAction(e -> {
@@ -312,20 +316,31 @@ public class GaragePanel {
 
             Vehicle selectedVehicle = ownedVehicles.get(vehicleIdx);
             Route   selectedRoute   = drawnRoutes.get(routeIdx);
-            gameController.onAssignVehicle(selectedVehicle, selectedRoute);
+            gameController.onAssignVehicle(selectedVehicle, selectedRoute, loopBox.isSelected());
 
             System.out.println("[Garage] Assigned " + selectedVehicle.getId()
                     + " to route: " + selectedRoute.getName());
             dialog.close();
         });
 
-        VBox assignCard = new VBox(12, ownedVehicleLabel, ownedVehicleBox, routeLabel, routeBox);
+        Button deployButton = new Button("Deploy");
+        deployButton.setStyle(PRIMARY_BUTTON_STYLE);
+        deployButton.setOnAction(e -> {
+            int vehicleIdx = ownedVehicleBox.getSelectionModel().getSelectedIndex();
+            if (ownedVehicles.isEmpty() || vehicleIdx < 0 || vehicleIdx >= ownedVehicles.size()) return;
+            Vehicle selectedVehicle = ownedVehicles.get(vehicleIdx);
+            gameController.onDeployVehicle(selectedVehicle);
+            dialog.close();
+        });
+
+        VBox assignCard = new VBox(12, ownedVehicleLabel, ownedVehicleBox, routeLabel, routeBox, loopBox);
         assignCard.setStyle(CARD_STYLE);
 
         return new VBox(14,
                 sectionTitle,
                 assignCard,
-                assignButton
+                assignButton,
+                deployButton
         );
     }
 

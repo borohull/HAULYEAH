@@ -72,6 +72,10 @@ public class SimulationEngine {
                     }
                 }
                 tileProgress.put(vehicle.getId(), savedProgress);
+                // Process the starting stop on the first tick so the vehicle loads/unloads
+                // immediately rather than driving past it empty.
+                Stop startStop = DeliveryService.findStopAt(vehicle.getPosition(), state.getMap().getStops());
+                if (startStop != null) deliveryService.handleStopArrival(vehicle, startStop, state);
             }
             tickVehicle(vehicle, dt, state);
         }
@@ -87,6 +91,7 @@ public class SimulationEngine {
     // ── Per-vehicle movement ──────────────────────────────────────────────────
 
     private void tickVehicle(Vehicle vehicle, double dt, GameState state) {
+        if (!vehicle.isActive()) return;
         Route route = vehicle.getRoute();
         if (route == null || !route.hasTilePath()) return;
 
@@ -137,8 +142,11 @@ public class SimulationEngine {
                     ? (curIdx + 1) % pathSize
                     : (forward ? Math.min(curIdx + 1, pathSize - 1) : Math.max(curIdx - 1, 0));
             if (!route.isCircular() && curIdx == nextIdx) {
-                // Arrived at endpoint — flip direction and continue consuming remaining
-                // progress in the new direction so the vehicle never freezes.
+                // Arrived at endpoint — park non-looping vehicles; flip looping ones.
+                if (!vehicle.isLooping()) {
+                    vehicle.setActive(false);
+                    break;
+                }
                 vehicle.advanceRoutePathIndex();
                 curIdx  = vehicle.getRoutePathIndex();
                 forward = vehicle.isMovingForward();

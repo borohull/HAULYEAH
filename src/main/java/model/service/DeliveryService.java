@@ -66,6 +66,9 @@ public class DeliveryService {
                     "Delivered " + city.getCurrentDemand().displayName() + " to " + city.getName()
                 );
                 city.advanceDemand();
+                if (!vehicle.isLooping()) {
+                    vehicle.setActive(false);
+                }
                 return;
             }
             // Also unload any cargo at a facility that consumes it

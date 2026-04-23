@@ -19,6 +19,8 @@ public class Vehicle {
     private int     routePathIndex = 0;
     /** True = travelling toward higher indices; false = travelling backward. */
     private boolean movingForward  = true;
+    private boolean looping        = false;
+    private boolean active         = true;
     /** Sub-tile progress (0.0–<1.0) persisted for save/load. */
     private double  routeProgress  = 0.0;
 
@@ -70,6 +72,7 @@ public class Vehicle {
     public void assignRoute(Route route) {
         this.route         = route;
         this.movingForward = true;
+        this.active        = true;
         if (route != null && route.hasTilePath()) {
             List<Position> path = route.getTilePath();
             // Start at the first stop in the path so the vehicle moves toward the second stop.
@@ -100,6 +103,10 @@ public class Vehicle {
     public void       setTravelDirection(Direction d) { this.travelDirection = d; }
     public double     getRouteProgress()      { return routeProgress; }
     public void       setRouteProgress(double p) { this.routeProgress = p; }
+    public boolean    isLooping()                { return looping; }
+    public void       setLooping(boolean l)      { this.looping = l; }
+    public boolean    isActive()                 { return active; }
+    public void       setActive(boolean a)       { this.active = a; }
 
     // ── Path index ────────────────────────────────────────────────────────────
     public int getRoutePathIndex() { return routePathIndex; }
