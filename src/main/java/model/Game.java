@@ -164,10 +164,12 @@ public class Game {
             Tile t = getTile(p);
             if (t != null) {
                 t.setType(TileType.FOREST);
+                t.setTreeCount(1 + Math.abs((p.getX() * 31 + p.getY() * 17) % 4));
                 t.setEntityId(forest.getId());
                 t.setEntityName(forest.getName());
             }
         }
+
     }
 
 
@@ -214,9 +216,21 @@ public class Game {
         List<MapEntity> entities = new ArrayList<>();
         entities.addAll(cities);
         entities.addAll(facilities);
-        entities.addAll(forests);
         entities.addAll(waterBodies);
         entities.addAll(bridges);
         return entities;
     }
+
+    private final java.util.List<Position> dirtyStaticTiles = new java.util.ArrayList<>();
+
+    public void markStaticTileDirty(Position p) {
+        dirtyStaticTiles.add(p);
+    }
+
+    public java.util.List<Position> consumeDirtyStaticTiles() {
+        java.util.List<Position> copy = new java.util.ArrayList<>(dirtyStaticTiles);
+        dirtyStaticTiles.clear();
+        return copy;
+    }
+
 }

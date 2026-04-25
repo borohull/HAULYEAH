@@ -39,7 +39,6 @@ public class GameController {
         ROUTE_DRAW
     }
 
-    private static final double ROAD_COST = 500.0;
     private static final double WOODEN_BRIDGE_COST = 1000.0;
     private static final double STONE_BRIDGE_COST = 2000.0;
     private static final double STEEL_BRIDGE_COST = 3000.0;
@@ -157,14 +156,30 @@ public class GameController {
 
     // ── Construction ──────────────────────────────────────────────────────────
 
+    private static final double ROAD_COST = 500.0;
+    private static final double FOREST_CLEARING_COST = 700.0;
+
     public void onBuildRoad(Position p) {
-        if (!state.getPlayer().getLedger().canAfford(ROAD_COST)) return;
+        Tile tile = state.getMap().getTile(p);
+        if (tile == null) return;
+
+        double cost = ROAD_COST;
+        String note = "Road";
+
+        if (tile.getType() == TileType.FOREST) {
+            cost += FOREST_CLEARING_COST;
+            note = "Road + clearing";
+        }
+
+        if (!state.getPlayer().getLedger().canAfford(cost)) return;
+
         if (constructionService.buildRoad(state.getMap(), p, Road.RoadType.HORIZONTAL)) {
-            state.getPlayer().getLedger().spend(ROAD_COST, TransactionType.BUILD, "Road");
+            state.getPlayer().getLedger().spend(cost, TransactionType.BUILD, note);
             markUnsaved();
             notifyView();
         }
     }
+
 
     public void onBuildStop(Position p) {
         String stopName = "Stop-" + (state.getMap().getStops().size() + 1);

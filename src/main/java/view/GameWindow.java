@@ -117,15 +117,21 @@ public class GameWindow {
         scroll.setStyle("-fx-background: #87CEEB; -fx-background-color: #87CEEB;");
 
         // Centre the scroll after layout
-        javafx.application.Platform.runLater(() -> {
-            scroll.setHvalue(0.8);
-            scroll.setVvalue(0.2);
-        });
+
 
         // ── Minimap ──────────────────────────────────────────────────────────
         MinimapPanel minimap = new MinimapPanel(scroll, mapGroup, mapPanel);
         minimap.drawMinimap(game);
         final long[] lastMinimapRefreshNanos = {0L};
+
+        javafx.application.Platform.runLater(() -> {
+            scroll.setHvalue(0.5);
+            scroll.setVvalue(0.5);
+            mapGroup.setScaleX(0.85);
+            mapGroup.setScaleY(0.85);
+            minimap.refreshViewport();
+        });
+
 
         // Ctrl+scroll to zoom
         scroll.addEventFilter(javafx.scene.input.ScrollEvent.SCROLL, e -> {
@@ -174,9 +180,20 @@ public class GameWindow {
         // Minimap only reflects static tiles — scroll listeners inside MinimapPanel
         // already refresh the viewport rectangle, so no per-tick redraw needed.
         simController.setOnStateChanged(() -> {
-            mapPanel.drawDynamic(game);
+            java.util.List<Position> dirtyTiles = game.consumeDirtyStaticTiles();
+            if (!dirtyTiles.isEmpty()) {
+                mapPanel.forceStaticRedraw();
+                mapPanel.drawGame(game);
+                minimap.drawMinimap(game);
+            } else {
+                mapPanel.drawDynamic(game);
+            }
+
             topHud.updateMoney((int) gameController.getState().getPlayer().getLedger().getCurrentCapital());
         });
+
+
+
 
         simController.setOnBankrupt(() -> javafx.application.Platform.runLater(() -> {
             Alert alert = PopupTheme.createAlert(

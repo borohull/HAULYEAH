@@ -114,6 +114,15 @@ public class MapPanel extends Canvas {
             loadTileImage("/images/facility5.png")
     };
 
+    private final Image[] forestImages = {
+            loadTileImage("/images/tr1.png"),
+            loadTileImage("/images/tr2.png"),
+            loadTileImage("/images/tr3.png"),
+            loadTileImage("/images/tr4.png"),
+            loadTileImage("/images/tr5.png")
+    };
+
+
     private final Image[] cityBuildingImages = {
             loadTileImage("/images/buildings/building.png"),
             loadTileImage("/images/buildings/building-1.png"),
@@ -554,7 +563,7 @@ public class MapPanel extends Canvas {
             case CITY_EMPTY -> COL_CITY_EMPTY_TOP;
             case FACILITY -> COL_FAC_TOP;
             case WATER -> COL_WATER_TOP;
-            case FOREST -> COL_FOREST_TOP;
+
             case BRIDGE -> COL_BRIDGE_TOP;
             default -> COL_EMPTY_TOP;
         };
@@ -640,6 +649,18 @@ public class MapPanel extends Canvas {
         return available[hash % available.length];
     }
 
+    private Image getForestImage(int tx, int ty) {
+        Image[] available = java.util.Arrays.stream(forestImages)
+                .filter(java.util.Objects::nonNull)
+                .toArray(Image[]::new);
+
+        if (available.length == 0) return null;
+
+        int hash = Math.abs((tx * 73856093) ^ (ty * 19349663));
+        return available[hash % available.length];
+    }
+
+
     private void drawBox(GraphicsContext gc, int tx, int ty, int ox, int oy,
                          Color colLeft, Color colRight, Color colRoof) {
         double inset = 6;
@@ -700,37 +721,36 @@ public class MapPanel extends Canvas {
     private void drawForestTree(GraphicsContext gc, int tx, int ty, int ox, int oy) {
         double cx = isoScreenX(tx, ty, ox);
         double cy = isoScreenY(tx, ty, oy);
-        double hw = TILE_W / 2.0 * 0.45;
-        double hh = TILE_H / 2.0 * 0.45;
 
-        Random tileRng = new Random((long) tx * 10000 + ty);
-        int numTrees = 1 + tileRng.nextInt(4);
-        for (int i = 0; i < numTrees; i++) {
-            double offsetX = (tileRng.nextDouble() - 0.5) * TILE_W * 0.6;
-            double offsetY = (tileRng.nextDouble() - 0.5) * TILE_H * 0.6;
-            double treeCx = cx + offsetX;
-            double treeCy = cy + offsetY;
+        Tile tile = currentGame.getTile(tx, ty);
+        int treeCount = tile != null ? Math.max(1, tile.getTreeCount()) : 1;
 
-            gc.setFill(Color.rgb(80, 50, 20));
-            gc.fillRect(treeCx - 1.5, treeCy + hh - 1, 3, WALL_H * 0.2);
+        double[][] offsets = {
+                {0.00, 0.08},
+                {-0.16, 0.10},
+                {0.16, 0.10},
+                {0.00, -0.02}
+        };
 
-            double treeH = WALL_H * 0.8;
-            gc.setFill(COL_FOREST_LEFT);
-            gc.fillPolygon(
-                    new double[]{treeCx - hw, treeCx, treeCx},
-                    new double[]{treeCy + hh, treeCy - treeH, treeCy + hh}, 3);
-            gc.setFill(COL_FOREST_ROOF);
-            gc.fillPolygon(
-                    new double[]{treeCx, treeCx + hw, treeCx},
-                    new double[]{treeCy - treeH, treeCy + hh, treeCy + hh}, 3);
+        for (int i = 0; i < treeCount && i < 4; i++) {
+            Image img = getForestImage(tx + i, ty + i * 7);
+            if (img == null) continue;
 
-            gc.setStroke(Color.rgb(0, 0, 0, 0.20));
-            gc.setLineWidth(0.3);
-            gc.strokePolygon(
-                    new double[]{treeCx - hw, treeCx + hw, treeCx},
-                    new double[]{treeCy + hh, treeCy + hh, treeCy - treeH}, 3);
+            double drawW = TILE_W * 0.42;
+            double drawH = TILE_H * 0.82;
+
+            double treeCx = cx + TILE_W * offsets[i][0];
+            double treeCy = cy + TILE_H * offsets[i][1];
+
+            double drawX = treeCx - drawW / 2.0;
+            double drawY = treeCy - drawH + TILE_H * 0.72;
+
+            gc.drawImage(img, drawX, drawY, drawW, drawH);
         }
     }
+
+
+
     private void drawDemandBadges(GraphicsContext gc, Game game, int ox, int oy) {
         gc.setTextAlign(TextAlignment.CENTER);
 
@@ -873,6 +893,8 @@ public class MapPanel extends Canvas {
         drawGround(gc, tile, tx, ty, storedOriginX, storedOriginY);
         drawStructure(gc, tile, tx, ty, storedOriginX, storedOriginY);
     }
+
+
 
     public void drawRoutePathOverlay(java.util.List<model.Position> path) {
         this.activeRoutePath = path;
