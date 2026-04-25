@@ -51,6 +51,8 @@ public class ConstructionService {
 
         game.getRoads().add(road);
         t.setType(TileType.ROAD);
+        t.setTreeCount(0);
+
         t.setEntityId(road.getId());
         t.setEntityName(null);
         return true;
@@ -66,6 +68,7 @@ public class ConstructionService {
         game.getRoads().remove(found);
         Tile t = game.getTile(p);
         t.setType(TileType.EMPTY);
+        t.setTreeCount(0);
         t.setEntityId(null);
         t.setEntityName(null);
         return true;

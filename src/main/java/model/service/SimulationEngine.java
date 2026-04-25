@@ -1,11 +1,6 @@
 package model.service;
 
-import model.GameState;
-import model.Position;
-import model.Route;
-import model.Stop;
-import model.TrafficLight;
-import model.Vehicle;
+import model.*;
 import model.enums.Direction;
 import model.enums.LightState;
 import java.util.HashMap;
@@ -25,6 +20,10 @@ public class SimulationEngine {
 
     private final VehicleService  vehicleService  = new VehicleService();
     private final DeliveryService deliveryService = new DeliveryService();
+    private static final double FOREST_GROWTH_INTERVAL = 10.0;
+    private static final double FOREST_SPREAD_CHANCE = 0.25;
+    private double forestGrowthTimer = 0.0;
+
 
     // Speed values in VehicleType are 25–60 (game units).
     // Divide by SPEED_SCALE → tiles per second  (40 → 4 t/s).
@@ -35,6 +34,9 @@ public class SimulationEngine {
 
     // ── Public API ────────────────────────────────────────────────────────────
 
+
+
+
     public void tick(GameState state, double dt) {
         // Advance all traffic light phase timers
         for (TrafficLight tl : state.getMap().getTrafficLights().values()) {
@@ -42,6 +44,8 @@ public class SimulationEngine {
         }
 
         deliveryService.tickDemand(state.getMap(), dt);
+        tickForestGrowth(state, dt);
+
 
         // Maintenance: drain maintenanceCost per game-minute per vehicle (aggregated, not logged individually)
         double maintenancePerSecond = 1.0 / 60.0;
@@ -80,6 +84,55 @@ public class SimulationEngine {
             tickVehicle(vehicle, dt, state);
         }
     }
+
+    private void tickForestGrowth(GameState state, double dt) {
+        forestGrowthTimer += dt;
+        if (forestGrowthTimer < FOREST_GROWTH_INTERVAL) return;
+        forestGrowthTimer = 0.0;
+
+        Game game = state.getMap();
+        List<Position> spreadTargets = new java.util.ArrayList<>();
+
+        for (int y = 0; y < game.getHeight(); y++) {
+            for (int x = 0; x < game.getWidth(); x++) {
+                Tile tile = game.getTile(x, y);
+                if (tile == null || tile.getType() != model.enums.TileType.FOREST) continue;
+
+                if (tile.getTreeCount() <= 0) {
+                    tile.setTreeCount(1);
+                    game.markStaticTileDirty(new Position(x, y));
+                } else if (tile.getTreeCount() < 4) {
+                    tile.addTree();
+                    game.markStaticTileDirty(new Position(x, y));
+                }
+
+                int[][] deltas = {{0,-1},{0,1},{-1,0},{1,0}};
+                for (int[] d : deltas) {
+                    int nx = x + d[0];
+                    int ny = y + d[1];
+                    Tile neighbor = game.getTile(nx, ny);
+                    if (neighbor == null) continue;
+
+                    if (neighbor.getType() == model.enums.TileType.EMPTY && Math.random() < FOREST_SPREAD_CHANCE) {
+                        spreadTargets.add(new Position(nx, ny));
+                    }
+                }
+            }
+        }
+
+        for (Position p : spreadTargets) {
+            Tile tile = game.getTile(p);
+            if (tile != null && tile.getType() == model.enums.TileType.EMPTY) {
+                tile.setType(model.enums.TileType.FOREST);
+                tile.setTreeCount(1);
+                tile.setEntityId(null);
+                tile.setEntityName(null);
+                game.markStaticTileDirty(p);
+            }
+        }
+    }
+
+
 
     /** Call this when a vehicle is assigned a new route so it starts cleanly at tile 0. */
     public void resetVehicle(String vehicleId) {
