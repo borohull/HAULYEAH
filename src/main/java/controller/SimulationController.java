@@ -79,7 +79,7 @@ public class SimulationController {
 
                 if (speed != Speed.PAUSED) {
                     double dt = elapsedSeconds * speed.multiplier;
-                    engine.tick(SimulationController.this.state, dt);
+                    engine.tick(SimulationController.this.state, dt, speed.multiplier);
                     notifyView();
 
                     if (state.getPlayer().getLedger().getCurrentCapital() < 0) {

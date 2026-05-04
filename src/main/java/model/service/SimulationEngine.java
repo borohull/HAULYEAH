@@ -37,7 +37,13 @@ public class SimulationEngine {
 
 
 
-    public void tick(GameState state, double dt) {
+    /**
+     * Advances the simulation by dt seconds.
+     * @param state the game state
+     * @param dt elapsed time in seconds (already scaled by game speed multiplier)
+     * @param currentSpeedMultiplier the current game speed multiplier (1, 2, 4) for bridge limiting
+     */
+    public void tick(GameState state, double dt, int currentSpeedMultiplier) {
         // Advance all traffic light phase timers
         for (TrafficLight tl : state.getMap().getTrafficLights().values()) {
             tl.tick(dt);
@@ -81,8 +87,15 @@ public class SimulationEngine {
                 Stop startStop = DeliveryService.findStopAt(vehicle.getPosition(), state.getMap().getStops());
                 if (startStop != null) deliveryService.handleStopArrival(vehicle, startStop, state);
             }
-            tickVehicle(vehicle, dt, state);
+            tickVehicle(vehicle, dt, state, currentSpeedMultiplier);
         }
+    }
+
+    /**
+     * Overload for backward compatibility (assumes 1x speed if not specified).
+     */
+    public void tick(GameState state, double dt) {
+        tick(state, dt, 1);
     }
 
     private void tickForestGrowth(GameState state, double dt) {
@@ -143,7 +156,7 @@ public class SimulationEngine {
 
     // ── Per-vehicle movement ──────────────────────────────────────────────────
 
-    private void tickVehicle(Vehicle vehicle, double dt, GameState state) {
+    private void tickVehicle(Vehicle vehicle, double dt, GameState state, int currentSpeedMultiplier) {
         if (!vehicle.isActive()) return;
         Route route = vehicle.getRoute();
         if (route == null || !route.hasTilePath()) return;
@@ -154,6 +167,18 @@ public class SimulationEngine {
 
         String vid          = vehicle.getId();
         double tilesPerSec  = Math.max(0.5, vehicle.getSpeed() / SPEED_SCALE);
+
+        // ── Apply bridge speed limit ───────────────────────────────────────────
+        // If the vehicle is on a bridge, cap its speed to the bridge's max speed multiplier
+        Position currentPos = vehicle.getPosition();
+        Bridge bridgeAtPos = state.getMap().getBridgeAt(currentPos);
+        if (bridgeAtPos != null) {
+            int bridgeMaxSpeedMultiplier = bridgeAtPos.getBridgeType().getMaxSpeedMultiplier();
+            // Cap dt to effectively limit to the bridge's max speed multiplier
+            // If bridge max is 1x and game speed is 4x, we use dt / 4
+            dt = dt * bridgeMaxSpeedMultiplier / currentSpeedMultiplier;
+        }
+
         double storedProgress = tileProgress.getOrDefault(vid, 0.0); // progress before this tick
         double progress       = storedProgress + tilesPerSec * dt;
         final  double STOP_LINE = 0.0; // vehicle waits here (clearly inside previous tile)
