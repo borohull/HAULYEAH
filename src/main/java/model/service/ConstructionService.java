@@ -123,6 +123,14 @@ public class ConstructionService {
      * Attempts to build a bridge.
      */
     public boolean buildBridge(Game game, Bridge bridge) {
+        if (bridge == null || bridge.getBridgeType() == null) {
+            return false;
+        }
+
+        if (bridge.getLength() > bridge.getBridgeType().getMaxSpan()) {
+            return false;
+        }
+
         for (Position p : bridge.getTiles()) {
             Tile t = game.getTile(p);
             if (t == null || t.getType() != TileType.WATER) {

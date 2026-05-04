@@ -103,6 +103,38 @@ class ConstructionServiceTest {
     }
 
     @Test
+    @DisplayName("Should build bridge at max span")
+    void testBuildBridgeAtMaxSpan() {
+        for (int x = 50; x <= 52; x++) {
+            game.getTile(x, 50).setType(TileType.WATER);
+        }
+
+        Bridge bridge = new Bridge("bridge-1", "Test Bridge", 50, 50, 3, Bridge.Orientation.HORIZONTAL, Bridge.BridgeType.WOODEN);
+        boolean result = service.buildBridge(game, bridge);
+
+        assertTrue(result, "Should successfully build bridge at its max span");
+        assertEquals(1, game.getBridges().size(), "Bridge should be added to game");
+        assertEquals(TileType.BRIDGE, game.getTile(50, 50).getType(), "First tile should be BRIDGE");
+        assertEquals(TileType.BRIDGE, game.getTile(51, 50).getType(), "Second tile should be BRIDGE");
+        assertEquals(TileType.BRIDGE, game.getTile(52, 50).getType(), "Third tile should be BRIDGE");
+    }
+
+    @Test
+    @DisplayName("Should not build bridge over max span")
+    void testBuildBridgeOverMaxSpan() {
+        for (int x = 50; x <= 53; x++) {
+            game.getTile(x, 50).setType(TileType.WATER);
+        }
+
+        Bridge bridge = new Bridge("bridge-1", "Test Bridge", 50, 50, 4, Bridge.Orientation.HORIZONTAL, Bridge.BridgeType.WOODEN);
+        boolean result = service.buildBridge(game, bridge);
+
+        assertFalse(result, "Should not build bridge over its max span");
+        assertEquals(0, game.getBridges().size(), "Bridge should not be added");
+        assertEquals(TileType.WATER, game.getTile(50, 50).getType(), "Water tile should remain unchanged");
+    }
+
+    @Test
     @DisplayName("Should not build bridge on non-water tile")
     void testBuildBridgeOnLand() {
         Position pos = new Position(50, 50);

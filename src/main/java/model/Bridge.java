@@ -7,18 +7,24 @@ public class Bridge extends MapEntity {
     public enum Orientation { HORIZONTAL, VERTICAL }
 
     public enum BridgeType {
-        WOODEN(100),
-        STEEL(500),
-        SUSPENSION(1000);
+        WOODEN(100, 3),
+        STEEL(500, 10),
+        SUSPENSION(1000, 6);
 
         private final int cost;
+        private final int maxSpan;
 
-        BridgeType(int cost) {
+        BridgeType(int cost, int maxSpan) {
             this.cost = cost;
+            this.maxSpan = maxSpan;
         }
 
         public int getCost() {
             return cost;
+        }
+
+        public int getMaxSpan() {
+            return maxSpan;
         }
     }
 
