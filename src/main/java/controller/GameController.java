@@ -18,6 +18,7 @@ import model.service.VehicleService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * GameController
@@ -63,6 +64,7 @@ public class GameController {
     private Runnable onStateChanged;
     private SimulationController simController;
     private java.util.function.Consumer<TrafficLight> onTrafficLightSelected;
+    private Consumer<String> onBridgeLimitReached;
 
     public GameController(GameState state) {
         this.state = state;
@@ -78,6 +80,10 @@ public class GameController {
 
     public void setOnTrafficLightSelected(java.util.function.Consumer<TrafficLight> callback) {
         this.onTrafficLightSelected = callback;
+    }
+
+    public void setOnBridgeLimitReached(Consumer<String> callback) {
+        this.onBridgeLimitReached = callback;
     }
 
     /** Directly fires the traffic-light-selected callback (used by GameWindow for quick-cycle clicks). */
@@ -229,6 +235,12 @@ public class GameController {
                 return;
         }
 
+        int spanIfBuilt = getConsecutiveBridgeSpan(state.getMap(), p, modelBridgeType);
+        if (spanIfBuilt > modelBridgeType.getMaxSpan()) {
+            notifyBridgeLimitReached(bridgeType, modelBridgeType.getMaxSpan());
+            return;
+        }
+
         if (!state.getPlayer().getLedger().canAfford(cost)) {
             System.out.println("[GameController] Cannot afford " + bridgeType + " ($" + cost + ")");
             return;
@@ -241,6 +253,44 @@ public class GameController {
             state.getPlayer().getLedger().spend(cost, TransactionType.BUILD, bridgeType);
             markUnsaved();
             notifyView();
+        }
+    }
+
+    private int getConsecutiveBridgeSpan(model.Game game, Position p, Bridge.BridgeType bridgeType) {
+        return 1
+                + countMatchingBridgeTiles(game, p, bridgeType, -1)
+                + countMatchingBridgeTiles(game, p, bridgeType, 1);
+    }
+
+    private int countMatchingBridgeTiles(model.Game game, Position start, Bridge.BridgeType bridgeType, int stepX) {
+        int count = 0;
+        int x = start.getX() + stepX;
+        int y = start.getY();
+
+        while (true) {
+            Tile t = game.getTile(x, y);
+            if (t == null || t.getType() != TileType.BRIDGE) {
+                break;
+            }
+
+            Bridge adjacent = game.getBridgeAt(new Position(x, y));
+            if (adjacent == null || adjacent.getBridgeType() != bridgeType) {
+                break;
+            }
+
+            count++;
+            x += stepX;
+        }
+
+        return count;
+    }
+
+    private void notifyBridgeLimitReached(String bridgeType, int maxSpan) {
+        String message = bridgeType + " can span at most " + maxSpan + " consecutive bridge tiles.";
+        if (onBridgeLimitReached != null) {
+            onBridgeLimitReached.accept(message);
+        } else {
+            System.out.println("[GameController] " + message);
         }
     }
 

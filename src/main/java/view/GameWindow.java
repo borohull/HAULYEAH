@@ -176,6 +176,16 @@ public class GameWindow {
                     mapPanel.drawGame(game);
                 }));
 
+        gameController.setOnBridgeLimitReached(message -> {
+            Alert alert = PopupTheme.createAlert(
+                    stage,
+                    Alert.AlertType.WARNING,
+                    "Bridge Limit Reached",
+                    null,
+                    message);
+            PopupTheme.showAndWait(alert, stage);
+        });
+
         // Tell SimulationController to redraw ONLY the dynamic layer on every simulation tick (vehicles move).
         // Minimap only reflects static tiles — scroll listeners inside MinimapPanel
         // already refresh the viewport rectangle, so no per-tick redraw needed.
