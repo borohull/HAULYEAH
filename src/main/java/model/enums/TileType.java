@@ -1,19 +1,32 @@
 package model.enums;
 
 /**
- * TileType — every possible state a map tile can have.
- * Moved from model.TileType → model.enums.TileType
+ * Every possible visual/functional state a {@link model.Tile} can have.
+ *
+ * <p>The type drives both rendering (which sprite or polygon to draw) and construction
+ * validation (what the player is allowed to build or place on the tile).
  */
 public enum TileType {
+    /** Undeveloped grass — roads and stops can be built here. */
     EMPTY,
+    /** A city building tile — not buildable by the player. */
     CITY,
+    /** An undeveloped tile inside a city bounding rectangle. */
     CITY_EMPTY,
+    /** A production facility tile — not buildable by the player. */
     FACILITY,
+    /** A player-built road. */
     ROAD,
+    /** A player-built transport stop adjacent to a road or city. */
     STOP,
+    /** A water tile — only bridges may be built here. */
     WATER,
+    /** A tile with trees; road building requires a clearing surcharge. */
     FOREST,
+    /** A bridge tile spanning water. */
     BRIDGE,
-    CITY_ROAD,   // Internal roads within cities — not modifiable by player
-    CITY_STOP    // Stops inside cities at internal road intersections
+    /** An internal city road tile generated from a {@link model.CityTemplate} — not modifiable. */
+    CITY_ROAD,
+    /** A stop placed on a city internal road. */
+    CITY_STOP
 }

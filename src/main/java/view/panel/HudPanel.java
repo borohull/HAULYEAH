@@ -66,6 +66,7 @@ public class HudPanel extends HBox {
 
     private boolean paused = true;
 
+    /** Creates a HudPanel with the world name set to "Unnamed World". */
     public HudPanel() {
         this("Unnamed World");
         lblMoney.setStyle(
@@ -81,6 +82,11 @@ public class HudPanel extends HBox {
         );
     }
 
+    /**
+     * Creates a HudPanel displaying the given world name.
+     *
+     * @param worldName the world name shown in the top-right info box
+     */
     public HudPanel(String worldName) {
         super(8);
 
@@ -186,6 +192,12 @@ public class HudPanel extends HBox {
 
     // ── Public API ────────────────────────────────────────────────────────────
 
+    /**
+     * Updates the world name displayed in the top-right box.
+     * Falls back to "Unnamed World" if {@code worldName} is null or blank.
+     *
+     * @param worldName new world name to display
+     */
     public void setWorldName(String worldName) {
         String displayName = (worldName == null || worldName.trim().isEmpty())
                 ? "Unnamed World"
@@ -193,19 +205,35 @@ public class HudPanel extends HBox {
         lblWorldName.setText(displayName);
     }
 
+    /**
+     * Updates the money display to show {@code capital} formatted with thousands separators.
+     *
+     * @param capital current player balance in game currency
+     */
     public void updateMoney(int capital) {
         lblMoney.setText(String.format("$%,d", capital));
     }
 
+    /**
+     * Toggles the pause state and updates the pause button label.
+     *
+     * @param paused {@code true} to show "Continue", {@code false} to show "Pause"
+     */
     public void setPaused(boolean paused) {
         this.paused = paused;
         btnPause.setText(paused ? "Continue" : "Pause");
     }
 
+    /** Returns whether the simulation is currently paused. */
     public boolean isPaused() {
         return paused;
     }
 
+    /**
+     * Highlights the speed button matching {@code speed} and resets the others.
+     *
+     * @param speed one of {@code "1x"}, {@code "2x"}, or {@code "4x"}
+     */
     public void setActiveSpeedButton(String speed) {
         btnSpeed1x.setStyle(SPEED_BUTTON_STYLE);
         btnSpeed2x.setStyle(SPEED_BUTTON_STYLE);
@@ -220,40 +248,57 @@ public class HudPanel extends HBox {
 
 
 
+    /**
+     * Shows tile info with a "Hover" prefix label (mouse is hovering over the tile).
+     *
+     * @param info description of the hovered tile
+     */
     public void setHoverTile(String info) {
         lblTileTitle.setText("Hover");
         lblSelectedTile.setText(info);
     }
 
+    /**
+     * Shows tile info with a "Selected" prefix label (player clicked the tile).
+     *
+     * @param info description of the selected tile
+     */
     public void setSelectedTile(String info) {
         lblTileTitle.setText("Selected");
         lblSelectedTile.setText(info);
     }
 
+    /** Returns the pause/continue button for external wiring by {@link view.GameWindow}. */
     public Button getPauseButton() {
         return btnPause;
     }
 
+    /** Returns the 1× speed button for external wiring. */
     public Button getSpeed1xButton() {
         return btnSpeed1x;
     }
 
+    /** Returns the 2× speed button for external wiring. */
     public Button getSpeed2xButton() {
         return btnSpeed2x;
     }
 
+    /** Returns the 4× speed button for external wiring. */
     public Button getSpeed4xButton() {
         return btnSpeed4x;
     }
 
+    /** Returns the money label (used by {@link view.GameWindow} for live-binding). */
     public Label getMoneyLabel() {
         return lblMoney;
     }
 
+    /** Returns the world-name label (used by {@link view.GameWindow} for live-binding). */
     public Label getWorldNameLabel() {
         return lblWorldName;
     }
 
+    /** Returns the tile-info label (used by {@link view.GameWindow} for live-binding). */
     public Label getSelectedTileLabel() {
         return lblSelectedTile;
     }

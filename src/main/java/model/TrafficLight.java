@@ -8,6 +8,18 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * A traffic light installed at a road junction that cycles through green phases per direction.
+ *
+ * <p>At any given moment exactly one direction has the green light; vehicles approaching from
+ * that direction are allowed to proceed. All other registered directions are red. Directions
+ * not registered with this light (e.g. straight-through lanes that don't need to be managed)
+ * are always treated as green so they don't block unmanaged traffic.
+ *
+ * <p>The phase timer counts down for each direction's configured {@code greenDuration}. When
+ * it reaches zero the light advances to the next direction. Players can also manually cycle
+ * the phase by clicking the light in SELECT mode ({@link #cycleToNextPhase()}).
+ */
 public class TrafficLight {
 
     private static final double DEFAULT_GREEN_SECONDS = 10.0;
@@ -24,6 +36,15 @@ public class TrafficLight {
 
     private double phaseTimer = DEFAULT_GREEN_SECONDS;
 
+    /**
+     * Creates a traffic light at the given position managing the specified directions.
+     * All directions are initialised with a green duration of
+     * {@value #DEFAULT_GREEN_SECONDS} seconds.
+     *
+     * @param id               unique identifier
+     * @param position         map tile this light is installed on
+     * @param activeDirections directions managed by this light
+     */
     public TrafficLight(String id, Position position, List<Direction> activeDirections) {
         this.id       = id;
         this.position = position;
@@ -37,6 +58,12 @@ public class TrafficLight {
     }
 
 
+    /**
+     * Advances the phase timer by {@code dt} seconds. When the current green phase
+     * expires the light automatically rotates to the next direction.
+     *
+     * @param dt elapsed time in game-seconds since the last tick
+     */
     public void tick(double dt) {
         if (activeDirections.isEmpty()) return;
         phaseTimer -= dt;
@@ -87,6 +114,12 @@ public class TrafficLight {
         return currentPhaseIndex;
     }
 
+    /**
+     * Restores traffic-light state after loading a saved game.
+     *
+     * @param phaseIndex saved phase index (clamped to valid range)
+     * @param phaseTimer remaining seconds in the current phase (clamped to [0, greenDuration])
+     */
     public void restoreState(int phaseIndex, double phaseTimer) {
         if (activeDirections.isEmpty()) {
             currentPhaseIndex = 0;

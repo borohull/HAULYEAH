@@ -20,6 +20,20 @@ import model.enums.TransactionType;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Modal dialog for reviewing financial history, shown when the player clicks Finance.
+ *
+ * <p>Four tabs are available:
+ * <ul>
+ *   <li><b>All</b> — every non-maintenance transaction, newest first.</li>
+ *   <li><b>Income</b> — only positive transactions.</li>
+ *   <li><b>Expenditure</b> — only negative transactions.</li>
+ *   <li><b>Maintenance</b> — running totals aggregated by vehicle key.</li>
+ * </ul>
+ *
+ * <p>A {@link javafx.animation.Timeline} refreshes the balance label and transaction
+ * lists every second while the dialog is open.
+ */
 public class FinancePanel {
 
     // ── Styles (mirrors GaragePanel exactly) ─────────────────────────────────
@@ -70,6 +84,12 @@ public class FinancePanel {
 
     // ── Public API ────────────────────────────────────────────────────────────
 
+    /**
+     * Opens the Finance dialog as an application-modal window.
+     *
+     * @param owner  the owning stage (used for modality and positioning)
+     * @param ledger the ledger whose data is displayed and auto-refreshed
+     */
     public static void show(Stage owner, FinanceLedger ledger) {
         Stage dialog = new Stage();
         dialog.initOwner(owner);

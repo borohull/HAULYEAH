@@ -5,6 +5,24 @@ import model.enums.Direction;
 import model.enums.VehicleType;
 import java.util.List;
 
+/**
+ * A vehicle travelling along a {@link Route} on the game map.
+ *
+ * <p>Vehicles are purchased by the player, assigned a route, and then managed tick-by-tick
+ * by the {@link model.service.SimulationEngine}. Each vehicle stores:
+ * <ul>
+ *   <li>its position in the route's tile path ({@link #routePathIndex})</li>
+ *   <li>a sub-tile interpolation progress used for smooth rendering ({@link #smoothX},
+ *       {@link #smoothY})</li>
+ *   <li>cargo currently being carried ({@link #cargoType}, {@link #cargoAmount})</li>
+ *   <li>flags for loop mode and active/parked state</li>
+ * </ul>
+ *
+ * <p><strong>Loop vs. one-shot:</strong> when {@link #looping} is {@code true}, the vehicle
+ * bounces back and forth along the route indefinitely. When {@code false} and the route is
+ * non-circular, the vehicle parks ({@link #active} = {@code false}) at the end of a single
+ * traversal.
+ */
 public class Vehicle {
 
     private final String     id;
@@ -35,6 +53,13 @@ public class Vehicle {
     private double smoothX;
     private double smoothY;
 
+    /**
+     * Creates a new, unassigned vehicle parked at the given position.
+     *
+     * @param id       unique vehicle identifier
+     * @param type     vehicle type that determines speed, capacity, and allowed cargo
+     * @param position initial map position
+     */
     public Vehicle(String id, VehicleType type, Position position) {
         this.id       = id;
         this.type     = type;
@@ -44,6 +69,12 @@ public class Vehicle {
     }
 
 
+    /**
+     * Restores the vehicle's position in its route after a save/load cycle.
+     *
+     * @param routePathIndex the tile-path index to resume from
+     * @param movingForward  {@code true} if the vehicle was moving toward higher indices
+     */
     public void restoreRouteState(int routePathIndex, boolean movingForward) {
         this.routePathIndex = Math.max(0, routePathIndex);
         this.movingForward = movingForward;
@@ -69,6 +100,12 @@ public class Vehicle {
     }
 
     // ── Route assignment ──────────────────────────────────────────────────────
+    /**
+     * Assigns a route to this vehicle and positions it at the route's first stop.
+     * Reactivates the vehicle if it was previously parked.
+     *
+     * @param route the route to follow, or {@code null} to clear the assignment
+     */
     public void assignRoute(Route route) {
         this.route         = route;
         this.movingForward = true;
@@ -137,6 +174,12 @@ public class Vehicle {
     public int       getCargoAmount() { return cargoAmount; }
     public boolean   isCarrying()     { return cargoType != null && cargoAmount > 0; }
 
+    /**
+     * Loads cargo onto this vehicle, capped to the vehicle's capacity.
+     *
+     * @param type   type of cargo being loaded
+     * @param amount amount to load (will be clamped to remaining capacity)
+     */
     public void loadCargo(CargoType type, int amount) {
         this.cargoType   = type;
         this.cargoAmount = Math.min(amount, getCapacity());

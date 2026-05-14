@@ -13,6 +13,15 @@ import javafx.stage.Window;
 
 import java.util.Optional;
 
+/**
+ * Centralized theme constants and factory helpers for all in-game popup dialogs.
+ *
+ * <p>All style strings are inline JavaFX CSS, applied via {@code setStyle()}. The
+ * factory methods create pre-styled {@link Alert} instances that match the game's
+ * warm gradient colour scheme. {@link #showAndWait(Alert, Window)} restores window
+ * focus and maximized state after the dialog closes — needed on some platforms
+ * where the owner window loses focus when a modal dialog is dismissed.
+ */
 public final class PopupTheme {
 
     public static final String ROOT_STYLE =
@@ -86,10 +95,31 @@ public final class PopupTheme {
 
     private PopupTheme() {}
 
+    /**
+     * Creates a themed {@link Alert} without an owner window.
+     *
+     * @param type    alert type (INFORMATION, CONFIRMATION, etc.)
+     * @param title   window title bar text
+     * @param header  bold header text inside the dialog (may be {@code null})
+     * @param content body text
+     * @param buttons button types to show; if empty the alert's defaults are used
+     * @return a styled, ready-to-show alert
+     */
     public static Alert createAlert(Alert.AlertType type, String title, String header, String content, ButtonType... buttons) {
         return createAlert(null, type, title, header, content, buttons);
     }
 
+    /**
+     * Creates a themed {@link Alert} with an optional owner window for modality.
+     *
+     * @param owner   owning window for {@link Modality#WINDOW_MODAL}, or {@code null}
+     * @param type    alert type
+     * @param title   window title bar text
+     * @param header  bold header text inside the dialog (may be {@code null})
+     * @param content body text
+     * @param buttons button types to show; if empty the alert's defaults are used
+     * @return a styled, ready-to-show alert
+     */
     public static Alert createAlert(Window owner,
                                     Alert.AlertType type,
                                     String title,
@@ -111,6 +141,13 @@ public final class PopupTheme {
         return alert;
     }
 
+    /**
+     * Shows the alert modally and restores the owner window's focus and maximized state afterward.
+     *
+     * @param alert the alert to display
+     * @param owner the game window that should regain focus when the dialog closes
+     * @return the button the user clicked, wrapped in an {@link Optional}
+     */
     public static Optional<ButtonType> showAndWait(Alert alert, Window owner) {
         boolean wasMaximized = owner instanceof Stage stage && stage.isMaximized();
         Optional<ButtonType> result = alert.showAndWait();
@@ -124,6 +161,13 @@ public final class PopupTheme {
         return result;
     }
 
+    /**
+     * Applies the game's colour scheme to an already-constructed {@link Alert}.
+     * Called automatically by the {@code createAlert} factories; exposed for
+     * alerts constructed directly.
+     *
+     * @param alert the alert to style
+     */
     public static void styleAlert(Alert alert) {
         DialogPane pane = alert.getDialogPane();
         pane.setGraphic(null);

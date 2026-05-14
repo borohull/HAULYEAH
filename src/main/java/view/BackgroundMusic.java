@@ -4,7 +4,10 @@ import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 
 /**
- * Simple background music controller for app-wide looping music.
+ * Utility class for app-wide looping background music.
+ *
+ * <p>Only one track can play at a time. A second call to {@link #playLoop} while music
+ * is already playing is a no-op. Call {@link #stop()} before switching tracks.
  */
 public final class BackgroundMusic {
 
@@ -13,6 +16,13 @@ public final class BackgroundMusic {
     private BackgroundMusic() {
     }
 
+    /**
+     * Starts looping the audio resource at the given classpath path.
+     * Does nothing if music is already playing.
+     *
+     * @param resourcePath classpath-relative path to the audio file (e.g. {@code "/audio/bgm.mp3"})
+     * @param volume       playback volume in the range [0.0, 1.0]; clamped automatically
+     */
     public static void playLoop(String resourcePath, double volume) {
         if (player != null) {
             return;
@@ -35,6 +45,7 @@ public final class BackgroundMusic {
         }
     }
 
+    /** Stops the current track and releases the {@link MediaPlayer} resource. */
     public static void stop() {
         if (player == null) {
             return;

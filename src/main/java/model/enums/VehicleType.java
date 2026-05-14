@@ -1,6 +1,15 @@
 package model.enums;
 
-/** VehicleType — types of vehicles available for purchase. */
+/**
+ * All purchasable vehicle types with their statically-defined stats.
+ *
+ * <p>Each vehicle type is bound to exactly one {@link CargoType} and has fixed values for
+ * speed (game units/sec before SPEED_SCALE division), cargo capacity, per-game-minute
+ * maintenance cost, and one-off purchase price.
+ *
+ * <p>The two passenger types ({@code CITY_BUS}, {@code EXPRESS_BUS}) can deliver to any
+ * city; all other types deliver the matching raw material cargo type.
+ */
 public enum VehicleType {
     // Passengers
     CITY_BUS      (CargoType.PASSENGERS, 40, 30,  80, 2500),
@@ -32,11 +41,18 @@ public enum VehicleType {
         this.purchasePrice   = purchasePrice;
     }
 
+    /** Returns the cargo type this vehicle is allowed to carry. */
     public CargoType getAllowedCargo()    { return allowedCargo; }
+    /** Returns the display-name category string (e.g. "Wood", "Iron"). */
     public String    getCategory()       { return allowedCargo.displayName(); }
+    /** Returns the movement speed in game units per second (before SPEED_SCALE division). */
     public int       getSpeed()          { return speed; }
+    /** Returns the maximum cargo load this vehicle can carry per trip. */
     public int       getCapacity()       { return capacity; }
+    /** Returns the per-game-minute maintenance drain from the player's capital. */
     public int       getMaintenanceCost(){ return maintenanceCost; }
+    /** Returns the one-time purchase price deducted from the player's capital. */
     public int       getPurchasePrice()  { return purchasePrice; }
+    /** Returns {@code true} if this vehicle type transports passengers. */
     public boolean   isPassenger()       { return allowedCargo == CargoType.PASSENGERS; }
 }

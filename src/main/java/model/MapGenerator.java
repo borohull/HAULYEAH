@@ -9,6 +9,22 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+/**
+ * Procedurally generates the game world ({@link Game}) for a new session.
+ *
+ * <p>The generator is deterministic when constructed with a fixed seed and produces the same
+ * city layout, facility positions, water bodies, and forests on every call. Random mode
+ * (no-arg constructor) uses a fresh random seed each time.
+ *
+ * <p>Key generation steps performed by {@link #generate}:
+ * <ol>
+ *   <li>Stamp {@link City} objects from hard-coded position table and {@link CityTemplate}s.</li>
+ *   <li>Place {@link Facility} objects at fixed positions with cargo categories.</li>
+ *   <li>Generate the "Silver River" water body and two lakes using stroke and ellipse helpers.</li>
+ *   <li>Place pre-defined {@link Forest} areas.</li>
+ *   <li>Assign demand sequences to each city.</li>
+ * </ol>
+ */
 public class MapGenerator {
     private static final int FAC_W = 4;
     private static final int FAC_H = 3;
@@ -31,12 +47,18 @@ public class MapGenerator {
     private final Random rng;
     private List<CityTemplate> cityTemplates;
 
+    /** Creates a generator with a random seed. */
     public MapGenerator() {
         this.rng = new Random();
         this.cityTemplates = new ArrayList<>();
         initializeCityTemplates();
     }
 
+    /**
+     * Creates a generator with a fixed seed for reproducible world generation.
+     *
+     * @param seed RNG seed
+     */
     public MapGenerator(long seed) {
         this.rng = new Random(seed);
         this.cityTemplates = new ArrayList<>();
@@ -119,6 +141,15 @@ public class MapGenerator {
         ));
     }
 
+    /**
+     * Generates a complete game world.
+     *
+     * @param width         number of columns in the grid
+     * @param height        number of rows in the grid
+     * @param numCities     how many cities to place (up to 7 are supported by hard-coded positions)
+     * @param numFacilities how many facilities to place (up to 15 are supported)
+     * @return a fully initialised {@link Game} ready to be wrapped in a {@link model.GameState}
+     */
     public Game generate(int width, int height, int numCities, int numFacilities) {
         Game game = new Game(width, height);
 

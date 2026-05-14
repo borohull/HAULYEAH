@@ -28,13 +28,29 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * SaveManager — handles persisting and loading the state of the game.
+ * Persists and restores the full game state to/from a plain-text file.
+ *
+ * <p>The save file lives at {@code ~/.haulyea/savegame.txt}. The {@code slot} parameter
+ * on all methods is accepted for API compatibility but currently ignored — there is
+ * exactly one save slot. {@link controller.MainMenuController} calls {@link #delete(int)}
+ * before generating a new world to ensure a clean state.
+ *
+ * <p>Load strategy: a fresh world is generated via {@link MapGenerator} with the saved
+ * dimensions and city/facility counts, then roads, stops, routes, vehicles, and traffic
+ * lights are replaced with the saved data. Tile types are restored row-by-row from the
+ * {@code [tileTypes]} section.
  */
 public class SaveManager {
 
     private static final Path SAVE_DIR = Path.of(System.getProperty("user.home"), ".haulyea");
     private static final Path SAVE_FILE = SAVE_DIR.resolve("savegame.txt");
 
+    /**
+     * Writes the current game state to {@code ~/.haulyea/savegame.txt}.
+     *
+     * @param state the game state to persist
+     * @param slot  ignored (single-slot implementation)
+     */
     public void save(GameState state, int slot) {
         Game game = state.getMap();
         Player player = state.getPlayer();
@@ -149,6 +165,12 @@ public class SaveManager {
         }
     }
 
+    /**
+     * Reads {@code ~/.haulyea/savegame.txt} and reconstructs a {@link GameState}.
+     *
+     * @param slot ignored (single-slot implementation)
+     * @return the restored game state, or {@code null} if the file doesn't exist or is invalid
+     */
     public GameState load(int slot) {
         try {
             Path file = SAVE_FILE;
@@ -419,10 +441,20 @@ public class SaveManager {
         }
     }
 
+    /**
+     * Returns {@code true} if a save file exists at the default path.
+     *
+     * @param slot ignored (single-slot implementation)
+     */
     public boolean saveExists() {
         return Files.exists(SAVE_FILE);
     }
 
+    /**
+     * Deletes the save file if it exists.
+     *
+     * @param slot ignored (single-slot implementation)
+     */
     public void delete(int slot) {
         try {
             Path file = SAVE_FILE;

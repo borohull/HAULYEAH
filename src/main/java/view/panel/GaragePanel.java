@@ -19,6 +19,17 @@ import model.enums.VehicleType;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Modal dialog for vehicle management, shown when the player clicks the Garage button.
+ *
+ * <p>Two tabs are presented:
+ * <ul>
+ *   <li><b>Purchase</b> — lets the player choose a {@link model.enums.VehicleType} and buy it
+ *       via {@link controller.GameController#onBuyVehicleDirect}.</li>
+ *   <li><b>Items</b> — lets the player assign an owned vehicle to a drawn route
+ *       (with optional looping) or re-deploy a parked vehicle.</li>
+ * </ul>
+ */
 public class GaragePanel {
 
     private static final String ROOT_STYLE =
@@ -95,11 +106,22 @@ public class GaragePanel {
     private final GameController gameController;
     private final Game game;
 
+    /**
+     * Creates a GaragePanel bound to the given controller and world state.
+     *
+     * @param gameController controller used to buy vehicles and assign routes
+     * @param game           current world, used to populate vehicle and route lists
+     */
     public GaragePanel(GameController gameController, Game game) {
         this.gameController = gameController;
         this.game = game;
     }
 
+    /**
+     * Opens the Garage dialog as an application-modal window.
+     *
+     * @param owner the owning stage (used for modality and positioning)
+     */
     public void show(Stage owner) {
         Stage dialog = new Stage();
         dialog.initOwner(owner);
