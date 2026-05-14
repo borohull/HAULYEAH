@@ -83,7 +83,7 @@ public class SimulationController {
                     engine.tick(SimulationController.this.state, dt, speed.multiplier);
                     notifyView();
 
-                    if (state.getPlayer().getLedger().getCurrentCapital() < 0) {
+                    if (state.getPlayer().getLedger().isBankrupt()) {
                         pause();
                         if (onBankrupt != null)
                             onBankrupt.run();

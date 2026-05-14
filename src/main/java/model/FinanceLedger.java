@@ -15,7 +15,7 @@ import java.util.Map;
  * rather than adding a transaction per tick, to avoid flooding the Finance panel.
  */
 public class FinanceLedger {
-    /** Current cash balance. May go negative (bankruptcy is tracked separately). */
+    /** Current cash balance. */
     private double currentCapital;
     /** Ordered log of all non-maintenance transactions. */
     private final List<Transaction> transactions;
@@ -35,6 +35,11 @@ public class FinanceLedger {
     /** Returns the current cash balance. */
     public double getCurrentCapital() {
         return currentCapital;
+    }
+
+    /** Returns {@code true} when the player has no money left. */
+    public boolean isBankrupt() {
+        return currentCapital <= 0.0;
     }
 
     /** Returns an unmodifiable view of all logged transactions (newest is last). */
