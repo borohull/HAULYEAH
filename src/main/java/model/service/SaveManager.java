@@ -15,6 +15,9 @@ import model.enums.Direction;
 import model.enums.TileType;
 import model.enums.VehicleType;
 import model.MapGenerator;
+import model.Transaction;
+import model.enums.TransactionType;
+import java.util.LinkedHashMap;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -73,6 +76,20 @@ public class SaveManager {
         // Finance data
         content.append("playerName=").append(player.getName()).append('\n');
         content.append("capital=").append(player.getLedger().getCurrentCapital()).append('\n');
+
+        content.append("[transactions]\n");
+        for (Transaction tx : player.getLedger().getTransactions()) {
+            content.append(tx.getAmount()).append('|')
+                    .append(tx.getType().name()).append('|')
+                    .append(tx.getTimestamp().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append('|')
+                    .append(tx.getNote())
+                    .append('\n');
+        }
+
+        content.append("[maintenanceTotals]\n");
+        for (Map.Entry<String, Double> entry : player.getLedger().getMaintenanceTotals().entrySet()) {
+            content.append(entry.getKey()).append('=').append(entry.getValue()).append('\n');
+        }
 
         // World data
         content.append("worldName=").append(game.getWorldName()).append('\n');
@@ -211,6 +228,8 @@ public class SaveManager {
             List<Stop> stops = new ArrayList<>();
             TileType[][] tileTypes = null;
             Map<String, Integer> cityDemandIndexes = new HashMap<>();
+            List<Transaction> transactions = new ArrayList<>();
+            Map<String, Double> maintenanceTotals = new LinkedHashMap<>();
 
             record ParsedRoute(String id, String name, boolean reversed, List<String> stopIds,
                     List<Position> tilePath) {
@@ -272,6 +291,10 @@ public class SaveManager {
                     tileTypes = new TileType[height][width];
                 } else if (line.equals("[cityDemandIndexes]")) {
                     section = 7;
+                } else if (line.equals("[transactions]")) {
+                    section = 8;
+                } else if (line.equals("[maintenanceTotals]")) {
+                    section = 9;
                 } else {
                     if (section == 1 && roads.size() < roadCount) {
                         String[] parts = line.split(",");
@@ -364,6 +387,21 @@ public class SaveManager {
                         if (parts.length == 2) {
                             cityDemandIndexes.put(parts[0], Integer.parseInt(parts[1]));
                         }
+                    } else if (section == 8) {
+                        String[] parts = line.split("\\|", 4);
+                        if (parts.length == 4) {
+                            double amount = Double.parseDouble(parts[0]);
+                            TransactionType type = TransactionType.valueOf(parts[1]);
+                            LocalDateTime ts = LocalDateTime.parse(parts[2],
+                                    DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                            String note = parts[3];
+                            transactions.add(new Transaction(amount, type, ts, note));
+                        }
+                    } else if (section == 9) {
+                        String[] parts = line.split("=", 2);
+                        if (parts.length == 2) {
+                            maintenanceTotals.put(parts[0], Double.parseDouble(parts[1]));
+                        }
                     }
                 }
             }
@@ -455,6 +493,7 @@ public class SaveManager {
             }
 
             Player player = new Player(playerName, capital);
+            player.getLedger().restore(capital, transactions, maintenanceTotals);
             GameState state = new GameState(game, player);
             state.setDemandTimer(demandTimer);
 
