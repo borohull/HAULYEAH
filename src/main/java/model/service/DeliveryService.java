@@ -16,21 +16,26 @@ import java.util.List;
  * Handles cargo loading/unloading when vehicles arrive at stops,
  * and advances city demand on a periodic timer.
  *
- * <p>Loading/unloading priority order at each stop arrival:
+ * <p>
+ * Loading/unloading priority order at each stop arrival:
  * <ol>
- *   <li>Unload passengers at any adjacent city ({@code INCOME_PER_UNIT} per passenger).</li>
- *   <li>Unload cargo if the adjacent city currently demands it; advance the city's demand sequence.</li>
- *   <li>Unload cargo at an adjacent facility that consumes it (no income).</li>
- *   <li>Load passengers onto buses from any adjacent city.</li>
- *   <li>Load cargo from an adjacent facility that produces the vehicle's cargo type.</li>
+ * <li>Unload passengers at any adjacent city ({@code INCOME_PER_UNIT} per
+ * passenger).</li>
+ * <li>Unload cargo if the adjacent city currently demands it; advance the
+ * city's demand sequence.</li>
+ * <li>Unload cargo at an adjacent facility that consumes it (no income).</li>
+ * <li>Load passengers onto buses from any adjacent city.</li>
+ * <li>Load cargo from an adjacent facility that produces the vehicle's cargo
+ * type.</li>
  * </ol>
  *
- * <p>City demand advances automatically every {@code DEMAND_ADVANCE_INTERVAL} game-seconds
+ * <p>
+ * City demand advances automatically every {@code DEMAND_ADVANCE_INTERVAL}
+ * game-seconds
  * (via {@link #tickDemand}) and also immediately on a successful delivery.
  */
 public class DeliveryService {
 
-    private static final double INCOME_PER_UNIT       = 150.0;
     private static final double DEMAND_ADVANCE_INTERVAL = 120.0; // game-seconds
 
     private double demandTimer = 0;
@@ -49,7 +54,8 @@ public class DeliveryService {
         if (demandTimer >= DEMAND_ADVANCE_INTERVAL) {
             demandTimer = 0;
             for (City city : game.getCities()) {
-                if (!city.getDemandSequence().isEmpty()) city.advanceDemand();
+                if (!city.getDemandSequence().isEmpty())
+                    city.advanceDemand();
             }
         }
     }
@@ -57,12 +63,14 @@ public class DeliveryService {
     // ── Called when a vehicle reaches a Stop tile ─────────────────────────────
 
     /**
-     * Processes cargo load/unload logic when {@code vehicle} arrives at {@code stop}.
+     * Processes cargo load/unload logic when {@code vehicle} arrives at
+     * {@code stop}.
      * See class-level doc for the full priority order.
      *
      * @param vehicle the vehicle that just reached the stop
      * @param stop    the stop tile that was reached
-     * @param state   full game state providing access to city/facility lists and the ledger
+     * @param state   full game state providing access to city/facility lists and
+     *                the ledger
      */
     public void handleStopArrival(Vehicle vehicle, Stop stop, GameState state) {
         Game game = state.getMap();
@@ -74,10 +82,9 @@ public class DeliveryService {
             if (city != null) {
                 int delivered = vehicle.unloadCargo();
                 state.getPlayer().getLedger().earn(
-                    delivered * INCOME_PER_UNIT,
-                    TransactionType.DELIVERY,
-                    "Transported passengers to " + city.getName()
-                );
+                        delivered * CargoType.PASSENGERS.getIncomePerUnit(),
+                        TransactionType.DELIVERY,
+                        "Transported passengers to " + city.getName());
                 return;
             }
         }
@@ -88,12 +95,11 @@ public class DeliveryService {
             if (city != null && city.getCurrentDemand() == vehicle.getCargoType()) {
                 int delivered = vehicle.unloadCargo();
                 state.getPlayer().getLedger().earn(
-                    delivered * INCOME_PER_UNIT,
-                    TransactionType.DELIVERY,
-                    "Delivered " + city.getCurrentDemand().displayName() + " to " + city.getName()
-                );
+                        delivered * city.getCurrentDemand().getIncomePerUnit(),
+                        TransactionType.DELIVERY,
+                        "Delivered " + city.getCurrentDemand().displayName() + " to " + city.getName());
                 city.advanceDemand();
-                if (!vehicle.isLooping()) {
+                if (!city.getDemandSequence().isEmpty() && !vehicle.isLooping()) {
                     vehicle.setActive(false);
                 }
                 return;
@@ -115,7 +121,8 @@ public class DeliveryService {
             return;
         }
 
-        // LOAD: vehicle is empty, adjacent facility produces cargo this vehicle can carry
+        // LOAD: vehicle is empty, adjacent facility produces cargo this vehicle can
+        // carry
         if (!vehicle.isCarrying()) {
             Facility facility = findAdjacentFacility(pos, game);
             if (facility != null && facility.getPrimaryProduction() != null) {
@@ -133,28 +140,31 @@ public class DeliveryService {
         if (isInsideCity) {
             // Stop is inside a city — find which one contains this position
             for (City city : game.getCities()) {
-                if (city.containsPosition(pos.getX(), pos.getY())) return city;
+                if (city.containsPosition(pos.getX(), pos.getY()))
+                    return city;
             }
         }
         // Check the 4 orthogonal neighbors
-        int[][] deltas = {{1,0},{-1,0},{0,1},{0,-1}};
+        int[][] deltas = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
         for (int[] d : deltas) {
             int nx = pos.getX() + d[0];
             int ny = pos.getY() + d[1];
             for (City city : game.getCities()) {
-                if (city.containsPosition(nx, ny)) return city;
+                if (city.containsPosition(nx, ny))
+                    return city;
             }
         }
         return null;
     }
 
     private Facility findAdjacentFacility(Position pos, Game game) {
-        int[][] deltas = {{1,0},{-1,0},{0,1},{0,-1},{0,0}};
+        int[][] deltas = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 }, { 0, 0 } };
         for (int[] d : deltas) {
             int nx = pos.getX() + d[0];
             int ny = pos.getY() + d[1];
             for (Facility fac : game.getFacilities()) {
-                if (fac.containsPosition(nx, ny)) return fac;
+                if (fac.containsPosition(nx, ny))
+                    return fac;
             }
         }
         return null;
@@ -171,7 +181,8 @@ public class DeliveryService {
      */
     public static Stop findStopAt(Position pos, List<Stop> stops) {
         for (Stop s : stops) {
-            if (s.getPosition().equals(pos)) return s;
+            if (s.getPosition().equals(pos))
+                return s;
         }
         return null;
     }

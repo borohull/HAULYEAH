@@ -3,22 +3,36 @@ package model.enums;
 /**
  * Categories of goods (and passengers) that vehicles can transport.
  *
- * <p>Each {@link VehicleType} is restricted to exactly one {@code CargoType}. Cities have
- * a demand sequence drawn from the non-passenger types. Passenger vehicles may unload at any
- * city stop; cargo vehicles must deliver to a city that currently demands that cargo type,
+ * <p>
+ * Each {@link VehicleType} is restricted to exactly one {@code CargoType}.
+ * Cities have
+ * a demand sequence drawn from the non-passenger types. Passenger vehicles may
+ * unload at any
+ * city stop; cargo vehicles must deliver to a city that currently demands that
+ * cargo type,
  * or to a facility that consumes it.
  */
 public enum CargoType {
     /** Human passengers — carried by buses, deliverable at any city. */
-    PASSENGERS,
+    PASSENGERS(10),
     /** Timber/logs — produced by wood factories, consumed by cities. */
-    WOOD,
+    WOOD(20),
     /** Iron ore — produced by iron mines, consumed by cities. */
-    IRON,
+    IRON(40),
     /** Coal — produced by coal factories, consumed by cities. */
-    COAL,
+    COAL(30),
     /** Crude oil — produced by oil rigs, consumed by cities. */
-    OIL;
+    OIL(50);
+
+    private final double incomePerUnit;
+
+    CargoType(double incomePerUnit) {
+        this.incomePerUnit = incomePerUnit;
+    }
+
+    public double getIncomePerUnit() {
+        return incomePerUnit;
+    }
 
     /**
      * Returns a human-readable title-case name (e.g. {@code "Passengers"}).
@@ -35,10 +49,10 @@ public enum CargoType {
     public String abbreviation() {
         return switch (this) {
             case PASSENGERS -> "Pax";
-            case WOOD       -> "W";
-            case IRON       -> "Fe";
-            case COAL       -> "Co";
-            case OIL        -> "Oil";
+            case WOOD -> "W";
+            case IRON -> "Fe";
+            case COAL -> "Co";
+            case OIL -> "Oil";
         };
     }
 }
