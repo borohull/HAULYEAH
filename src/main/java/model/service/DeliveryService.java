@@ -38,8 +38,6 @@ public class DeliveryService {
 
     private static final double DEMAND_ADVANCE_INTERVAL = 120.0; // game-seconds
 
-    private double demandTimer = 0;
-
     // ── Called by SimulationEngine each tick ──────────────────────────────────
 
     /**
@@ -49,15 +47,16 @@ public class DeliveryService {
      * @param game the world containing all cities
      * @param dt   elapsed simulation time in seconds this frame
      */
-    public void tickDemand(Game game, double dt) {
-        demandTimer += dt;
-        if (demandTimer >= DEMAND_ADVANCE_INTERVAL) {
-            demandTimer = 0;
+    public void tickDemand(Game game, GameState state, double dt) {
+        double timer = state.getDemandTimer() + dt;
+        if (timer >= DEMAND_ADVANCE_INTERVAL) {
+            timer = 0;
             for (City city : game.getCities()) {
                 if (!city.getDemandSequence().isEmpty())
                     city.advanceDemand();
             }
         }
+        state.setDemandTimer(timer);
     }
 
     // ── Called when a vehicle reaches a Stop tile ─────────────────────────────

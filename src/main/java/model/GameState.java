@@ -8,6 +8,16 @@ public class GameState {
     private final Game gameMap;
     private final Player player;
 
+    private double demandTimer = 0.0;
+
+    public double getDemandTimer() {
+        return demandTimer;
+    }
+
+    public void setDemandTimer(double t) {
+        this.demandTimer = t;
+    }
+
     public GameState(Game map, Player player) {
         this.gameMap = map;
         this.player = player;
