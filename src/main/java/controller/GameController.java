@@ -65,6 +65,8 @@ public class GameController {
     private SimulationController simController;
     private java.util.function.Consumer<TrafficLight> onTrafficLightSelected;
     private Consumer<String> onBridgeLimitReached;
+    private Consumer<String> onInsufficientFunds;
+    private Runnable onBankrupt;
 
     public GameController(GameState state) {
         this.state = state;
@@ -84,6 +86,14 @@ public class GameController {
 
     public void setOnBridgeLimitReached(Consumer<String> callback) {
         this.onBridgeLimitReached = callback;
+    }
+
+    public void setOnInsufficientFunds(Consumer<String> callback) {
+        this.onInsufficientFunds = callback;
+    }
+
+    public void setOnBankrupt(Runnable callback) {
+        this.onBankrupt = callback;
     }
 
     /**
@@ -113,14 +123,15 @@ public class GameController {
             return null;
         }
 
-        if (!state.getPlayer().getLedger().canAfford(type.getPurchasePrice())) {
-            System.out.println("[GameController] Cannot afford " + type + " ($" + type.getPurchasePrice() + ")");
-            return null;
-        }
         Vehicle v = vehicleService.spawnAtPosition(state.getMap(), type, spawnPos);
         if (v != null) {
+            if (!state.getPlayer().getLedger().canAfford(type.getPurchasePrice())) {
+                notifyInsufficientFunds("Not enough money to buy " + type.name().replace('_', ' ')
+                        + ". The purchase will still go through and may bankrupt you.");
+            }
             state.getPlayer().getLedger().spend(type.getPurchasePrice(), TransactionType.PURCHASE,
                     "Buy " + type.name());
+            handleBankruptcyIfNeeded();
         }
         markUnsaved();
         notifyView();
@@ -185,11 +196,12 @@ public class GameController {
             note = "Road + clearing";
         }
 
-        if (!state.getPlayer().getLedger().canAfford(cost))
-            return;
-
         if (constructionService.buildRoad(state.getMap(), p, Road.RoadType.HORIZONTAL)) {
+            if (!state.getPlayer().getLedger().canAfford(cost)) {
+                notifyInsufficientFunds("Not enough money to build a road. The build will still go through and may bankrupt you.");
+            }
             state.getPlayer().getLedger().spend(cost, TransactionType.BUILD, note);
+            handleBankruptcyIfNeeded();
             markUnsaved();
             notifyView();
         }
@@ -249,16 +261,16 @@ public class GameController {
             return;
         }
 
-        if (!state.getPlayer().getLedger().canAfford(cost)) {
-            System.out.println("[GameController] Cannot afford " + bridgeType + " ($" + cost + ")");
-            return;
-        }
-
         int numBridges = state.getMap().getBridges().size();
         Bridge bridge = new Bridge("bridge-" + (numBridges + 1), bridgeType + " " + (numBridges + 1),
                 p.getX(), p.getY(), 1, Bridge.Orientation.HORIZONTAL, modelBridgeType);
         if (constructionService.buildBridge(state.getMap(), bridge)) {
+            if (!state.getPlayer().getLedger().canAfford(cost)) {
+                notifyInsufficientFunds("Not enough money to build a " + bridgeType
+                        + ". The build will still go through and may bankrupt you.");
+            }
             state.getPlayer().getLedger().spend(cost, TransactionType.BUILD, bridgeType);
+            handleBankruptcyIfNeeded();
             markUnsaved();
             notifyView();
         }
@@ -299,6 +311,28 @@ public class GameController {
             onBridgeLimitReached.accept(message);
         } else {
             System.out.println("[GameController] " + message);
+        }
+    }
+
+    private void notifyInsufficientFunds(String message) {
+        if (onInsufficientFunds != null) {
+            onInsufficientFunds.accept(message);
+        } else {
+            System.out.println("[GameController] " + message);
+        }
+    }
+
+    private void handleBankruptcyIfNeeded() {
+        if (!state.getPlayer().getLedger().isBankrupt()) {
+            return;
+        }
+
+        if (simController != null) {
+            simController.pause();
+        }
+
+        if (onBankrupt != null) {
+            onBankrupt.run();
         }
     }
 

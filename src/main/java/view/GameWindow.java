@@ -4,7 +4,6 @@ import controller.GameController;
 import controller.SimulationController;
 import javafx.scene.Group;
 import javafx.scene.Scene;
-import view.PopupTheme;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ScrollPane;
@@ -24,6 +23,8 @@ import view.panel.HudPanel;
 import view.panel.MapPanel;
 import view.panel.MinimapPanel;
 import view.panel.TrafficLightPanel;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * GameWindow — builds and shows the in-game scene.
@@ -176,6 +177,31 @@ public class GameWindow {
                     mapPanel.drawGame(game);
                 }));
 
+        gameController.setOnInsufficientFunds(message -> javafx.application.Platform.runLater(() -> {
+            Alert alert = PopupTheme.createAlert(
+                    stage,
+                    Alert.AlertType.WARNING,
+                    "Not Enough Money",
+                    null,
+                    message);
+            PopupTheme.showAndWait(alert, stage);
+        }));
+
+        AtomicBoolean bankruptHandled = new AtomicBoolean(false);
+        Runnable bankruptHandler = () -> {
+            if (!bankruptHandled.compareAndSet(false, true)) {
+                return;
+            }
+            Alert alert = PopupTheme.createAlert(
+                    stage,
+                    Alert.AlertType.INFORMATION,
+                    "Bankrupt!",
+                    "You went bankrupt!",
+                    "Your capital reached $0 or below. Game over.");
+            PopupTheme.showAndWait(alert, stage);
+            new controller.MainMenuController(stage).showMainMenu();
+        };
+
         gameController.setOnBridgeLimitReached(message -> {
             Alert alert = PopupTheme.createAlert(
                     stage,
@@ -185,6 +211,8 @@ public class GameWindow {
                     message);
             PopupTheme.showAndWait(alert, stage);
         });
+
+        gameController.setOnBankrupt(() -> javafx.application.Platform.runLater(bankruptHandler));
 
         // Tell SimulationController to redraw ONLY the dynamic layer on every simulation tick (vehicles move).
         // Minimap only reflects static tiles — scroll listeners inside MinimapPanel
@@ -205,16 +233,7 @@ public class GameWindow {
 
 
 
-        simController.setOnBankrupt(() -> javafx.application.Platform.runLater(() -> {
-            Alert alert = PopupTheme.createAlert(
-                    stage,
-                    Alert.AlertType.INFORMATION,
-                    "Bankrupt!",
-                    "You went bankrupt!",
-                    "Your capital fell below $0. Game over.");
-            PopupTheme.showAndWait(alert, stage);
-            new controller.MainMenuController(stage).showMainMenu();
-        }));
+        simController.setOnBankrupt(() -> javafx.application.Platform.runLater(bankruptHandler));
 
 
         // ── Assemble layout ──────────────────────────────────────────────────
