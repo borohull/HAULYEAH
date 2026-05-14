@@ -5,13 +5,14 @@ import model.service.SimulationEngine;
 import javafx.animation.AnimationTimer;
 import javafx.stage.Window;
 import view.PopupTheme;
+
 /**
  * SimulationController
  *
  * Manages the simulation lifecycle:
- *   - Play / Pause
- *   - Speed control (1×, 2×, 4×)
- *   - Saving the current game to a slot
+ * - Play / Pause
+ * - Speed control (1×, 2×, 4×)
+ * - Saving the current game to a slot
  *
  * In a future issue this controller will drive a JavaFX AnimationTimer
  * that calls SimulationEngine.tick(state, dt) on every frame.
@@ -25,9 +26,9 @@ public class SimulationController {
     /** Matches the TimeSpeed enum in the UML (currently stored in GameSpeed). */
     public enum Speed {
         PAUSED(0, "⏸"),
-        X1(1,    "▶  1×"),
-        X2(2,    "▶▶ 2×"),
-        X4(4,    "▶▶▶ 4×");
+        X1(1, "▶  1×"),
+        X2(2, "▶▶ 2×"),
+        X4(4, "▶▶▶ 4×");
 
         public final int multiplier;
         public final String label;
@@ -41,16 +42,16 @@ public class SimulationController {
         public Speed next() {
             return switch (this) {
                 case PAUSED -> X1;
-                case X1     -> X2;
-                case X2     -> X4;
-                case X4     -> PAUSED;
+                case X1 -> X2;
+                case X2 -> X4;
+                case X4 -> PAUSED;
             };
         }
     }
 
     private final GameState state;
-    private Speed      speed   = Speed.PAUSED;
-    private boolean    running = false;
+    private Speed speed = Speed.PAUSED;
+    private boolean running = false;
     private boolean hasUnsavedChanges = false;
 
     private final SimulationEngine engine = new SimulationEngine();
@@ -64,7 +65,7 @@ public class SimulationController {
 
     public SimulationController(GameState state) {
         this.state = state;
-        
+
         this.timer = new AnimationTimer() {
             @Override
             public void handle(long now) {
@@ -72,7 +73,7 @@ public class SimulationController {
                     lastTime = now;
                     return;
                 }
-                
+
                 // Elapsed physical time in seconds
                 double elapsedSeconds = (now - lastTime) / 1_000_000_000.0;
                 lastTime = now;
@@ -84,16 +85,25 @@ public class SimulationController {
 
                     if (state.getPlayer().getLedger().getCurrentCapital() < 0) {
                         pause();
-                        if (onBankrupt != null) onBankrupt.run();
+                        if (onBankrupt != null)
+                            onBankrupt.run();
                     }
                 }
             }
         };
     }
 
-    public void setOnStateChanged(Runnable callback) { this.onStateChanged = callback; }
-    public void setOnBankrupt(Runnable callback)      { this.onBankrupt = callback; }
-    public void setDialogOwner(Window owner)          { this.dialogOwner = owner; }
+    public void setOnStateChanged(Runnable callback) {
+        this.onStateChanged = callback;
+    }
+
+    public void setOnBankrupt(Runnable callback) {
+        this.onBankrupt = callback;
+    }
+
+    public void setDialogOwner(Window owner) {
+        this.dialogOwner = owner;
+    }
 
     // -----------------------------------------------------------------------
     // Simulation control
@@ -119,7 +129,7 @@ public class SimulationController {
      */
     public void pause() {
         running = false;
-        speed   = Speed.PAUSED;
+        speed = Speed.PAUSED;
         System.out.println("[SimulationController] pause()");
         timer.stop();
         notifyView();
@@ -130,17 +140,17 @@ public class SimulationController {
      * Convenient for a single speed-toggle button.
      */
     public void cycleSpeed() {
-        speed   = speed.next();
+        speed = speed.next();
         running = speed != Speed.PAUSED;
         System.out.println("[SimulationController] speed -> " + speed.label);
-        
+
         if (running) {
             lastTime = 0;
             timer.start();
         } else {
             timer.stop();
         }
-        
+
         notifyView();
     }
 
@@ -150,17 +160,17 @@ public class SimulationController {
      * @param newSpeed desired speed (use Speed.PAUSED to pause)
      */
     public void setSpeed(Speed newSpeed) {
-        this.speed   = newSpeed;
+        this.speed = newSpeed;
         this.running = newSpeed != Speed.PAUSED;
         System.out.println("[SimulationController] setSpeed -> " + newSpeed.label);
-        
+
         if (running) {
             lastTime = 0;
             timer.start();
         } else {
             timer.stop();
         }
-        
+
         notifyView();
     }
 
@@ -212,8 +222,13 @@ public class SimulationController {
     // Getters for the HUD
     // -----------------------------------------------------------------------
 
-    public boolean isRunning() { return running; }
-    public Speed   getSpeed()  { return speed; }
+    public boolean isRunning() {
+        return running;
+    }
+
+    public Speed getSpeed() {
+        return speed;
+    }
 
     /** Clears saved tile-progress for a vehicle so it restarts cleanly. */
     public void resetVehicle(String vehicleId) {

@@ -24,9 +24,9 @@ import java.util.function.Consumer;
  * GameController
  *
  * Handles all in-game user interactions:
- *   - Mouse clicks on the map (tile selection, building, demolishing)
- *   - Route drawing: player clicks road/stop tiles to define the exact path
- *   - Delegating build/remove actions to model services
+ * - Mouse clicks on the map (tile selection, building, demolishing)
+ * - Route drawing: player clicks road/stop tiles to define the exact path
+ * - Delegating build/remove actions to model services
  */
 public class GameController {
 
@@ -50,14 +50,14 @@ public class GameController {
     private String selectedBridgeType = DEFAULT_BRIDGE_TYPE;
 
     private final ConstructionService constructionService = new ConstructionService();
-    private final VehicleService      vehicleService      = new VehicleService();
+    private final VehicleService vehicleService = new VehicleService();
     private int routeCounter = 0;
 
     // ── Route drawing state ───────────────────────────────────────────────────
     /** Tiles the player has clicked so far while drawing a route. */
-    private final List<Position> currentRoutePath  = new ArrayList<>();
+    private final List<Position> currentRoutePath = new ArrayList<>();
     /** Stops detected along currentRoutePath. */
-    private final List<Stop>     currentRouteStops = new ArrayList<>();
+    private final List<Stop> currentRouteStops = new ArrayList<>();
     /** Name to give the route when finished. */
     private String pendingRouteName = "";
 
@@ -86,9 +86,13 @@ public class GameController {
         this.onBridgeLimitReached = callback;
     }
 
-    /** Directly fires the traffic-light-selected callback (used by GameWindow for quick-cycle clicks). */
+    /**
+     * Directly fires the traffic-light-selected callback (used by GameWindow for
+     * quick-cycle clicks).
+     */
     public void fireTrafficLightSelected(TrafficLight tl) {
-        if (onTrafficLightSelected != null) onTrafficLightSelected.accept(tl);
+        if (onTrafficLightSelected != null)
+            onTrafficLightSelected.accept(tl);
     }
 
     public Vehicle onBuyVehicleDirect(VehicleType type) {
@@ -115,26 +119,27 @@ public class GameController {
         }
         Vehicle v = vehicleService.spawnAtPosition(state.getMap(), type, spawnPos);
         if (v != null) {
-            state.getPlayer().getLedger().spend(type.getPurchasePrice(), TransactionType.PURCHASE, "Buy " + type.name());
+            state.getPlayer().getLedger().spend(type.getPurchasePrice(), TransactionType.PURCHASE,
+                    "Buy " + type.name());
         }
         markUnsaved();
         notifyView();
         return v;
     }
 
-
     // ── Main tile-click dispatcher ────────────────────────────────────────────
 
     public void onTileClicked(Position p) {
         switch (buildMode) {
-            case ROAD          -> onBuildRoad(p);
-            case STOP          -> onBuildStop(p);
-            case BRIDGE        -> onBuildBridge(p, selectedBridgeType);
+            case ROAD -> onBuildRoad(p);
+            case STOP -> onBuildStop(p);
+            case BRIDGE -> onBuildBridge(p, selectedBridgeType);
             case TRAFFIC_LIGHT -> onBuildTrafficLight(p);
-            case DEMOLISH      -> onDemolish(p);
-            case SELECT        -> onSelect(p);
-            case ROUTE_DRAW    -> onRouteDrawClick(p);
-            default            -> { }
+            case DEMOLISH -> onDemolish(p);
+            case SELECT -> onSelect(p);
+            case ROUTE_DRAW -> onRouteDrawClick(p);
+            default -> {
+            }
         }
     }
 
@@ -146,7 +151,9 @@ public class GameController {
         notifyView();
     }
 
-    public BuildMode getBuildMode() { return buildMode; }
+    public BuildMode getBuildMode() {
+        return buildMode;
+    }
 
     public void setSelectedBridgeType(String bridgeType) {
         if (bridgeType == null || bridgeType.isBlank()) {
@@ -167,7 +174,8 @@ public class GameController {
 
     public void onBuildRoad(Position p) {
         Tile tile = state.getMap().getTile(p);
-        if (tile == null) return;
+        if (tile == null)
+            return;
 
         double cost = ROAD_COST;
         String note = "Road";
@@ -177,7 +185,8 @@ public class GameController {
             note = "Road + clearing";
         }
 
-        if (!state.getPlayer().getLedger().canAfford(cost)) return;
+        if (!state.getPlayer().getLedger().canAfford(cost))
+            return;
 
         if (constructionService.buildRoad(state.getMap(), p, Road.RoadType.HORIZONTAL)) {
             state.getPlayer().getLedger().spend(cost, TransactionType.BUILD, note);
@@ -185,7 +194,6 @@ public class GameController {
             notifyView();
         }
     }
-
 
     public void onBuildStop(Position p) {
         String stopName = "Stop-" + (state.getMap().getStops().size() + 1);
@@ -313,18 +321,19 @@ public class GameController {
         }
     }
 
-
     // ── Route drawing ─────────────────────────────────────────────────────────
 
     /**
      * Enters route-draw mode.
+     * 
      * @param routeName the name to give the finished route
      */
     public void startRouteDraw(String routeName) {
         currentRoutePath.clear();
         currentRouteStops.clear();
         pendingRouteName = (routeName == null || routeName.isBlank())
-                ? "Route " + (routeCounter + 1) : routeName;
+                ? "Route " + (routeCounter + 1)
+                : routeName;
         setBuildMode(BuildMode.ROUTE_DRAW);
         System.out.println("[GameController] Route draw started: " + pendingRouteName);
     }
@@ -335,7 +344,8 @@ public class GameController {
      */
     public void onRouteDrawClick(Position p) {
         Tile tile = state.getMap().getTile(p.getX(), p.getY());
-        if (tile == null) return;
+        if (tile == null)
+            return;
 
         TileType type = tile.getType();
         if (!isWalkable(type)) {
@@ -346,7 +356,8 @@ public class GameController {
         // Auto-fill tiles to ensure continuous one-by-one drawing
         if (!currentRoutePath.isEmpty()) {
             Position lastP = currentRoutePath.get(currentRoutePath.size() - 1);
-            if (lastP.equals(p)) return;
+            if (lastP.equals(p))
+                return;
 
             // Build the straight-line fill (X-first, then Y) and validate every tile
             int dx = Integer.signum(p.getX() - lastP.getX());
@@ -373,10 +384,12 @@ public class GameController {
 
             if (allWalkable) {
                 for (Position fp : fillSegment) {
-                    if (!currentRoutePath.contains(fp)) currentRoutePath.add(fp);
+                    if (!currentRoutePath.contains(fp))
+                        currentRoutePath.add(fp);
                 }
             }
-            // If path is blocked, only the destination tile is skipped — user must trace manually.
+            // If path is blocked, only the destination tile is skipped — user must trace
+            // manually.
         } else {
             currentRoutePath.add(p);
         }
@@ -393,6 +406,7 @@ public class GameController {
 
     /**
      * Finishes route drawing, creates the Route, and returns to SELECT mode.
+     * 
      * @return the created Route, or null if path is too short
      */
     public Route finishRouteDraw() {
@@ -402,7 +416,7 @@ public class GameController {
             return null;
         }
 
-        String id   = "route-" + (++routeCounter);
+        String id = "route-" + (++routeCounter);
         String name = pendingRouteName.isBlank() ? "Route " + routeCounter : pendingRouteName;
 
         Route route = new Route(id, name,
@@ -429,7 +443,55 @@ public class GameController {
         notifyView();
     }
 
-    /** Returns a live (uncopied) view of the path being drawn — for overlay rendering. */
+    // Add both methods to GameController.java
+    // Place them in the "Route drawing" section, after finishRouteDraw()
+
+    /**
+     * Deletes a route from the world.
+     *
+     * Before removing the route, every vehicle currently assigned to it
+     * is unassigned and parked so they don't keep trying to follow a
+     * route that no longer exists.
+     *
+     * @param route the route to delete
+     */
+    public void deleteRoute(Route route) {
+        if (route == null)
+            return;
+
+        // Unassign every vehicle that was following this route
+        for (model.Vehicle vehicle : state.getMap().getVehicles()) {
+            if (vehicle.getRoute() != null
+                    && vehicle.getRoute().getId().equals(route.getId())) {
+                vehicle.assignRoute(null);
+                vehicle.setActive(false);
+            }
+        }
+
+        state.getMap().removeRoute(route);
+        markUnsaved();
+        notifyView();
+    }
+
+    /**
+     * Renames an existing route.
+     * Blank or null names are ignored — the route keeps its current name.
+     *
+     * @param route   the route to rename
+     * @param newName the desired new name
+     */
+    public void renameRoute(Route route, String newName) {
+        if (route == null || newName == null || newName.isBlank())
+            return;
+        route.setName(newName.trim());
+        markUnsaved();
+        notifyView();
+    }
+
+    /**
+     * Returns a live (uncopied) view of the path being drawn — for overlay
+     * rendering.
+     */
     public List<Position> getCurrentRoutePath() {
         return currentRoutePath;
     }
@@ -441,10 +503,12 @@ public class GameController {
     }
 
     public Route onCreateRoute(List<Stop> stops, String customName) {
-        if (stops == null || stops.size() < 2) return null;
-        String id   = "route-" + (++routeCounter);
+        if (stops == null || stops.size() < 2)
+            return null;
+        String id = "route-" + (++routeCounter);
         String name = (customName != null && !customName.isBlank())
-                ? customName : "Route " + routeCounter;
+                ? customName
+                : "Route " + routeCounter;
 
         // Build circular tile path: stop[0]→stop[1]→...→stop[n-1]→back to stop[0]
         List<Position> tilePath = new ArrayList<>();
@@ -454,12 +518,18 @@ public class GameController {
         for (int i = 0; i < stops.size() - 1; i++) {
             List<Position> seg = RoadPathfinder.findPath(
                     state.getMap(), stops.get(i).getPosition(), stops.get(i + 1).getPosition());
-            if (seg == null) { allConnected = false; break; }
-            if (tilePath.isEmpty()) tilePath.addAll(seg);
-            else tilePath.addAll(seg.subList(1, seg.size()));
+            if (seg == null) {
+                allConnected = false;
+                break;
+            }
+            if (tilePath.isEmpty())
+                tilePath.addAll(seg);
+            else
+                tilePath.addAll(seg.subList(1, seg.size()));
         }
 
-        // Closing segment: last stop back to first stop (exclude both endpoints — first is already
+        // Closing segment: last stop back to first stop (exclude both endpoints — first
+        // is already
         // at index 0 of tilePath, last is already at the end)
         if (allConnected) {
             List<Position> closing = RoadPathfinder.findPath(
@@ -469,7 +539,8 @@ public class GameController {
             if (closing == null || closing.size() < 2) {
                 allConnected = false;
             } else {
-                // closing[0] == last stop (already in path), closing[last] == first stop (already at index 0)
+                // closing[0] == last stop (already in path), closing[last] == first stop
+                // (already at index 0)
                 tilePath.addAll(closing.subList(1, closing.size() - 1));
             }
         }
@@ -487,17 +558,22 @@ public class GameController {
 
     public void onBuyVehicle(VehicleType type) {
         List<Stop> stops = state.getMap().getStops();
-        if (stops.isEmpty()) return;
+        if (stops.isEmpty())
+            return;
         Vehicle v = vehicleService.spawnVehicle(state.getMap(), type, stops.get(0));
         List<Route> routes = state.getMap().getRoutes();
-        if (!routes.isEmpty()) { v.setLooping(false); vehicleService.assignRoute(state.getMap(), v, routes.get(0)); }
+        if (!routes.isEmpty()) {
+            v.setLooping(false);
+            vehicleService.assignRoute(state.getMap(), v, routes.get(0));
+        }
         notifyView();
     }
 
     public Vehicle spawnAndAssign(VehicleType type, Route route) {
         Position spawnPos = null;
 
-        // Prefer the first stop on the route so vehicle starts at a stop facing the right direction
+        // Prefer the first stop on the route so vehicle starts at a stop facing the
+        // right direction
         if (route != null && route.hasTilePath()) {
             if (route.hasStops()) {
                 spawnPos = route.getStops().get(0).getPosition();
@@ -507,7 +583,8 @@ public class GameController {
         } else {
             // Fallback: first stop on the map
             List<Stop> stops = state.getMap().getStops();
-            if (!stops.isEmpty()) spawnPos = stops.get(0).getPosition();
+            if (!stops.isEmpty())
+                spawnPos = stops.get(0).getPosition();
         }
 
         if (spawnPos == null) {
@@ -525,42 +602,53 @@ public class GameController {
     public void onAssignVehicle(Vehicle vehicle, Route route, boolean looping) {
         vehicle.setLooping(looping);
         vehicleService.assignRoute(state.getMap(), vehicle, route);
-        if (simController != null) simController.resetVehicle(vehicle.getId());
+        if (simController != null)
+            simController.resetVehicle(vehicle.getId());
         notifyView();
     }
 
     public void onDeployVehicle(Vehicle vehicle) {
-        if (vehicle.getRoute() == null) return;
+        if (vehicle.getRoute() == null)
+            return;
         vehicle.assignRoute(vehicle.getRoute());
-        if (simController != null) simController.resetVehicle(vehicle.getId());
+        if (simController != null)
+            simController.resetVehicle(vehicle.getId());
         notifyView();
     }
 
-
     // ── Misc ──────────────────────────────────────────────────────────────────
 
-    public void onOpenMinimap()        { }
-    public void onOpenFinanceDetails() { }
+    public void onOpenMinimap() {
+    }
+
+    public void onOpenFinanceDetails() {
+    }
 
     public void onModifyRoute(Route route, List<Stop> newOrder) {
         System.out.println("[GameController] onModifyRoute() — not yet implemented");
     }
 
     private void markUnsaved() {
-        if (simController != null) simController.markUnsavedChanges();
+        if (simController != null)
+            simController.markUnsavedChanges();
     }
 
     private static boolean isWalkable(TileType t) {
         return t == TileType.ROAD || t == TileType.STOP
-            || t == TileType.CITY_ROAD || t == TileType.CITY_STOP
-            || t == TileType.BRIDGE;
+                || t == TileType.CITY_ROAD || t == TileType.CITY_STOP
+                || t == TileType.BRIDGE;
     }
 
     private void notifyView() {
-        if (onStateChanged != null) onStateChanged.run();
+        if (onStateChanged != null)
+            onStateChanged.run();
     }
 
-    public void notifyViewFromOutside() { notifyView(); }
+    public void notifyViewFromOutside() {
+        notifyView();
+    }
 
-    public GameState getState() { return state; }
+    public GameState getState() {
+        return state;
+    }
 }
