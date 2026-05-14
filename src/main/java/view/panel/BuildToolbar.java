@@ -11,10 +11,18 @@ import javafx.scene.layout.VBox;
 import model.Road;
 
 /**
- * BuildToolbar — the bottom toolbar shown during gameplay.
+ * Bottom toolbar shown during gameplay.
  *
- * Contains: Select, Build (with road/stop submenu), Remove, Garage, Finance, Save, Menu.
- * Renamed from BottomToolbar → BuildToolbar to match the UML diagram.
+ * <p>Top-level buttons: Select, Build, Remove, Garage, Finance, Save, Exit, Menu.
+ * Clicking <b>Build</b> reveals a submenu (Road, Stop, Bridge, Route, Traffic Light).
+ * Clicking <b>Bridge</b> within that submenu reveals a second submenu for bridge type.
+ * During route drawing, all submenus are hidden and a dedicated route-draw bar is shown instead.
+ *
+ * <p>Selection state is tracked by the boolean fields ({@code roadSelected}, {@code stopSelected}, etc.)
+ * and read by {@link controller.GameController} on each map click. Only one mode can be active at a time;
+ * {@link #clearSelection()} resets all flags and restores button styles.
+ *
+ * <p>Renamed from {@code BottomToolbar} to {@code BuildToolbar} to match the UML diagram.
  */
 public class BuildToolbar extends VBox {
 
@@ -90,6 +98,7 @@ public class BuildToolbar extends VBox {
     private final Button btnCancelRoute;
     private final HBox   routeDrawBar;
 
+    /** Creates and wires up the full toolbar with all buttons, submenus, and toggle logic. */
     public BuildToolbar() {
         super();
 
@@ -364,15 +373,27 @@ public class BuildToolbar extends VBox {
 
     // ── State getters ─────────────────────────────────────────────────────────
 
+    /** Returns {@code true} if Road build mode is active. */
     public boolean isRoadSelected()         { return roadSelected; }
+    /** Returns {@code true} if Stop build mode is active. */
     public boolean isStopSelected()         { return stopSelected; }
+    /** Returns {@code true} if Bridge build mode is active. */
     public boolean isBridgeSelected()       { return bridgeSelected; }
+    /** Returns {@code true} if Demolish mode is active. */
     public boolean isRemoveSelected()       { return removeSelected; }
+    /** Returns {@code true} if Route-draw mode is active. */
     public boolean isRouteSelected()        { return routeSelected; }
+    /** Returns {@code true} if Select (inspect) mode is active. */
     public boolean isSelectSelected()       { return selectSelected; }
+    /** Returns {@code true} if Traffic Light placement mode is active. */
     public boolean isTrafficLightSelected() { return trafficLightSelected; }
+    /** Returns the display name of the currently selected bridge type (e.g. {@code "Steel Bridge"}). */
     public String getSelectedBridgeType()   { return selectedBridgeType; }
 
+    /**
+     * Clears all selection flags and resets all button styles to their default (inactive) appearance.
+     * Does not close submenus — callers that want to hide submenus should call this after hiding them.
+     */
     public void clearSelection() {
         roadSelected         = false;
         stopSelected         = false;
@@ -396,17 +417,29 @@ public class BuildToolbar extends VBox {
 
     // ── Button accessors (for GameWindow wiring) ──────────────────────────────
 
+    /** Returns the Select button for action-listener wiring in {@link view.GameWindow}. */
     public Button getSelectButton()  { return btnSelect; }
+    /** Returns the Build button for action-listener wiring in {@link view.GameWindow}. */
     public Button getBuildButton()   { return btnBuild; }
+    /** Returns the Remove button for action-listener wiring in {@link view.GameWindow}. */
     public Button getRemoveButton()  { return btnRemove; }
+    /** Returns the Garage button for action-listener wiring in {@link view.GameWindow}. */
     public Button getGarageButton()  { return btnGarage; }
+    /** Returns the Finance button for action-listener wiring in {@link view.GameWindow}. */
     public Button getFinanceButton() { return btnFinance; }
+    /** Returns the Save button for action-listener wiring in {@link view.GameWindow}. */
     public Button getSaveButton()    { return btnSave; }
+    /** Returns the Exit button for action-listener wiring in {@link view.GameWindow}. */
     public Button getExitButton()    { return btnExit; }
+    /** Returns the Menu button for action-listener wiring in {@link view.GameWindow}. */
     public Button getMenuButton()    { return btnMenu; }
+    /** Returns the Route submenu button for action-listener wiring in {@link view.GameWindow}. */
     public Button getRouteButton()        { return btnRoute; }
+    /** Returns the Traffic Light submenu button for action-listener wiring. */
     public Button getTrafficLightButton() { return btnTrafficLight; }
+    /** Returns the "Done Route" button shown in the route-draw bar. */
     public Button getDoneRouteButton()  { return btnDoneRoute; }
+    /** Returns the "Cancel" button shown in the route-draw bar. */
     public Button getCancelRouteButton(){ return btnCancelRoute; }
 
     /** Show the route-draw instruction bar (hides build submenu). */
@@ -442,6 +475,10 @@ public class BuildToolbar extends VBox {
         return b;
     }
 
+    /**
+     * Programmatically activates Select mode (same effect as clicking the Select button).
+     * Used by {@link controller.GameController} to restore the default mode after certain actions.
+     */
     public void selectSelectMode() {
         selectSelected = true;
         roadSelected   = false;

@@ -25,6 +25,25 @@ import model.enums.VehicleType;
 import java.util.List;
 import java.util.Random;
 
+/**
+ * Isometric 2.5D map renderer backed by two layered JavaFX {@link javafx.scene.canvas.Canvas} nodes.
+ *
+ * <p>The <em>static canvas</em> (this node) renders terrain, buildings, roads, and stops —
+ * tiles that change only when the player builds or demolishes. The <em>overlay canvas</em>
+ * (returned by {@link #getOverlayCanvas()}) renders vehicles, hover highlights, and the
+ * route-draw path, and is repainted every simulation frame.
+ *
+ * <p>Tile coordinates map to screen space via a standard isometric projection:
+ * <pre>
+ *   screenX = ORIGIN_X + (tx - ty) * (TILE_W / 2)
+ *   screenY = ORIGIN_Y + (tx + ty) * (TILE_H / 2)
+ * </pre>
+ * with {@code TILE_W = 64} and {@code TILE_H = 32}.
+ *
+ * <p>{@link #drawGame(Game)} performs a full static redraw; {@link #drawDynamic(Game)} repaints
+ * only the dynamic overlay. {@link #redrawTile(int, int)} repaints a single static tile after a
+ * build/demolish action.
+ */
 public class MapPanel extends Canvas {
 
     private static final int TILE_W = 64;
@@ -158,12 +177,14 @@ public class MapPanel extends Canvas {
 
     private final javafx.scene.canvas.Canvas overlayCanvas = new javafx.scene.canvas.Canvas();
 
+    /** Returns the overlay canvas that is stacked on top of this canvas for dynamic drawing. */
     public javafx.scene.canvas.Canvas getOverlayCanvas() {
         return overlayCanvas;
     }
 
     private boolean staticNeedsRedraw = true;
 
+    /** Marks the static layer dirty so the next {@link #drawGame} call redraws all terrain and structures. */
     public void forceStaticRedraw() {
         this.staticNeedsRedraw = true;
     }
@@ -197,10 +218,17 @@ public class MapPanel extends Canvas {
         return frames.toArray(new Image[0]);
     }
 
+    /** Creates an empty MapPanel; canvas dimensions are set on the first {@link #drawGame} call. */
     public MapPanel() {
         super(0, 0);
     }
 
+    /**
+     * Performs a full render pass: resizes the canvas to fit the world, repaints the static
+     * layer if dirty, then repaints the dynamic overlay.
+     *
+     * @param game the world to render
+     */
     public void drawGame(Game game) {
         int cols = game.getWidth();
         int rows = game.getHeight();
@@ -258,6 +286,12 @@ public class MapPanel extends Canvas {
         drawDynamic(game);
     }
     
+    /**
+     * Repaints the overlay canvas: vehicles, hover highlight, and the active route-draw path.
+     * Called every animation frame by {@link controller.SimulationController}.
+     *
+     * @param game the world to render; if {@code null} the call is a no-op
+     */
     public void drawDynamic(Game game) {
         if (currentGame == null || game == null) return;
         
@@ -832,14 +866,24 @@ public class MapPanel extends Canvas {
         return new double[]{cy, cy + TILE_H / 2.0, cy + TILE_H, cy + TILE_H / 2.0};
     }
 
+    /** Returns the isometric tile width in pixels ({@value #TILE_W}). */
     public int getTileW() {
         return TILE_W;
     }
 
+    /** Returns the isometric tile height in pixels ({@value #TILE_H}). */
     public int getTileH() {
         return TILE_H;
     }
 
+    /**
+     * Converts a screen coordinate to the nearest grid tile using the inverse isometric projection.
+     * Uses a nearest-neighbour fallback when the point falls outside any tile diamond.
+     *
+     * @param screenX pixel X relative to the canvas origin
+     * @param screenY pixel Y relative to the canvas origin
+     * @return {@code int[]{tileX, tileY}} — may be out-of-bounds; callers must validate
+     */
     public int[] screenToTile(double screenX, double screenY) {
         double dx = screenX - storedOriginX;
         double dy = screenY - storedOriginY - TILE_H / 2.0;
@@ -886,6 +930,13 @@ public class MapPanel extends Canvas {
         return normalized <= 1.0;
     }
 
+    /**
+     * Repaints a single static tile without triggering a full redraw.
+     * Used after road/stop/bridge placement or demolition.
+     *
+     * @param tx tile column
+     * @param ty tile row
+     */
     public void redrawTile(int tx, int ty) {
         if (currentGame == null || !currentGame.inBounds(tx, ty)) return;
         Tile tile = currentGame.getTile(tx, ty);
@@ -894,8 +945,11 @@ public class MapPanel extends Canvas {
         drawStructure(gc, tile, tx, ty, storedOriginX, storedOriginY);
     }
 
-
-
+    /**
+     * Stores the given route-draw path and triggers a dynamic redraw to display it as an overlay.
+     *
+     * @param path ordered list of tile positions making up the in-progress route; may be empty
+     */
     public void drawRoutePathOverlay(java.util.List<model.Position> path) {
         this.activeRoutePath = path;
         drawDynamic(currentGame);
@@ -933,6 +987,7 @@ public class MapPanel extends Canvas {
         }
     }
 
+    /** Clears the hover highlight and route path, then repaints the dynamic overlay. */
     public void clearHoverOverlay() {
         this.hoverX = -1;
         this.hoverY = -1;
@@ -940,10 +995,25 @@ public class MapPanel extends Canvas {
         drawDynamic(currentGame);
     }
 
+    /**
+     * Highlights a tile with the standard green/red validity colour and repaints the overlay.
+     *
+     * @param tx    tile column to highlight
+     * @param ty    tile row to highlight
+     * @param valid {@code true} for green (buildable), {@code false} for red (blocked)
+     */
     public void drawHoverOverlay(int tx, int ty, boolean valid) {
         drawHoverOverlay(tx, ty, valid, false);
     }
 
+    /**
+     * Highlights a tile and repaints the overlay.
+     *
+     * @param tx    tile column to highlight
+     * @param ty    tile row to highlight
+     * @param valid {@code true} for green, {@code false} for red (ignored when {@code grey} is set)
+     * @param grey  {@code true} to use a neutral grey highlight (used during route drawing)
+     */
     public void drawHoverOverlay(int tx, int ty, boolean valid, boolean grey) {
         this.hoverX = tx;
         this.hoverY = ty;
@@ -952,6 +1022,15 @@ public class MapPanel extends Canvas {
         drawDynamic(currentGame);
     }
 
+    /**
+     * Highlights a tile while keeping the active route-draw path visible.
+     * Equivalent to {@link #drawHoverOverlay(int, int, boolean)} but intended for use
+     * during route drawing where both the path and the cursor tile should be shown.
+     *
+     * @param tx    tile column to highlight
+     * @param ty    tile row to highlight
+     * @param valid {@code true} for green, {@code false} for red
+     */
     public void drawHoverOnTopOfRoute(int tx, int ty, boolean valid) {
         drawHoverOverlay(tx, ty, valid, false);
     }

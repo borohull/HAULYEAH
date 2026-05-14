@@ -23,7 +23,9 @@ public enum TimeSpeed {
         this.label      = label;
     }
 
+    /** Returns the integer multiplier applied to the simulation delta-time (0 when paused). */
     public int    getMultiplier() { return multiplier; }
+    /** Returns the human-readable speed label shown in the HUD (e.g. "▶▶ 2×"). */
     public String getLabel()      { return label; }
 
     /** Cycles: PAUSED → X1 → X2 → X4 → PAUSED */
