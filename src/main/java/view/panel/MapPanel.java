@@ -536,6 +536,22 @@ public class MapPanel extends Canvas {
             gc.setFill(isPassenger ? Color.rgb(30, 120, 220) : Color.rgb(220, 100, 30));
             gc.fillOval(cx - 8, cy, 16, 10);
         }
+
+        String typeName = vehicle.getType().name().replace("_", " ");
+        String cargoName = vehicle.getType().getAllowedCargo().displayName();
+        String label = typeName + " · " + cargoName;
+
+        gc.setFont(Font.font("Monospace", 10));
+        gc.setTextAlign(TextAlignment.CENTER);
+
+        double tw = label.length() * 6.0;
+        double labelY = cy - 28;
+
+        gc.setFill(Color.rgb(0, 0, 0, 0.55));
+        gc.fillRoundRect(cx - tw / 2 - 4, labelY - 11, tw + 8, 14, 4, 4);
+
+        gc.setFill(Color.WHITE);
+        gc.fillText(label, cx, labelY);
     }
 
     private Image getGroundImage(Tile tile) {
