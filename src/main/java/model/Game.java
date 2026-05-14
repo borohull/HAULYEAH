@@ -8,15 +8,23 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The game world — a fixed-size 2D grid together with all entities that inhabit it.
+ * The game world — a fixed-size 2D grid together with all entities that inhabit
+ * it.
  *
- * <p>{@code Game} is the spatial root of the simulation. It holds every {@link Tile} in the
- * grid and maintains lists of domain objects: {@link City}, {@link Facility}, {@link WaterBody},
- * {@link Forest}, {@link Bridge}, {@link Road}, {@link Stop}, {@link Vehicle}, {@link Route},
+ * <p>
+ * {@code Game} is the spatial root of the simulation. It holds every
+ * {@link Tile} in the
+ * grid and maintains lists of domain objects: {@link City}, {@link Facility},
+ * {@link WaterBody},
+ * {@link Forest}, {@link Bridge}, {@link Road}, {@link Stop}, {@link Vehicle},
+ * {@link Route},
  * and {@link TrafficLight}.
  *
- * <p>Construction and removal operations (add road, build bridge, …) are intentionally
- * extracted into {@link model.service.ConstructionService} to keep this class a pure data
+ * <p>
+ * Construction and removal operations (add road, build bridge, …) are
+ * intentionally
+ * extracted into {@link model.service.ConstructionService} to keep this class a
+ * pure data
  * container. {@code Game} only exposes the raw collections and lookup helpers.
  */
 public class Game {
@@ -25,15 +33,15 @@ public class Game {
     private final Tile[][] grid;
     private String worldName;
 
-    private final List<City>       cities;
-    private final List<Facility>   facilities;
-    private final List<WaterBody>  waterBodies;
-    private final List<Forest>     forests;
-    private final List<Bridge>     bridges;
-    private final List<Road>       roads;
-    private final List<Stop>       stops;
-    private final List<Vehicle>    vehicles;
-    private final List<Route>      routes;
+    private final List<City> cities;
+    private final List<Facility> facilities;
+    private final List<WaterBody> waterBodies;
+    private final List<Forest> forests;
+    private final List<Bridge> bridges;
+    private final List<Road> roads;
+    private final List<Stop> stops;
+    private final List<Vehicle> vehicles;
+    private final List<Route> routes;
     private final Map<Position, TrafficLight> trafficLights;
 
     /**
@@ -44,22 +52,21 @@ public class Game {
      * @param height number of rows
      */
     public Game(int width, int height) {
-        this.width  = width;
+        this.width = width;
         this.height = height;
-        this.grid   = new Tile[width][height];
+        this.grid = new Tile[width][height];
         this.worldName = "Unnamed World";
-        this.cities      = new ArrayList<>();
-        this.facilities  = new ArrayList<>();
+        this.cities = new ArrayList<>();
+        this.facilities = new ArrayList<>();
         this.waterBodies = new ArrayList<>();
-        this.forests     = new ArrayList<>();
-        this.bridges     = new ArrayList<>();
-        this.roads       = new ArrayList<>();
-        this.stops       = new ArrayList<>();
-        this.vehicles      = new ArrayList<>();
-        this.routes        = new ArrayList<>();
+        this.forests = new ArrayList<>();
+        this.bridges = new ArrayList<>();
+        this.roads = new ArrayList<>();
+        this.stops = new ArrayList<>();
+        this.vehicles = new ArrayList<>();
+        this.routes = new ArrayList<>();
         this.trafficLights = new HashMap<>();
 
-        
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 grid[x][y] = new Tile(x, y);
@@ -68,18 +75,21 @@ public class Game {
     }
 
     /**
-     * Returns the tile at (x, y), or {@code null} if the coordinates are out of bounds.
+     * Returns the tile at (x, y), or {@code null} if the coordinates are out of
+     * bounds.
      *
      * @param x column index
      * @param y row index
      */
     public Tile getTile(int x, int y) {
-        if (x < 0 || x >= width || y < 0 || y >= height) return null;
+        if (x < 0 || x >= width || y < 0 || y >= height)
+            return null;
         return grid[x][y];
     }
 
     /**
-     * Returns the tile at the given {@link Position}, or {@code null} if out of bounds.
+     * Returns the tile at the given {@link Position}, or {@code null} if out of
+     * bounds.
      *
      * @param p grid position
      */
@@ -97,10 +107,17 @@ public class Game {
         return x >= 0 && x < width && y >= 0 && y < height;
     }
 
-    
-    public int getWidth()  { return width; }
-    public int getHeight() { return height; }
-    public String getWorldName() { return worldName; }
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public String getWorldName() {
+        return worldName;
+    }
 
     /**
      * Sets the world name shown in the HUD. Trims whitespace; falls back to
@@ -116,17 +133,45 @@ public class Game {
         this.worldName = worldName.trim();
     }
 
-    
-    public List<City>      getCities()      { return cities; }
-    public List<Facility>  getFacilities()  { return facilities; }
-    public List<WaterBody> getWaterBodies() { return waterBodies; }
-    public List<Forest>    getForests()     { return forests; }
-    public List<Bridge>    getBridges()     { return bridges; }
-    public List<Road>      getRoads()       { return roads; }
-    public List<Stop>      getStops()       { return stops; }
-    public List<Vehicle>   getVehicles()    { return vehicles; }
-    public List<Route>     getRoutes()      { return routes; }
-    public Map<Position, TrafficLight> getTrafficLights() { return trafficLights; }
+    public List<City> getCities() {
+        return cities;
+    }
+
+    public List<Facility> getFacilities() {
+        return facilities;
+    }
+
+    public List<WaterBody> getWaterBodies() {
+        return waterBodies;
+    }
+
+    public List<Forest> getForests() {
+        return forests;
+    }
+
+    public List<Bridge> getBridges() {
+        return bridges;
+    }
+
+    public List<Road> getRoads() {
+        return roads;
+    }
+
+    public List<Stop> getStops() {
+        return stops;
+    }
+
+    public List<Vehicle> getVehicles() {
+        return vehicles;
+    }
+
+    public List<Route> getRoutes() {
+        return routes;
+    }
+
+    public Map<Position, TrafficLight> getTrafficLights() {
+        return trafficLights;
+    }
 
     public void addTrafficLight(TrafficLight tl) {
         trafficLights.put(tl.getPosition(), tl);
@@ -140,8 +185,25 @@ public class Game {
         return trafficLights.get(p);
     }
 
-    public void addVehicle(Vehicle v) { vehicles.add(v); }
-    public void addRoute(Route r)     { routes.add(r); }
+    public void addVehicle(Vehicle v) {
+        vehicles.add(v);
+    }
+
+    public void addRoute(Route r) {
+        routes.add(r);
+    }
+
+    /**
+     * Removes a route from the world.
+     * Does NOT automatically unassign vehicles — call
+     * {@link controller.GameController#deleteRoute(Route)} instead,
+     * which handles vehicle cleanup before calling this.
+     *
+     * @param route the route to remove
+     */
+    public void removeRoute(Route route) {
+        routes.remove(route);
+    }
 
     public void addCity(City city) {
         cities.add(city);
@@ -213,7 +275,6 @@ public class Game {
 
     }
 
-
     // Construction methods (addRoad, addBridge, addStop, etc.) and validation
     // logic (isAdjacent...) have been moved to model.service.ConstructionService
     // to separate game logic from data representation.
@@ -225,7 +286,8 @@ public class Game {
      */
     public Road getRoadAt(Position p) {
         for (Road r : roads) {
-            if (r.getPosition().equals(p)) return r;
+            if (r.getPosition().equals(p))
+                return r;
         }
         return null;
     }
@@ -237,20 +299,23 @@ public class Game {
      */
     public Stop getStopAt(Position p) {
         for (Stop s : stops) {
-            if (s.getPosition().equals(p)) return s;
+            if (s.getPosition().equals(p))
+                return s;
         }
         return null;
     }
 
     /**
-     * Returns the bridge whose footprint contains position {@code p}, or {@code null}
+     * Returns the bridge whose footprint contains position {@code p}, or
+     * {@code null}
      * if no bridge covers that tile.
      *
      * @param p grid position to query
      */
     public Bridge getBridgeAt(Position p) {
         for (Bridge b : bridges) {
-            if (b.containsPosition(p.getX(), p.getY())) return b;
+            if (b.containsPosition(p.getX(), p.getY()))
+                return b;
         }
         return null;
     }
@@ -262,7 +327,7 @@ public class Game {
      * @param p centre position
      */
     public List<Position> getAdjacentRoads(Position p) {
-        int[][] deltas = { {0, -1}, {0, 1}, {-1, 0}, {1, 0} };
+        int[][] deltas = { { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 } };
         List<Position> result = new ArrayList<>();
         for (int[] d : deltas) {
             Position neighbour = new Position(p.getX() + d[0], p.getY() + d[1]);
@@ -275,7 +340,8 @@ public class Game {
     }
 
     /**
-     * Returns a combined list of all map entities that have a visual presence on the map:
+     * Returns a combined list of all map entities that have a visual presence on
+     * the map:
      * cities, facilities, water bodies, and bridges. Used for label rendering.
      */
     public List<MapEntity> getAllEntities() {
@@ -290,7 +356,8 @@ public class Game {
     private final java.util.List<Position> dirtyStaticTiles = new java.util.ArrayList<>();
 
     /**
-     * Marks a tile as visually changed so the next render pass redraws the static layer
+     * Marks a tile as visually changed so the next render pass redraws the static
+     * layer
      * (used for forest growth).
      *
      * @param p the tile that changed
@@ -300,7 +367,8 @@ public class Game {
     }
 
     /**
-     * Returns and clears the list of tiles that have been marked dirty since the last call.
+     * Returns and clears the list of tiles that have been marked dirty since the
+     * last call.
      * Called once per frame by the rendering layer.
      */
     public java.util.List<Position> consumeDirtyStaticTiles() {
