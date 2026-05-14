@@ -15,13 +15,19 @@ package model.enums;
 public enum CargoType {
     /** Human passengers — carried by buses, deliverable at any city. */
     PASSENGERS(10),
-    /** Timber/logs — produced by wood factories, consumed by cities. */
+    /**
+     * Timber/logs — produced by Wood Factories; consumed by Coal Mines and cities.
+     */
     WOOD(20),
-    /** Iron ore — produced by iron mines, consumed by cities. */
-    IRON(40),
-    /** Coal — produced by coal factories, consumed by cities. */
+    /**
+     * Coal — produced by Coal Mines from wood; consumed by Iron Mines and cities.
+     */
     COAL(30),
-    /** Crude oil — produced by oil rigs, consumed by cities. */
+    /**
+     * Iron ore — produced by Iron Mines from coal; consumed by Oil Rigs and cities.
+     */
+    IRON(40),
+    /** Crude oil — produced by Oil Rigs from iron; consumed by cities. */
     OIL(50);
 
     private final double incomePerUnit;

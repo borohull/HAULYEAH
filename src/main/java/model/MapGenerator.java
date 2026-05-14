@@ -12,36 +12,42 @@ import java.util.Set;
 /**
  * Procedurally generates the game world ({@link Game}) for a new session.
  *
- * <p>The generator is deterministic when constructed with a fixed seed and produces the same
- * city layout, facility positions, water bodies, and forests on every call. Random mode
+ * <p>
+ * The generator is deterministic when constructed with a fixed seed and
+ * produces the same
+ * city layout, facility positions, water bodies, and forests on every call.
+ * Random mode
  * (no-arg constructor) uses a fresh random seed each time.
  *
- * <p>Key generation steps performed by {@link #generate}:
+ * <p>
+ * Key generation steps performed by {@link #generate}:
  * <ol>
- *   <li>Stamp {@link City} objects from hard-coded position table and {@link CityTemplate}s.</li>
- *   <li>Place {@link Facility} objects at fixed positions with cargo categories.</li>
- *   <li>Generate the "Silver River" water body and two lakes using stroke and ellipse helpers.</li>
- *   <li>Place pre-defined {@link Forest} areas.</li>
- *   <li>Assign demand sequences to each city.</li>
+ * <li>Stamp {@link City} objects from hard-coded position table and
+ * {@link CityTemplate}s.</li>
+ * <li>Place {@link Facility} objects at fixed positions with cargo
+ * categories.</li>
+ * <li>Generate the "Silver River" water body and two lakes using stroke and
+ * ellipse helpers.</li>
+ * <li>Place pre-defined {@link Forest} areas.</li>
+ * <li>Assign demand sequences to each city.</li>
  * </ol>
  */
 public class MapGenerator {
     private static final int FAC_W = 4;
-    private static final int FAC_H = 3;
-;
+    private static final int FAC_H = 3;;
     private static final int PADDING = 2;
 
     private static final Object[][] FACILITY_DATA = {
-            {"Iron Mine",     CargoType.IRON, null},
-            {"Wood Factory",  CargoType.WOOD, null},
-            {"Coal Factory",  CargoType.COAL, null},
-            {"Oil Rig",       CargoType.OIL,  null},
-            {"Wood Factory",  CargoType.WOOD, null},
-            {"Coal Factory",  CargoType.COAL, null},
-            {"Oil Rig",       CargoType.OIL,  null},
-            {"Iron Mine",     CargoType.IRON, null},
-            {"Wood Factory",  CargoType.WOOD, null},
-            {"Oil Rig",       CargoType.OIL,  null}
+            { "Wood Factory", CargoType.WOOD, null },
+            { "Coal Mine", CargoType.COAL, CargoType.WOOD },
+            { "Iron Mine", CargoType.IRON, CargoType.COAL },
+            { "Oil Rig", CargoType.OIL, CargoType.IRON },
+            { "Wood Factory", CargoType.WOOD, null },
+            { "Coal Mine", CargoType.COAL, CargoType.WOOD },
+            { "Iron Mine", CargoType.IRON, CargoType.COAL },
+            { "Oil Rig", CargoType.OIL, CargoType.IRON },
+            { "Wood Factory", CargoType.WOOD, null },
+            { "Coal Mine", CargoType.COAL, CargoType.WOOD },
     };
 
     private final Random rng;
@@ -72,8 +78,7 @@ public class MapGenerator {
                 ".B.B.",
                 "B.V.B",
                 ".B.B.",
-                "B.B.B"
-        ));
+                "B.B.B"));
 
         cityTemplates.add(new CityTemplate(
                 "Budapest",
@@ -88,8 +93,7 @@ public class MapGenerator {
                 "B.B.H.B.B.H.B.B",
                 ".B.B.B.B.B.B.B.",
                 "B.B.H.B.B.H.B.B",
-                ".B.B.B.B.B.B.B."
-        ));
+                ".B.B.B.B.B.B.B."));
 
         cityTemplates.add(new CityTemplate(
                 "Szeged",
@@ -97,8 +101,7 @@ public class MapGenerator {
                 ".B.B.",
                 "H.X.H",
                 ".B.B.",
-                ".H..B"
-        ));
+                ".H..B"));
 
         cityTemplates.add(new CityTemplate(
                 "Pecs",
@@ -106,8 +109,7 @@ public class MapGenerator {
                 ".B.B.",
                 "H.X.H",
                 ".B.B.",
-                "B.H.B"
-        ));
+                "B.H.B"));
 
         cityTemplates.add(new CityTemplate(
                 "Miskolc",
@@ -115,8 +117,7 @@ public class MapGenerator {
                 ".B.B.",
                 "H.X.H",
                 ".B.B.",
-                ".H..B"
-        ));
+                ".H..B"));
 
         cityTemplates.add(new CityTemplate(
                 "Gyor",
@@ -127,8 +128,7 @@ public class MapGenerator {
                 "B.B.H.B.B",
                 ".B.B.B.B.",
                 "B.B.H.B.B",
-                ".B.B.B.B."
-        ));
+                ".B.B.B.B."));
 
         cityTemplates.add(new CityTemplate(
                 "Sopron",
@@ -137,8 +137,7 @@ public class MapGenerator {
                 "HHHHHHHHHHH",
                 ".B.B.B.B.B.",
                 "B.B.B.B.B.B",
-                ".B.B.B.B.B."
-        ));
+                ".B.B.B.B.B."));
     }
 
     /**
@@ -146,21 +145,23 @@ public class MapGenerator {
      *
      * @param width         number of columns in the grid
      * @param height        number of rows in the grid
-     * @param numCities     how many cities to place (up to 7 are supported by hard-coded positions)
+     * @param numCities     how many cities to place (up to 7 are supported by
+     *                      hard-coded positions)
      * @param numFacilities how many facilities to place (up to 15 are supported)
-     * @return a fully initialised {@link Game} ready to be wrapped in a {@link model.GameState}
+     * @return a fully initialised {@link Game} ready to be wrapped in a
+     *         {@link model.GameState}
      */
     public Game generate(int width, int height, int numCities, int numFacilities) {
         Game game = new Game(width, height);
 
         int[][] cityPositions = {
-                {10, 10},
-                {50, 10},
-                {20, 50},
-                {50, 46},
-                {30, 70},
-                {70, 60},
-                {28, 0}
+                { 10, 10 },
+                { 50, 10 },
+                { 20, 50 },
+                { 50, 46 },
+                { 30, 70 },
+                { 70, 60 },
+                { 28, 0 }
         };
 
         for (int i = 0; i < Math.min(numCities, cityPositions.length); i++) {
@@ -182,35 +183,36 @@ public class MapGenerator {
 
         List<int[]> cityRects = new ArrayList<>();
         for (City city : game.getCities()) {
-            cityRects.add(new int[]{city.getOrigin().getX(), city.getOrigin().getY(), city.getWidth(), city.getHeight()});
+            cityRects.add(
+                    new int[] { city.getOrigin().getX(), city.getOrigin().getY(), city.getWidth(), city.getHeight() });
         }
 
         int[][] facilityPositions = {
-                {6, 42},
-                {14, 22},
-                {22, 62},
-                {31, 16},
-                {47, 58},
-                {58, 24},
-                {62, 42},
-                {66, 30},
-                {10, 66},
-                {50, 72},
-                {4, 14},
-                {8, 8},
-                {62, 8},
-                {20, 12},
-                {56, 52}
+                { 6, 42 },
+                { 14, 22 },
+                { 22, 62 },
+                { 31, 16 },
+                { 47, 58 },
+                { 58, 24 },
+                { 62, 42 },
+                { 66, 30 },
+                { 10, 66 },
+                { 50, 72 },
+                { 4, 14 },
+                { 8, 8 },
+                { 62, 8 },
+                { 20, 12 },
+                { 56, 52 }
         };
-
-
 
         for (int i = 0; i < Math.min(numFacilities, facilityPositions.length) && i < FACILITY_DATA.length; i++) {
             Object[] data = FACILITY_DATA[i % FACILITY_DATA.length];
             List<CargoType> produces = new ArrayList<>();
             List<CargoType> consumes = new ArrayList<>();
-            if (data[1] != null) produces.add((CargoType) data[1]);
-            if (data[2] != null) consumes.add((CargoType) data[2]);
+            if (data[1] != null)
+                produces.add((CargoType) data[1]);
+            if (data[2] != null)
+                consumes.add((CargoType) data[2]);
 
             int[] pos = facilityPositions[i];
             int facW = FAC_W;
@@ -227,21 +229,14 @@ public class MapGenerator {
                     facW,
                     facH,
                     produces,
-                    consumes
-            );
+                    consumes);
             game.addFacility(fac);
         }
 
         Facility specialFac = new Facility(
-                "facility_special",
-                "Iron Mine",
-                4,
-                4,
-                3,
-                3,
+                "facility_special", "Iron Mine", 4, 4, 3, 3,
                 List.of(CargoType.IRON),
-                List.of()
-        );
+                List.of(CargoType.COAL));
 
         game.addFacility(specialFac);
 
@@ -318,17 +313,17 @@ public class MapGenerator {
 
     private static void assignDemandSequences(Game game) {
         Map<String, List<CargoType>> sequences = Map.of(
-            "Debrecen", List.of(CargoType.WOOD, CargoType.IRON, CargoType.COAL),
-            "Budapest", List.of(CargoType.OIL, CargoType.IRON, CargoType.COAL, CargoType.WOOD),
-            "Szeged",   List.of(CargoType.WOOD, CargoType.COAL, CargoType.OIL),
-            "Pecs",     List.of(CargoType.COAL, CargoType.OIL, CargoType.IRON),
-            "Miskolc",  List.of(CargoType.IRON, CargoType.COAL, CargoType.WOOD, CargoType.OIL),
-            "Gyor",     List.of(CargoType.WOOD, CargoType.OIL, CargoType.IRON),
-            "Sopron",   List.of(CargoType.COAL, CargoType.WOOD, CargoType.OIL)
-        );
+                "Debrecen", List.of(CargoType.WOOD, CargoType.IRON, CargoType.COAL),
+                "Budapest", List.of(CargoType.OIL, CargoType.IRON, CargoType.COAL, CargoType.WOOD),
+                "Szeged", List.of(CargoType.WOOD, CargoType.COAL, CargoType.OIL),
+                "Pecs", List.of(CargoType.COAL, CargoType.OIL, CargoType.IRON),
+                "Miskolc", List.of(CargoType.IRON, CargoType.COAL, CargoType.WOOD, CargoType.OIL),
+                "Gyor", List.of(CargoType.WOOD, CargoType.OIL, CargoType.IRON),
+                "Sopron", List.of(CargoType.COAL, CargoType.WOOD, CargoType.OIL));
         for (City city : game.getCities()) {
             List<CargoType> seq = sequences.get(city.getName());
-            if (seq != null) city.setDemandSequence(seq);
+            if (seq != null)
+                city.setDemandSequence(seq);
         }
     }
 
@@ -439,7 +434,7 @@ public class MapGenerator {
             int y = 1 + rng.nextInt(Math.max(1, mapH - entityH - 2));
 
             if (!overlaps(x, y, entityW, entityH, occupied)) {
-                return new int[]{x, y};
+                return new int[] { x, y };
             }
         }
 
@@ -506,7 +501,8 @@ public class MapGenerator {
         }
     }
 
-    private void addRiverStroke(Set<Position> tiles, int startX, int startY, int width, int length, int shiftEvery, int shiftDirection) {
+    private void addRiverStroke(Set<Position> tiles, int startX, int startY, int width, int length, int shiftEvery,
+            int shiftDirection) {
         int x = startX;
         for (int row = 0; row < length; row++) {
             for (int dx = 0; dx < width; dx++) {
@@ -531,7 +527,8 @@ public class MapGenerator {
     }
 
     private WaterBody createWaterBodyFromTiles(String id, String name, Set<Position> tiles) {
-        if (tiles.isEmpty()) return null;
+        if (tiles.isEmpty())
+            return null;
 
         int minX = Integer.MAX_VALUE;
         int minY = Integer.MAX_VALUE;
@@ -552,7 +549,6 @@ public class MapGenerator {
                 minY,
                 (maxX - minX) + 1,
                 (maxY - minY) + 1,
-                new ArrayList<>(tiles)
-        );
+                new ArrayList<>(tiles));
     }
 }
