@@ -135,6 +135,11 @@ public class MapPanel extends Canvas {
     private final Image goodsNorthImage = loadTileImage("/images/vehicles/goods_north.png");
     private final Image goodsSouthImage = loadTileImage("/images/vehicles/goods_south.png");
 
+    private final Image oilTankerEastImage = loadTileImage("/images/vehicles/oil_east.png");
+    private final Image oilTankerWestImage = loadTileImage("/images/vehicles/oil_west.png");
+    private final Image oilTankerNorthImage = loadTileImage("/images/vehicles/oil_north.png");
+    private final Image oilTankerSouthImage = loadTileImage("/images/vehicles/oil_south.png");
+
     private final Image[] facilityImages = {
             loadTileImage("/images/facility1.png"),
             loadTileImage("/images/facility2.png"),
@@ -480,9 +485,16 @@ public class MapPanel extends Canvas {
                 case NORTH -> goodsNorthImage;
                 case SOUTH -> goodsSouthImage;
             };
+        } else if (vehicle.getType() == VehicleType.OIL_TANKER) {
+            img = switch (travelDir) {
+                case EAST -> oilTankerEastImage;
+                case WEST -> oilTankerWestImage;
+                case NORTH -> oilTankerNorthImage;
+                case SOUTH -> oilTankerSouthImage;
+            };
         } else {
             Image[] imgs = switch (vehicle.getType()) {
-                case OIL_TANKER, FUEL_TRUCK -> foodTruckImages;
+                case FUEL_TRUCK -> foodTruckImages;
                 default -> null;
             };
 
