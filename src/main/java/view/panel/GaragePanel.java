@@ -180,10 +180,10 @@ public class GaragePanel {
         root.setCenter(content);
         root.setStyle(ROOT_STYLE);
 
-        dialog.setScene(new Scene(root, 760, 560));
+        dialog.setScene(new Scene(root, 920, 620));
         dialog.setResizable(true);
-        dialog.setMinWidth(680);
-        dialog.setMinHeight(520);
+        dialog.setMinWidth(820);
+        dialog.setMinHeight(540);
         dialog.showAndWait();
     }
 
@@ -253,72 +253,115 @@ public class GaragePanel {
         Label sectionTitle = new Label("Vehicles & Routes");
         sectionTitle.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #4b3a2d;");
 
-        Label ownedVehicleLabel = new Label("Owned vehicle");
-        ownedVehicleLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #4b3a2d;");
-
-        ComboBox<String> ownedVehicleBox = new ComboBox<>();
-        ownedVehicleBox.setPrefWidth(320);
-        ownedVehicleBox.setStyle(FIELD_STYLE);
-
         List<Vehicle> ownedVehicles = game.getVehicles();
+
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+        scrollPane.setPrefHeight(360);
+
+        VBox vehicleList = new VBox(10);
+        vehicleList.setStyle("-fx-background-color: transparent;");
+
         if (ownedVehicles.isEmpty()) {
-            ownedVehicleBox.getItems().add("No vehicles owned");
+            Label empty = new Label("No vehicles owned yet.");
+            empty.setStyle("-fx-font-size: 13px; -fx-text-fill: #7b6553;");
+            vehicleList.getChildren().add(empty);
         } else {
-            for (Vehicle v : ownedVehicles) {
-                String routeName = v.getRoute() != null ? v.getRoute().getName() : "Unassigned";
-                String status = v.isActive() ? "Active" : "Parked";
-                ownedVehicleBox.getItems().add(formatName(v.getType()) + " - " + routeName + " (" + status + ")");
+            model.enums.CargoType[] order = {
+                    model.enums.CargoType.PASSENGERS,
+                    model.enums.CargoType.WOOD,
+                    model.enums.CargoType.COAL,
+                    model.enums.CargoType.IRON,
+                    model.enums.CargoType.OIL
+            };
+
+            for (model.enums.CargoType cargoType : order) {
+                List<Vehicle> group = ownedVehicles.stream()
+                        .filter(v -> v.getType().getAllowedCargo() == cargoType)
+                        .collect(java.util.stream.Collectors.toList());
+
+                if (group.isEmpty())
+                    continue;
+
+                Label groupHeader = new Label("── " + cargoType.displayName() + " ──");
+                groupHeader.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #9aab64;");
+                vehicleList.getChildren().add(groupHeader);
+
+                for (Vehicle v : group) {
+                    String status = v.isActive() ? "Active" : "Parked";
+                    String routeName = v.getRoute() != null ? v.getRoute().getName() : "Unassigned";
+
+                    // ── Row 1: name + route combobox + loop ───────────────────
+                    Label nameLabel = new Label(formatName(v.getType()) + "  ·  " + status + "  ·  " + routeName);
+                    nameLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #3d3026;");
+                    HBox.setHgrow(nameLabel, Priority.ALWAYS);
+
+                    ComboBox<String> routeBox = new ComboBox<>();
+                    routeBox.setPrefWidth(160);
+                    routeBox.setStyle(FIELD_STYLE);
+                    if (drawnRoutes.isEmpty()) {
+                        routeBox.getItems().add("No routes");
+                    } else {
+                        for (Route r : drawnRoutes)
+                            routeBox.getItems().add(r.getName());
+                        if (v.getRoute() != null) {
+                            drawnRoutes.stream()
+                                    .filter(r -> r.getId().equals(v.getRoute().getId()))
+                                    .findFirst()
+                                    .ifPresent(r -> routeBox.getSelectionModel().select(r.getName()));
+                        } else {
+                            routeBox.getSelectionModel().selectFirst();
+                        }
+                    }
+
+                    CheckBox loopBox = new CheckBox("Loop");
+                    loopBox.setSelected(v.isLooping());
+                    loopBox.setStyle("-fx-font-size: 12px; -fx-text-fill: #4b3a2d;");
+
+                    HBox row1 = new HBox(10, nameLabel, routeBox, loopBox);
+                    row1.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+                    // ── Row 2: action buttons ─────────────────────────────────
+                    Button assignBtn = new Button("Assign");
+                    assignBtn.setStyle(PRIMARY_BUTTON_STYLE);
+                    assignBtn.setOnAction(e -> {
+                        int ri = routeBox.getSelectionModel().getSelectedIndex();
+                        if (drawnRoutes.isEmpty() || ri < 0 || ri >= drawnRoutes.size())
+                            return;
+                        gameController.onAssignVehicle(v, drawnRoutes.get(ri), loopBox.isSelected());
+                        dialog.close();
+                    });
+
+                    Button deployBtn = new Button("Deploy");
+                    deployBtn.setStyle(SECONDARY_BUTTON_STYLE);
+                    deployBtn.setDisable(v.isActive());
+                    deployBtn.setOnAction(e -> {
+                        gameController.onDeployVehicle(v);
+                        dialog.close();
+                    });
+
+                    Button sellBtn = new Button("Sell  $" + v.getType().getSellPrice());
+                    sellBtn.setStyle("-fx-background-color: #8b4513; -fx-text-fill: white;" +
+                            "-fx-font-size: 13px; -fx-font-weight: bold;" +
+                            "-fx-background-radius: 10; -fx-padding: 8 16; -fx-cursor: hand;");
+                    sellBtn.setOnAction(e -> {
+                        gameController.onSellVehicle(v);
+                        dialog.close();
+                    });
+
+                    HBox row2 = new HBox(8, assignBtn, deployBtn, sellBtn);
+                    row2.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+
+                    VBox card = new VBox(8, row1, row2);
+                    card.setStyle(CARD_STYLE);
+                    vehicleList.getChildren().add(card);
+                }
             }
-            ownedVehicleBox.getSelectionModel().selectFirst();
         }
 
-        Label routeLabel = new Label("Assign to route");
-        routeLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #4b3a2d;");
-
-        ComboBox<String> routeBox = new ComboBox<>();
-        routeBox.setPrefWidth(320);
-        routeBox.setStyle(FIELD_STYLE);
-        if (drawnRoutes.isEmpty()) {
-            routeBox.getItems().add("Draw a route first");
-        } else {
-            for (Route r : drawnRoutes) {
-                routeBox.getItems().add(r.getName());
-            }
-            routeBox.getSelectionModel().selectFirst();
-        }
-
-        CheckBox loopBox = new CheckBox("Loop route");
-
-        Button assignButton = new Button("Assign Route");
-        assignButton.setStyle(PRIMARY_BUTTON_STYLE);
-        assignButton.setOnAction(e -> {
-            int vi = ownedVehicleBox.getSelectionModel().getSelectedIndex();
-            int ri = routeBox.getSelectionModel().getSelectedIndex();
-            if (ownedVehicles.isEmpty() || drawnRoutes.isEmpty())
-                return;
-            if (vi < 0 || vi >= ownedVehicles.size())
-                return;
-            if (ri < 0 || ri >= drawnRoutes.size())
-                return;
-            gameController.onAssignVehicle(ownedVehicles.get(vi), drawnRoutes.get(ri), loopBox.isSelected());
-            dialog.close();
-        });
-
-        Button deployButton = new Button("Deploy");
-        deployButton.setStyle(PRIMARY_BUTTON_STYLE);
-        deployButton.setOnAction(e -> {
-            int vi = ownedVehicleBox.getSelectionModel().getSelectedIndex();
-            if (ownedVehicles.isEmpty() || vi < 0 || vi >= ownedVehicles.size())
-                return;
-            gameController.onDeployVehicle(ownedVehicles.get(vi));
-            dialog.close();
-        });
-
-        VBox assignCard = new VBox(12, ownedVehicleLabel, ownedVehicleBox,
-                routeLabel, routeBox, loopBox);
-        assignCard.setStyle(CARD_STYLE);
-
-        return new VBox(14, sectionTitle, assignCard, assignButton, deployButton);
+        scrollPane.setContent(vehicleList);
+        return new VBox(14, sectionTitle, scrollPane);
     }
 
     // ── Routes tab ────────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 package model.service;
 
+import model.City;
 import model.Game;
 import model.GameState;
 import model.Player;
@@ -14,6 +15,9 @@ import model.enums.Direction;
 import model.enums.TileType;
 import model.enums.VehicleType;
 import model.MapGenerator;
+import model.Transaction;
+import model.enums.TransactionType;
+import java.util.LinkedHashMap;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,14 +34,22 @@ import java.util.stream.Collectors;
 /**
  * Persists and restores the full game state to/from a plain-text file.
  *
- * <p>The save file lives at {@code ~/.haulyea/savegame.txt}. The {@code slot} parameter
- * on all methods is accepted for API compatibility but currently ignored — there is
- * exactly one save slot. {@link controller.MainMenuController} calls {@link #delete(int)}
+ * <p>
+ * The save file lives at {@code ~/.haulyea/savegame.txt}. The {@code slot}
+ * parameter
+ * on all methods is accepted for API compatibility but currently ignored —
+ * there is
+ * exactly one save slot. {@link controller.MainMenuController} calls
+ * {@link #delete(int)}
  * before generating a new world to ensure a clean state.
  *
- * <p>Load strategy: a fresh world is generated via {@link MapGenerator} with the saved
- * dimensions and city/facility counts, then roads, stops, routes, vehicles, and traffic
- * lights are replaced with the saved data. Tile types are restored row-by-row from the
+ * <p>
+ * Load strategy: a fresh world is generated via {@link MapGenerator} with the
+ * saved
+ * dimensions and city/facility counts, then roads, stops, routes, vehicles, and
+ * traffic
+ * lights are replaced with the saved data. Tile types are restored row-by-row
+ * from the
  * {@code [tileTypes]} section.
  */
 public class SaveManager {
@@ -64,6 +76,20 @@ public class SaveManager {
         // Finance data
         content.append("playerName=").append(player.getName()).append('\n');
         content.append("capital=").append(player.getLedger().getCurrentCapital()).append('\n');
+
+        content.append("[transactions]\n");
+        for (Transaction tx : player.getLedger().getTransactions()) {
+            content.append(tx.getAmount()).append('|')
+                    .append(tx.getType().name()).append('|')
+                    .append(tx.getTimestamp().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append('|')
+                    .append(tx.getNote())
+                    .append('\n');
+        }
+
+        content.append("[maintenanceTotals]\n");
+        for (Map.Entry<String, Double> entry : player.getLedger().getMaintenanceTotals().entrySet()) {
+            content.append(entry.getKey()).append('=').append(entry.getValue()).append('\n');
+        }
 
         // World data
         content.append("worldName=").append(game.getWorldName()).append('\n');
@@ -155,6 +181,13 @@ public class SaveManager {
             content.append('\n');
         }
 
+        content.append("[cityDemandIndexes]\n");
+        for (City city : game.getCities()) {
+            content.append(city.getId()).append('=').append(city.getDemandIndex()).append('\n');
+        }
+
+        content.append("demandTimer=").append(state.getDemandTimer()).append('\n');
+
         try {
             Files.createDirectories(SAVE_DIR);
             Files.writeString(SAVE_FILE, content);
@@ -169,7 +202,8 @@ public class SaveManager {
      * Reads {@code ~/.haulyea/savegame.txt} and reconstructs a {@link GameState}.
      *
      * @param slot ignored (single-slot implementation)
-     * @return the restored game state, or {@code null} if the file doesn't exist or is invalid
+     * @return the restored game state, or {@code null} if the file doesn't exist or
+     *         is invalid
      */
     public GameState load(int slot) {
         try {
@@ -187,18 +221,25 @@ public class SaveManager {
 
             String playerName = "Player 1";
             double capital = 100000;
-
+            double demandTimer = 0.0;
             String worldName = null;
             int width = 0, height = 0;
             List<Road> roads = new ArrayList<>();
             List<Stop> stops = new ArrayList<>();
             TileType[][] tileTypes = null;
+            Map<String, Integer> cityDemandIndexes = new HashMap<>();
+            List<Transaction> transactions = new ArrayList<>();
+            Map<String, Double> maintenanceTotals = new LinkedHashMap<>();
 
-            record ParsedRoute(String id, String name, boolean reversed, List<String> stopIds, List<Position> tilePath) {}
+            record ParsedRoute(String id, String name, boolean reversed, List<String> stopIds,
+                    List<Position> tilePath) {
+            }
             record ParsedVehicle(String id, VehicleType type, int x, int y, String routeId, int routePathIndex,
-                                 boolean movingForward, Direction travelDirection, double routeProgress) {}
+                    boolean movingForward, Direction travelDirection, double routeProgress) {
+            }
             record ParsedTrafficLight(String id, int x, int y, List<Direction> directions,
-                                      Map<Direction, Double> durations, int phaseIndex, double phaseTimer) {}
+                    Map<Direction, Double> durations, int phaseIndex, double phaseTimer) {
+            }
 
             List<ParsedRoute> parsedRoutes = new ArrayList<>();
             List<ParsedVehicle> parsedVehicles = new ArrayList<>();
@@ -210,12 +251,15 @@ public class SaveManager {
 
             for (String line : lines) {
                 line = line.trim();
-                if (line.isEmpty() || line.startsWith("#")) continue;
+                if (line.isEmpty() || line.startsWith("#"))
+                    continue;
 
                 if (line.startsWith("playerName=")) {
                     playerName = line.substring(11);
                 } else if (line.startsWith("capital=")) {
                     capital = Double.parseDouble(line.substring(8));
+                } else if (line.startsWith("demandTimer=")) {
+                    demandTimer = Double.parseDouble(line.substring("demandTimer=".length()));
                 } else if (line.startsWith("worldName=")) {
                     worldName = line.substring(10);
                 } else if (line.startsWith("width=")) {
@@ -245,6 +289,12 @@ public class SaveManager {
                 } else if (line.equals("[tileTypes]")) {
                     section = 6;
                     tileTypes = new TileType[height][width];
+                } else if (line.equals("[cityDemandIndexes]")) {
+                    section = 7;
+                } else if (line.equals("[transactions]")) {
+                    section = 8;
+                } else if (line.equals("[maintenanceTotals]")) {
+                    section = 9;
                 } else {
                     if (section == 1 && roads.size() < roadCount) {
                         String[] parts = line.split(",");
@@ -284,8 +334,7 @@ public class SaveManager {
                                     parts[1],
                                     Boolean.parseBoolean(parts[2]),
                                     stopIds,
-                                    tilePath
-                            ));
+                                    tilePath));
                         }
                     } else if (section == 4 && parsedVehicles.size() < vehicleCount) {
                         String[] parts = line.split("\\|", -1);
@@ -300,8 +349,7 @@ public class SaveManager {
                                     Integer.parseInt(parts[5]),
                                     Boolean.parseBoolean(parts[6]),
                                     Direction.valueOf(parts[7]),
-                                    routeProgress
-                            ));
+                                    routeProgress));
                         }
                     } else if (section == 5 && parsedTrafficLights.size() < trafficLightCount) {
                         String[] parts = line.split("\\|", -1);
@@ -326,8 +374,7 @@ public class SaveManager {
                                     directions,
                                     durations,
                                     Integer.parseInt(parts[4]),
-                                    Double.parseDouble(parts[5])
-                            ));
+                                    Double.parseDouble(parts[5])));
                         }
                     } else if (section == 6 && y < height) {
                         String[] types = line.split(",");
@@ -335,6 +382,26 @@ public class SaveManager {
                             tileTypes[y][x] = TileType.valueOf(types[x]);
                         }
                         y++;
+                    } else if (section == 7) {
+                        String[] parts = line.split("=");
+                        if (parts.length == 2) {
+                            cityDemandIndexes.put(parts[0], Integer.parseInt(parts[1]));
+                        }
+                    } else if (section == 8) {
+                        String[] parts = line.split("\\|", 4);
+                        if (parts.length == 4) {
+                            double amount = Double.parseDouble(parts[0]);
+                            TransactionType type = TransactionType.valueOf(parts[1]);
+                            LocalDateTime ts = LocalDateTime.parse(parts[2],
+                                    DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                            String note = parts[3];
+                            transactions.add(new Transaction(amount, type, ts, note));
+                        }
+                    } else if (section == 9) {
+                        String[] parts = line.split("=", 2);
+                        if (parts.length == 2) {
+                            maintenanceTotals.put(parts[0], Double.parseDouble(parts[1]));
+                        }
                     }
                 }
             }
@@ -384,8 +451,7 @@ public class SaveManager {
                         parsedRoute.id(),
                         parsedRoute.name(),
                         routeStops,
-                        parsedRoute.tilePath()
-                );
+                        parsedRoute.tilePath());
                 route.setReversed(parsedRoute.reversed());
                 game.addRoute(route);
                 routeById.put(route.getId(), route);
@@ -395,8 +461,7 @@ public class SaveManager {
                 Vehicle vehicle = new Vehicle(
                         parsedVehicle.id(),
                         parsedVehicle.type(),
-                        new Position(parsedVehicle.x(), parsedVehicle.y())
-                );
+                        new Position(parsedVehicle.x(), parsedVehicle.y()));
 
                 if (!parsedVehicle.routeId().isBlank()) {
                     Route route = routeById.get(parsedVehicle.routeId());
@@ -417,8 +482,7 @@ public class SaveManager {
                 TrafficLight tl = new TrafficLight(
                         parsedTrafficLight.id(),
                         new Position(parsedTrafficLight.x(), parsedTrafficLight.y()),
-                        parsedTrafficLight.directions()
-                );
+                        parsedTrafficLight.directions());
 
                 for (Map.Entry<Direction, Double> entry : parsedTrafficLight.durations().entrySet()) {
                     tl.setGreenDuration(entry.getKey(), entry.getValue());
@@ -429,7 +493,16 @@ public class SaveManager {
             }
 
             Player player = new Player(playerName, capital);
+            player.getLedger().restore(capital, transactions, maintenanceTotals);
             GameState state = new GameState(game, player);
+            state.setDemandTimer(demandTimer);
+
+            for (City city : game.getCities()) {
+                Integer savedIndex = cityDemandIndexes.get(city.getId());
+                if (savedIndex != null) {
+                    city.setDemandIndex(savedIndex);
+                }
+            }
 
             System.out.println("[SaveManager] Game loaded: " + SAVE_FILE);
             return state;

@@ -536,6 +536,22 @@ public class MapPanel extends Canvas {
             gc.setFill(isPassenger ? Color.rgb(30, 120, 220) : Color.rgb(220, 100, 30));
             gc.fillOval(cx - 8, cy, 16, 10);
         }
+
+        String typeName = vehicle.getType().name().replace("_", " ");
+        String cargoName = vehicle.getType().getAllowedCargo().displayName();
+        String label = typeName + " · " + cargoName;
+
+        gc.setFont(Font.font("Monospace", 10));
+        gc.setTextAlign(TextAlignment.CENTER);
+
+        double tw = label.length() * 6.0;
+        double labelY = cy - 28;
+
+        gc.setFill(Color.rgb(0, 0, 0, 0.55));
+        gc.fillRoundRect(cx - tw / 2 - 4, labelY - 11, tw + 8, 14, 4, 4);
+
+        gc.setFill(Color.WHITE);
+        gc.fillText(label, cx, labelY);
     }
 
     private Image getGroundImage(Tile tile) {
@@ -834,23 +850,27 @@ public class MapPanel extends Canvas {
             gc.fillText(text, cx, cy + 1);
         }
 
-        // Facility production: secondary signal (smaller)
         for (Facility facility : game.getFacilities()) {
-            CargoType production = facility.getPrimaryProduction();
-            if (production == null)
+            CargoType prod = facility.getPrimaryProduction();
+            CargoType consumed = facility.getConsumes().isEmpty() ? null : facility.getConsumes().get(0);
+            if (prod == null && consumed == null)
                 continue;
+
             Position center = facility.getCenter();
             double cx = isoScreenX(center.getX(), center.getY(), ox);
             double cy = isoScreenY(center.getX(), center.getY(), oy) - WALL_H - 38;
-            String text = "Produces: " + production.displayName();
 
-            gc.setFont(Font.font("Monospace", 12));
-            double tw = text.length() * 7.1;
-            gc.setFill(Color.rgb(0, 0, 0, 0.58));
+            String text = (prod != null ? "▲ " + prod.displayName() : "")
+                    + (prod != null && consumed != null ? "  ▼ " : "")
+                    + (consumed != null ? consumed.displayName() : "");
+
+            gc.setFont(Font.font("Monospace", 11));
+            double tw = text.length() * 6.7;
+            gc.setFill(Color.rgb(20, 20, 20, 0.65));
             gc.fillRoundRect(cx - tw / 2 - 6, cy - 13, tw + 12, 20, 6, 6);
             gc.setFill(Color.WHITE);
             gc.setTextAlign(TextAlignment.CENTER);
-            gc.fillText(text, cx, cy);
+            gc.fillText(text, cx, cy + 1);
         }
     }
 

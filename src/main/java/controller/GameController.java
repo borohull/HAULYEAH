@@ -198,7 +198,8 @@ public class GameController {
 
         if (constructionService.buildRoad(state.getMap(), p, Road.RoadType.HORIZONTAL)) {
             if (!state.getPlayer().getLedger().canAfford(cost)) {
-                notifyInsufficientFunds("Not enough money to build a road. The build will still go through and may bankrupt you.");
+                notifyInsufficientFunds(
+                        "Not enough money to build a road. The build will still go through and may bankrupt you.");
             }
             state.getPlayer().getLedger().spend(cost, TransactionType.BUILD, note);
             handleBankruptcyIfNeeded();
@@ -600,6 +601,17 @@ public class GameController {
             v.setLooping(false);
             vehicleService.assignRoute(state.getMap(), v, routes.get(0));
         }
+        notifyView();
+    }
+
+    public void onSellVehicle(Vehicle vehicle) {
+        int sellPrice = vehicle.getType().getSellPrice();
+        state.getMap().getVehicles().remove(vehicle);
+        state.getPlayer().getLedger().earn(
+                sellPrice,
+                TransactionType.INCOME,
+                "Sold " + vehicle.getType().name().replace("_", " "));
+        markUnsaved();
         notifyView();
     }
 
